@@ -1,0 +1,367 @@
+// Postman Visualizer - OFDMA Pre-EQ (PNN6 vs PNN7) Grouped By Channel
+//
+// Assumptions (based on your JSON):
+// - pm.response.json().data.analysis is an array of per-(channel_id, file_type_version) analysis objects
+// - Each analysis item has:
+//     item.pnm_header.file_type_version  (6 or 7)
+//     item.channel_id
+//     item.mac_address
+//     item.subcarrier_zero_frequency
+//     item.carrier_values.frequency              (Hz[])
+//     item.carrier_values.magnitudes             (dB[])
+//     item.carrier_values.group_delay.magnitude  (us[] or seconds-derived already in your model)
+//     item.signal_statistics.*
+//     item.echo.report.echoes[] (optional)
+
+const template = `
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; background: #1e1e1e; color: #e0e0e0; }
+  .container { max-width: 1400px; margin: 0 auto; }
+  h1 { color: #e0e0e0; text-align: center; margin-bottom: 30px; }
+  .channel-section { background: #2d2d2d; padding: 25px; margin: 30px 0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+  .channel-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+  .channel-title { font-size: 28px; font-weight: bold; margin: 0; }
+  .channel-subtitle { font-size: 16px; margin: 5px 0 0 0; opacity: 0.9; }
+
+  .series-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin: 10px 0 24px 0; }
+  .series-card { background: #3d3d3d; padding: 16px; border-radius: 8px; border-left: 4px solid #ff6c37; }
+  .series-header { font-size: 18px; font-weight: bold; color: #ff6c37; margin-bottom: 12px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 12px 0 0 0; }
+  .stat-card { background: #2d2d2d; padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+  .stat-label { font-size: 11px; color: #b0b0b0; text-transform: uppercase; font-weight: 600; }
+  .stat-value { font-size: 18px; font-weight: bold; color: #8b9dff; margin-top: 4px; }
+
+  .chart-container { background: #2d2d2d; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); margin: 18px 0; }
+  .chart-title { font-size: 16px; font-weight: bold; color: #e0e0e0; margin-bottom: 12px; text-align: center; }
+  canvas { max-height: 350px; }
+
+  .echo-table { width: 100%; background: #2d2d2d; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.3); margin: 12px 0 0 0; }
+  .echo-table th { background: #667eea; color: white; padding: 10px; text-align: left; font-size: 13px; }
+  .echo-table td { padding: 10px; border-bottom: 1px solid #3d3d3d; font-size: 13px; color: #e0e0e0; }
+
+  .divider { height: 2px; background: linear-gradient(90deg, transparent, #667eea, transparent); margin: 40px 0; }
+  .no-data { text-align: center; padding: 40px; color: #b0b0b0; font-size: 18px; }
+</style>
+
+<div class="container">
+  <h1>Pre-Equalization Analysis (PNN6 vs PNN7)</h1>
+
+  {{#each channels}}
+    <div class="channel-section">
+      <div class="channel-header">
+        <div class="channel-title">Channel {{channelId}}</div>
+        <div class="channel-subtitle">MAC: {{macAddress}} | Subcarrier-0 Freq: {{subcarrierZeroFreq}} Hz</div>
+      </div>
+
+      <div class="series-wrap">
+        {{#each series}}
+          <div class="series-card">
+            <div class="series-header">PNN v{{version}}</div>
+
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">Mean (dB)</div>
+                <div class="stat-value">{{stats.mean}}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Median (dB)</div>
+                <div class="stat-value">{{stats.median}}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Std Dev</div>
+                <div class="stat-value">{{stats.std}}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Power</div>
+                <div class="stat-value">{{stats.power}}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Peak-to-Peak</div>
+                <div class="stat-value">{{stats.peakToPeak}}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Crest Factor</div>
+                <div class="stat-value">{{stats.crestFactor}}</div>
+              </div>
+            </div>
+
+            {{#if echoes.length}}
+              <div class="chart-title" style="margin-top: 14px;">Echo Analysis</div>
+              <table class="echo-table">
+                <thead>
+                  <tr>
+                    <th>Bin Index</th>
+                    <th>Time (μs)</th>
+                    <th>Amplitude</th>
+                    <th>Distance (m)</th>
+                    <th>Distance (ft)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{#each echoes}}
+                    <tr>
+                      <td>{{binIndex}}</td>
+                      <td>{{time}}</td>
+                      <td>{{amplitude}}</td>
+                      <td>{{distanceM}}</td>
+                      <td>{{distanceFt}}</td>
+                    </tr>
+                  {{/each}}
+                </tbody>
+              </table>
+            {{/if}}
+          </div>
+        {{/each}}
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-title">Magnitude Response (Overlay: PNN6 vs PNN7)</div>
+        <canvas id="magnitude-{{channelId}}"></canvas>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-title">Group Delay (Overlay: PNN6 vs PNN7)</div>
+        <canvas id="groupdelay-{{channelId}}"></canvas>
+      </div>
+    </div>
+
+    {{#unless @last}}
+      <div class="divider"></div>
+    {{/unless}}
+  {{/each}}
+
+  {{#unless channels.length}}
+    <div class="no-data">No data available to display</div>
+  {{/unless}}
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+<script>
+pm.getData(function(err, data) {
+  if (err || !data || !data.channels) return;
+
+  const darkModeOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    legend: {
+      display: true,
+      labels: { fontColor: '#e0e0e0', fontSize: 12 }
+    },
+    scales: {
+      xAxes: [{
+        ticks: { fontColor: '#b0b0b0', maxTicksLimit: 10 },
+        gridLines: { color: '#3d3d3d', zeroLineColor: '#5d5d5d' },
+        scaleLabel: { display: true, fontColor: '#e0e0e0', labelString: 'Frequency (MHz)' }
+      }],
+      yAxes: [{
+        ticks: { fontColor: '#b0b0b0' },
+        gridLines: { color: '#3d3d3d', zeroLineColor: '#5d5d5d' },
+        scaleLabel: { display: true, fontColor: '#e0e0e0' }
+      }]
+    },
+    tooltips: {
+      backgroundColor: '#2d2d2d',
+      titleFontColor: '#e0e0e0',
+      bodyFontColor: '#e0e0e0',
+      borderColor: '#667eea',
+      borderWidth: 1
+    },
+    elements: { line: { tension: 0 } }
+  };
+
+  function padOrTrim(arr, n) {
+    if (!Array.isArray(arr)) return Array(n).fill(null);
+    if (arr.length === n) return arr;
+    if (arr.length > n) return arr.slice(0, n);
+    const out = arr.slice(0);
+    while (out.length < n) out.push(null);
+    return out;
+  }
+
+  function seriesStyle(version) {
+    // Deterministic styling: v6 (blue), v7 (orange), fallback (gray)
+    if (String(version) === '6') {
+      return { borderColor: '#4fc3f7', backgroundColor: 'rgba(79, 195, 247, 0.08)' };
+    }
+    if (String(version) === '7') {
+      return { borderColor: '#ff6c37', backgroundColor: 'rgba(255, 108, 55, 0.08)' };
+    }
+    return { borderColor: '#b0b0b0', backgroundColor: 'rgba(176, 176, 176, 0.06)' };
+  }
+
+  data.channels.forEach(channel => {
+    const magCanvas = document.getElementById('magnitude-' + channel.channelId);
+    const gdCanvas  = document.getElementById('groupdelay-' + channel.channelId);
+    if (!magCanvas || !gdCanvas) return;
+
+    const series = Array.isArray(channel.series) ? channel.series.slice(0) : [];
+    if (!series.length) return;
+
+    // Use the first series' frequency labels as the master label set
+    const labels = series[0].frequencies || [];
+    const n = labels.length;
+
+    const magDatasets = series.map(s => {
+      const st = seriesStyle(s.version);
+      return {
+        label: 'PNN v' + s.version,
+        data: padOrTrim(s.magnitudes, n),
+        borderColor: st.borderColor,
+        backgroundColor: st.backgroundColor,
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: true
+      };
+    });
+
+    const gdDatasets = series.map(s => {
+      const st = seriesStyle(s.version);
+      return {
+        label: 'PNN v' + s.version,
+        data: padOrTrim(s.groupDelays, n),
+        borderColor: st.borderColor,
+        backgroundColor: st.backgroundColor,
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: true
+      };
+    });
+
+    new Chart(magCanvas, {
+      type: 'line',
+      data: { labels: labels, datasets: magDatasets },
+      options: {
+        ...darkModeOptions,
+        scales: {
+          ...darkModeOptions.scales,
+          yAxes: [{
+            ...darkModeOptions.scales.yAxes[0],
+            scaleLabel: { display: true, fontColor: '#e0e0e0', labelString: 'Magnitude (dB)' }
+          }]
+        }
+      }
+    });
+
+    new Chart(gdCanvas, {
+      type: 'line',
+      data: { labels: labels, datasets: gdDatasets },
+      options: {
+        ...darkModeOptions,
+        scales: {
+          ...darkModeOptions.scales,
+          yAxes: [{
+            ...darkModeOptions.scales.yAxes[0],
+            scaleLabel: { display: true, fontColor: '#e0e0e0', labelString: 'Group Delay' }
+          }]
+        }
+      }
+    });
+  });
+});
+</script>
+`;
+
+function constructVisualizerPayload() {
+  const resp = pm.response.json();
+
+  const analysis = (resp && resp.data && Array.isArray(resp.data.analysis)) ? resp.data.analysis : [];
+  if (!analysis.length) return { channels: [] };
+
+  const channelMap = new Map();
+
+  function toFixedOrNA(v, digits) {
+    if (typeof v !== 'number' || !isFinite(v)) return 'N/A';
+    return v.toFixed(digits);
+  }
+
+  function sanitizeMac(value, fallback) {
+    var fb = (fallback === undefined || fallback === null) ? 'N/A' : fallback;
+    if (value === undefined || value === null) return fb;
+    var text = String(value).trim();
+    if (!text) return fb;
+    var compact = text.replace(/[^0-9a-f]/gi, '').toLowerCase();
+    if (compact.length !== 12) return text;
+    if (text.indexOf(':') !== -1) return compact.match(/.{1,2}/g).join(':');
+    if (text.indexOf('-') !== -1) return compact.match(/.{1,2}/g).join('-');
+    if (text.indexOf('_') !== -1) return compact.match(/.{1,2}/g).join('_');
+    return compact;
+  }
+
+  analysis.forEach(item => {
+    const channelId = item.channel_id;
+    if (channelId === undefined || channelId === null) return;
+
+    if (!channelMap.has(channelId)) {
+      channelMap.set(channelId, {
+        channelId: channelId,
+        macAddress: sanitizeMac(item.mac_address, 'N/A'),
+        subcarrierZeroFreq: item.subcarrier_zero_frequency ?? 'N/A',
+        series: []
+      });
+    }
+
+    const ver = item.pnm_header && item.pnm_header.file_type_version !== undefined
+      ? item.pnm_header.file_type_version
+      : 'N/A';
+
+    const freqHz = item.carrier_values && Array.isArray(item.carrier_values.frequency)
+      ? item.carrier_values.frequency
+      : [];
+
+    const frequencies = freqHz.map(f => {
+      if (typeof f !== 'number' || !isFinite(f)) return 'N/A';
+      return (f / 1000000).toFixed(3);
+    });
+
+    const magnitudes = item.carrier_values && Array.isArray(item.carrier_values.magnitudes)
+      ? item.carrier_values.magnitudes
+      : [];
+
+    const groupDelays = item.carrier_values
+      && item.carrier_values.group_delay
+      && Array.isArray(item.carrier_values.group_delay.magnitude)
+        ? item.carrier_values.group_delay.magnitude
+        : [];
+
+    const stats = item.signal_statistics || {};
+    const echoesRaw = item.echo && item.echo.report && Array.isArray(item.echo.report.echoes)
+      ? item.echo.report.echoes
+      : [];
+
+    const echoes = echoesRaw.map(echo => ({
+      binIndex: echo.bin_index,
+      time: (typeof echo.time_s === 'number' ? (echo.time_s * 1000000).toFixed(4) : 'N/A'),
+      amplitude: (typeof echo.amplitude === 'number' ? echo.amplitude.toFixed(6) : 'N/A'),
+      distanceM: (typeof echo.distance_m === 'number' ? echo.distance_m.toFixed(2) : 'N/A'),
+      distanceFt: (typeof echo.distance_ft === 'number' ? echo.distance_ft.toFixed(2) : 'N/A')
+    }));
+
+    channelMap.get(channelId).series.push({
+      version: ver,
+      frequencies: frequencies,
+      magnitudes: magnitudes,
+      groupDelays: groupDelays,
+      stats: {
+        mean: toFixedOrNA(stats.mean, 3),
+        median: toFixedOrNA(stats.median, 3),
+        std: toFixedOrNA(stats.std, 3),
+        power: toFixedOrNA(stats.power, 3),
+        peakToPeak: toFixedOrNA(stats.peak_to_peak, 3),
+        crestFactor: toFixedOrNA(stats.crest_factor, 3)
+      },
+      echoes: echoes
+    });
+  });
+
+  const channels = Array.from(channelMap.values()).map(ch => {
+    ch.series.sort((a, b) => String(a.version).localeCompare(String(b.version)));
+    return ch;
+  });
+
+  channels.sort((a, b) => Number(a.channelId) - Number(b.channelId));
+
+  return { channels };
+}
+
+pm.visualizer.set(template, constructVisualizerPayload());

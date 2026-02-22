@@ -2,6 +2,10 @@
 
 This repository contains Postman collections, environment, and globals for PyPNM API workflows.
 
+Repository version source of truth:
+
+- `VERSION` (must stay in sync with `pyproject.toml`)
+
 The main collection (`PyPNM`) includes requests for:
 
 - Single-capture PNM workflows
@@ -14,6 +18,36 @@ Current collection snapshot:
 
 - `PyPNM`: 60 requests across 21 folders (`POST`, `GET`, `DELETE` workflows)
 - `PyPNM-CMTS`: placeholder collection shell (currently no requests)
+
+## Documentation
+
+User and tooling documentation is available in `docs/`:
+
+- `docs/README.md`
+- `docs/user-guide.md`
+- `docs/tools.md`
+- `docs/release.md`
+
+## Local Tools (Sanitize / Version / Release)
+
+This repository keeps local tooling under `tools/` to keep the project root lean.
+
+Create a local virtual environment and install tool dependencies:
+
+```bash
+./install.sh
+```
+
+Common commands:
+
+```bash
+.venv/bin/python tools/sanitize.py --check
+.venv/bin/python tools/sanitize.py --fix
+.venv/bin/python tools/support/bump_version.py --version 0.1.1 --check
+.venv/bin/python tools/release/release.py --version-info
+./tools/git/git-save.sh --help
+./tools/git/git-push.sh --help
+```
 
 ## 1. Download and Install Postman
 
@@ -186,3 +220,5 @@ before troubleshooting the chart.
 - `postman/collections/PyPNM-CMTS.postman_collection.json` currently imports as an empty collection shell (no requests yet).
 - `postman/globals/workspace.postman_globals.json` contains shared placeholders used across requests.
 - `postman/scripts/update_operation_ids.py` is a helper script for collection edits (not required for normal Postman import/use).
+- Visual example sanitization is handled by `tools/sanitize.py` for both `visual/**/*.json` and `visual/**/*.html`.
+- Version synchronization is handled by `tools/support/bump_version.py` (`VERSION` + `pyproject.toml`).

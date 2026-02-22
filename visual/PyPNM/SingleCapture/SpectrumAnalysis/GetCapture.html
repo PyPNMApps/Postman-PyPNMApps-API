@@ -1,0 +1,100 @@
+// Visualization Script
+const template = `
+<div style="background-color: #1e1e1e; padding: 20px; font-family: Arial, sans-serif;">
+    <h2 style="color: #ffffff; text-align: center;">Spectrum Analysis</h2>
+    <canvas id="spectrumChart" width="800" height="400"></canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+<script>
+    var ctx = document.getElementById('spectrumChart').getContext('2d');
+    
+    var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Magnitude',
+                data: [],
+                borderColor: '#4CAF50',
+                backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                borderWidth: 1,
+                pointRadius: 0,
+                fill: true,
+                tension: 0.1
+            },
+            {
+                label: 'Window Average',
+                data: [],
+                borderColor: '#FF9800',
+                backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                borderWidth: 1,
+                pointRadius: 0,
+                fill: false,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            legend: {
+                display: true,
+                labels: {
+                    fontColor: '#ffffff'
+                }
+            },
+            scales: {
+                xAxes: [{
+                    display: true,
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Frequency (Hz)',
+                        fontColor: '#ffffff',
+                        fontSize: 14
+                    },
+                    ticks: {
+                        fontColor: '#ffffff',
+                        callback: function(value) {
+                            return (value / 1000000).toFixed(1) + ' MHz';
+                        }
+                    }
+                }],
+                yAxes: [{
+                    display: true,
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Magnitude (dBmV)',
+                        fontColor: '#ffffff',
+                        fontSize: 14
+                    },
+                    ticks: {
+                        fontColor: '#ffffff'
+                    }
+                }]
+            }
+        }
+    });
+
+    pm.getData(function (err, value) {
+        if (err) {
+            console.error(err);
+            return;
+        }
+        
+        var analysisData = value.response.data.analysis[0];
+        var signalAnalysis = analysisData.signal_analysis;
+        
+        myChart.data.labels = signalAnalysis.frequencies;
+        myChart.data.datasets[0].data = signalAnalysis.magnitudes;
+        myChart.data.datasets[1].data = signalAnalysis.window_average.magnitudes;
+        myChart.update();
+    });
+
+</script>
+`;
+
+function constructVisualizerPayload() {
+    return { response: pm.response.json() };
+}
+
+pm.visualizer.set(template, constructVisualizerPayload());

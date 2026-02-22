@@ -1,0 +1,144 @@
+// Visualization Script
+const template = `
+<div style="font-family: Arial, sans-serif; padding: 20px;">
+    <h2 style="text-align: center; color: #333;">FEC Summary - Codeword Analysis</h2>
+    
+    {{#each channels}}
+    <div style="margin-bottom: 40px; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+        <h3 style="color: #2c5aa0;">Channel ID: {{channel_id}}</h3>
+        
+        {{#each profiles}}
+        <div style="margin-bottom: 30px;">
+            <h4 style="color: #555;">Profile {{profile}}</h4>
+            <canvas id="chart-{{../channel_id}}-{{profile}}" height="80"></canvas>
+        </div>
+        {{/each}}
+    </div>
+    {{/each}}
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+<script>
+    pm.getData(function (err, value) {
+        value.channels.forEach(function(channel) {
+            channel.profiles.forEach(function(profile) {
+                var ctx = document.getElementById("chart-" + channel.channel_id + "-" + profile.profile);
+                new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: profile.timestampLabels,
+                        datasets: [
+                            {
+                                label: "Total Codewords",
+                                data: profile.total_codewords,
+                                borderColor: "#2c5aa0",
+                                backgroundColor: "rgba(44, 90, 160, 0.1)",
+                                fill: true,
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                pointHoverRadius: 0,
+                                yAxisID: "y-axis-1"
+                            },
+                            {
+                                label: "Corrected",
+                                data: profile.corrected,
+                                borderColor: "#f39c12",
+                                backgroundColor: "rgba(243, 156, 18, 0.1)",
+                                fill: true,
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                pointHoverRadius: 0,
+                                yAxisID: "y-axis-2"
+                            },
+                            {
+                                label: "Uncorrected",
+                                data: profile.uncorrected,
+                                borderColor: "#e74c3c",
+                                backgroundColor: "rgba(231, 76, 60, 0.1)",
+                                fill: true,
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                pointHoverRadius: 0,
+                                yAxisID: "y-axis-2"
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        scales: {
+                            yAxes: [
+                                {
+                                    id: "y-axis-1",
+                                    type: "linear",
+                                    position: "left",
+                                    scaleLabel: {
+                                        display: true,
+                                        labelString: "Total Codewords"
+                                    }
+                                },
+                                {
+                                    id: "y-axis-2",
+                                    type: "linear",
+                                    position: "right",
+                                    scaleLabel: {
+                                        display: true,
+                                        labelString: "Errors"
+                                    },
+                                    gridLines: {
+                                        drawOnChartArea: false
+                                    }
+                                }
+                            ],
+                            xAxes: [{
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: "Timestamp"
+                                }
+                            }]
+                        },
+                        legend: {
+                            display: true,
+                            position: "top"
+                        }
+                    }
+                });
+            });
+        });
+    });
+</script>
+`;
+
+function constructVisualizerPayload() {
+    const responseData = pm.response.json();
+    const channels = [];
+    
+    if (responseData.data && responseData.data.analysis) {
+        responseData.data.analysis.forEach(function(channelData) {
+            const channelObj = {
+                channel_id: channelData.channel_id,
+                profiles: []
+            };
+            
+            channelData.profiles.forEach(function(profileData) {
+                const timestampLabels = profileData.codewords.timestamps.map(function(ts) {
+                    return new Date(ts * 1000).toLocaleTimeString();
+                });
+                
+                channelObj.profiles.push({
+                    profile: profileData.profile,
+                    timestampLabels: timestampLabels,
+                    total_codewords: profileData.codewords.total_codewords,
+                    corrected: profileData.codewords.corrected,
+                    uncorrected: profileData.codewords.uncorrected
+                });
+            });
+            
+            channels.push(channelObj);
+        });
+    }
+    
+    return { channels: channels };
+}
+
+pm.visualizer.set(template, constructVisualizerPayload());

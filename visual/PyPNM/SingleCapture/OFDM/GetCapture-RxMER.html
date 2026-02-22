@@ -1,0 +1,124 @@
+var template = `
+<canvas id="carrierChart" height="100"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+<script>
+    var ctx = document.getElementById("carrierChart");
+    var colors = [
+        { border: 'rgba(255, 99, 132, 1)', background: 'rgba(255, 99, 132, 0.2)' },
+        { border: 'rgba(54, 162, 235, 1)', background: 'rgba(54, 162, 235, 0.2)' },
+        { border: 'rgba(75, 192, 192, 1)', background: 'rgba(75, 192, 192, 0.2)' },
+        { border: 'rgba(255, 206, 86, 1)', background: 'rgba(255, 206, 86, 0.2)' },
+        { border: 'rgba(153, 102, 255, 1)', background: 'rgba(153, 102, 255, 0.2)' }
+    ];
+    
+    var myChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: []
+        },
+        options: {
+            responsive: true,
+            legend: { 
+                display: true,
+                position: 'top'
+            },
+            title: {
+                display: true,
+                text: 'OFDM RxMER Carrier Magnitude by Frequency'
+            },
+            scales: {
+                xAxes: [{
+                    display: true,
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Frequency (GHz)'
+                    }
+                }],
+                yAxes: [{
+                    display: true,
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Magnitude (dB)'
+                    }
+                }]
+            },
+            elements: {
+                point: {
+                    radius: 0
+                },
+                line: {
+                    tension: 0.1
+                }
+            }
+        }
+    });
+
+    pm.getData(function (err, value) {
+        if (value && value.analysisData && value.analysisData.length > 0) {
+            // Collect all unique frequencies across all channels for x-axis labels
+            var allFrequencies = [];
+            value.analysisData.forEach(function(channel) {
+                channel.frequencies.forEach(function(freq) {
+                    if (allFrequencies.indexOf(freq) === -1) {
+                        allFrequencies.push(freq);
+                    }
+                });
+            });
+            allFrequencies.sort(function(a, b) { return a - b; });
+            
+            // Set labels (convert to GHz for display)
+            myChart.data.labels = allFrequencies.map(function(f) {
+                return (f / 1000000000).toFixed(3);
+            });
+            
+            // Create a dataset for each channel
+            value.analysisData.forEach(function(channel, index) {
+                var colorIndex = index % colors.length;
+                
+                // Create a map of frequency to magnitude for this channel
+                var freqToMag = {};
+                for (var i = 0; i < channel.frequencies.length; i++) {
+                    freqToMag[channel.frequencies[i]] = channel.magnitudes[i];
+                }
+                
+                // Map data to all frequencies (null for missing values)
+                var data = allFrequencies.map(function(freq) {
+                    return freqToMag[freq] !== undefined ? freqToMag[freq] : null;
+                });
+                
+                myChart.data.datasets.push({
+                    label: 'Channel ' + channel.channelId,
+                    data: data,
+                    borderColor: colors[colorIndex].border,
+                    backgroundColor: colors[colorIndex].background,
+                    fill: false,
+                    spanGaps: false
+                });
+            });
+            
+            myChart.update();
+        }
+    });
+</script>`;
+
+function constructVisualizerPayload() {
+    var response = pm.response.json();
+    var analysisData = [];
+    
+    if (response && response.data && response.data.analysis && Array.isArray(response.data.analysis)) {
+        response.data.analysis.forEach(function(entry) {
+            if (entry.carrier_values && entry.carrier_values.magnitude && entry.carrier_values.frequency) {
+                analysisData.push({
+                    channelId: entry.channel_id,
+                    magnitudes: entry.carrier_values.magnitude,
+                    frequencies: entry.carrier_values.frequency
+                });
+            }
+        });
+    }
+    
+    return { analysisData: analysisData };
+}
+
+pm.visualizer.set(template, constructVisualizerPayload());

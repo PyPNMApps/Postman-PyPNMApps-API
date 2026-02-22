@@ -1,0 +1,1020 @@
+// Visualization Script
+// Visualization Script
+// Visualization Script - Complete Channel Analysis with Constellation, Frequency Response, Echo, and Stats
+const template = `
+<style>
+    body { 
+        font-family: Arial, sans-serif; 
+        padding: 20px; 
+        background-color: #1a1a1a;
+        color: #e0e0e0;
+    }
+    .chart-container { 
+        background: #2d2d2d; 
+        padding: 20px; 
+        margin-bottom: 30px; 
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        border: 1px solid #3d3d3d;
+    }
+    h2 { 
+        color: #ffffff; 
+        margin-top: 0;
+        border-bottom: 2px solid #FF6C37;
+        padding-bottom: 10px;
+    }
+    h3 {
+        color: #FF6C37;
+        margin-top: 0;
+        margin-bottom: 15px;
+    }
+    h4 {
+        color: #FF6C37;
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+    .device-info {
+        background: #2d2d2d;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        border: 1px solid #3d3d3d;
+    }
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+    }
+    .info-item {
+        padding: 12px;
+        background: #3d3d3d;
+        border-radius: 4px;
+        border: 1px solid #4d4d4d;
+    }
+    .info-label {
+        font-weight: bold;
+        color: #b0b0b0;
+        font-size: 11px;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+    }
+    .info-value {
+        color: #e0e0e0;
+        font-size: 15px;
+        font-weight: 500;
+    }
+    .channel-section {
+        background: #2d2d2d;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        border: 2px solid #FF6C37;
+    }
+    .channel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #4d4d4d;
+    }
+    .channel-title {
+        font-size: 22px;
+        font-weight: bold;
+        color: #FF6C37;
+    }
+    .channel-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .constellation-container {
+        background: #3d3d3d;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        border: 1px solid #4d4d4d;
+    }
+    .constellation-canvas {
+        background: #1a1a1a;
+        border: 1px solid #4d4d4d;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+    .frequency-response-container {
+        background: #3d3d3d;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        border: 1px solid #4d4d4d;
+    }
+    .graph-canvas {
+        background: #1a1a1a;
+        border: 1px solid #4d4d4d;
+        border-radius: 4px;
+        margin-bottom: 10px;
+    }
+    .metrics-panel {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-top: 15px;
+    }
+    .metric-card {
+        background: #3d3d3d;
+        padding: 12px;
+        border-radius: 4px;
+        border: 1px solid #4d4d4d;
+        text-align: center;
+    }
+    .metric-label {
+        font-size: 11px;
+        color: #b0b0b0;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+    }
+    .metric-value {
+        font-size: 18px;
+        font-weight: bold;
+        color: #FF6C37;
+    }
+    .metric-unit {
+        font-size: 12px;
+        color: #b0b0b0;
+    }
+    .stats-panel {
+        background: #3d3d3d;
+        padding: 15px;
+        border-radius: 4px;
+        border: 1px solid #4d4d4d;
+        margin-top: 15px;
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 8px;
+    }
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px;
+        background: #2d2d2d;
+        border-radius: 3px;
+        border: 1px solid #4d4d4d;
+    }
+    .stat-label {
+        color: #b0b0b0;
+        font-size: 12px;
+    }
+    .stat-value {
+        color: #e0e0e0;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .toggle-container {
+        margin: 15px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .toggle-label {
+        color: #b0b0b0;
+        font-size: 13px;
+    }
+    input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+    .echo-container {
+        background: #3d3d3d;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        border: 1px solid #4d4d4d;
+    }
+    .echo-summary {
+        background: #2d2d2d;
+        padding: 12px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+        border-left: 4px solid #FF6C37;
+    }
+    .echo-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    .echo-table th {
+        background: #2d2d2d;
+        color: #FF6C37;
+        padding: 10px;
+        text-align: left;
+        font-size: 12px;
+        border: 1px solid #4d4d4d;
+    }
+    .echo-table td {
+        padding: 8px;
+        border: 1px solid #4d4d4d;
+        font-size: 12px;
+        color: #e0e0e0;
+    }
+    .echo-table tr:nth-child(even) {
+        background: #2d2d2d;
+    }
+    .echo-table tr:nth-child(odd) {
+        background: #3d3d3d;
+    }
+    .measurement-stats-section {
+        background: #2d2d2d;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        border: 1px solid #3d3d3d;
+    }
+    .measurement-card {
+        background: #3d3d3d;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        border: 1px solid #4d4d4d;
+    }
+    .measurement-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #4d4d4d;
+    }
+    .measurement-title {
+        font-size: 16px;
+        font-weight: bold;
+        color: #FF6C37;
+    }
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    .status-ready {
+        background: #2d5016;
+        color: #7bc043;
+        border: 1px solid #7bc043;
+    }
+    .status-other {
+        background: #4d4d4d;
+        color: #b0b0b0;
+        border: 1px solid #6d6d6d;
+    }
+    .measurement-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 12px;
+    }
+    .measurement-item {
+        background: #2d2d2d;
+        padding: 12px;
+        border-radius: 4px;
+        border: 1px solid #4d4d4d;
+    }
+    .measurement-label {
+        font-size: 11px;
+        color: #b0b0b0;
+        margin-bottom: 6px;
+        line-height: 1.3;
+    }
+    .measurement-value {
+        font-size: 16px;
+        font-weight: bold;
+        color: #e0e0e0;
+    }
+    .measurement-highlight {
+        color: #FF6C37;
+    }
+    .radar-container {
+        background: #3d3d3d;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        border: 1px solid #4d4d4d;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
+
+<div class="device-info">
+    <h2>Device Information</h2>
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="info-label">MAC Address</div>
+            <div class="info-value">{{deviceInfo.mac_address}}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Model</div>
+            <div class="info-value">{{deviceInfo.model}}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Vendor</div>
+            <div class="info-value">{{deviceInfo.vendor}}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Hardware Revision</div>
+            <div class="info-value">{{deviceInfo.hw_rev}}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Software Version</div>
+            <div class="info-value">{{deviceInfo.sw_rev}}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Boot Revision</div>
+            <div class="info-value">{{deviceInfo.bootr}}</div>
+        </div>
+    </div>
+</div>
+
+{{#each channels}}
+<div class="channel-section">
+    <div class="channel-header">
+        <div class="channel-title">Channel {{channel_id}}</div>
+    </div>
+    
+    <div class="channel-info-grid">
+        <div class="info-item">
+            <div class="info-label">Frequency Range</div>
+            <div class="info-value">{{freqStart}} - {{freqEnd}} MHz</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Center Frequency</div>
+            <div class="info-value">{{centerFreq}} MHz</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Bandwidth</div>
+            <div class="info-value">{{bandwidth}} MHz</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Subcarrier Spacing</div>
+            <div class="info-value">{{subcarrier_spacing}}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Carrier Count</div>
+            <div class="info-value">{{carrier_count}}</div>
+        </div>
+    </div>
+    
+    <div class="constellation-container">
+        <h4>Constellation Diagram</h4>
+        <div class="toggle-container">
+            <input type="checkbox" id="toggle-{{channel_id}}" checked>
+            <label for="toggle-{{channel_id}}" class="toggle-label">Show Decision Boundaries</label>
+        </div>
+        <canvas id="constellation-{{channel_id}}" class="constellation-canvas" width="600" height="600"></canvas>
+        <div class="metrics-panel">
+            <div class="metric-card">
+                <div class="metric-label">EVM RMS</div>
+                <div class="metric-value">{{evmRms}}<span class="metric-unit">%</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">MER</div>
+                <div class="metric-value">{{mer}}<span class="metric-unit">dB</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">SNR</div>
+                <div class="metric-value">{{snr}}<span class="metric-unit">dB</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Mean Power</div>
+                <div class="metric-value">{{meanPower}}<span class="metric-unit">dBmV</span></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="frequency-response-container">
+        <h4>Channel Estimation - Magnitude Response</h4>
+        <canvas id="magnitude-{{channel_id}}" class="graph-canvas" width="800" height="400"></canvas>
+    </div>
+    
+    <div class="frequency-response-container">
+        <h4>Channel Estimation - Group Delay</h4>
+        <canvas id="groupdelay-{{channel_id}}" class="graph-canvas" width="800" height="400"></canvas>
+    </div>
+    
+    <div class="echo-container">
+        <h4>Echo Analysis</h4>
+        <div class="echo-summary">
+            <strong>Cable Type:</strong> {{echo.cable_type}} | 
+            <strong>Velocity Factor:</strong> {{echo.velocity_factor}} | 
+            <strong>Propagation Speed:</strong> {{echo.prop_speed}} m/s
+        </div>
+        {{#if echo.hasEchoes}}
+        <canvas id="echo-{{channel_id}}" class="graph-canvas" width="800" height="300"></canvas>
+        <table class="echo-table">
+            <thead>
+                <tr>
+                    <th>Echo #</th>
+                    <th>Time (μs)</th>
+                    <th>Amplitude</th>
+                    <th>Distance (m)</th>
+                    <th>Distance (ft)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each echo.echoes}}
+                <tr>
+                    <td>{{echoNum}}</td>
+                    <td>{{time}}</td>
+                    <td>{{amplitude}}</td>
+                    <td>{{distance_m}}</td>
+                    <td>{{distance_ft}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+        {{else}}
+        <p style="color: #b0b0b0; text-align: center; padding: 20px;">No significant echoes detected</p>
+        {{/if}}
+    </div>
+    
+    <div class="stats-panel">
+        <h4>Signal Statistics</h4>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-label">Mean:</span>
+                <span class="stat-value">{{stats.mean}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Median:</span>
+                <span class="stat-value">{{stats.median}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Std Dev:</span>
+                <span class="stat-value">{{stats.std}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Variance:</span>
+                <span class="stat-value">{{stats.variance}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Power:</span>
+                <span class="stat-value">{{stats.power}} dBmV</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Peak-to-Peak:</span>
+                <span class="stat-value">{{stats.peak_to_peak}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">MAD:</span>
+                <span class="stat-value">{{stats.mad}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Skewness:</span>
+                <span class="stat-value">{{stats.skewness}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Kurtosis:</span>
+                <span class="stat-value">{{stats.kurtosis}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Crest Factor:</span>
+                <span class="stat-value">{{stats.crest_factor}}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{{/each}}
+
+<div class="measurement-stats-section">
+    <h2>Channel Measurement Statistics (DOCSIS PNM)</h2>
+    {{#each measurementStats}}
+    <div class="measurement-card">
+        <div class="measurement-header">
+            <div class="measurement-title">Channel {{channel_id}} (Index {{index}})</div>
+            <div class="status-badge {{statusClass}}">{{measStatus}}</div>
+        </div>
+        <div class="measurement-grid">
+            <div class="measurement-item">
+                <div class="measurement-label">Amplitude Ripple Peak-to-Peak</div>
+                <div class="measurement-value measurement-highlight">{{ampRipplePkToPk}} <span class="metric-unit">dB</span></div>
+            </div>
+            <div class="measurement-item">
+                <div class="measurement-label">Amplitude Ripple RMS</div>
+                <div class="measurement-value measurement-highlight">{{ampRippleRms}} <span class="metric-unit">dB</span></div>
+            </div>
+            <div class="measurement-item">
+                <div class="measurement-label">Amplitude Slope</div>
+                <div class="measurement-value">{{ampSlope}} <span class="metric-unit">dB/MHz</span></div>
+            </div>
+            <div class="measurement-item">
+                <div class="measurement-label">Amplitude Mean</div>
+                <div class="measurement-value">{{ampMean}} <span class="metric-unit">dB</span></div>
+            </div>
+            <div class="measurement-item">
+                <div class="measurement-label">Group Delay Ripple Peak-to-Peak</div>
+                <div class="measurement-value measurement-highlight">{{grpDelayRipplePkToPk}} <span class="metric-unit">ns</span></div>
+            </div>
+            <div class="measurement-item">
+                <div class="measurement-label">Group Delay Ripple RMS</div>
+                <div class="measurement-value measurement-highlight">{{grpDelayRippleRms}} <span class="metric-unit">ns</span></div>
+            </div>
+            <div class="measurement-item">
+                <div class="measurement-label">Group Delay Slope</div>
+                <div class="measurement-value">{{grpDelaySlope}} <span class="metric-unit">ns/MHz</span></div>
+            </div>
+            <div class="measurement-item">
+                <div class="measurement-label">Group Delay Mean</div>
+                <div class="measurement-value">{{grpDelayMean}} <span class="metric-unit">ns</span></div>
+            </div>
+        </div>
+    </div>
+    {{/each}}
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+    pm.getData(function(err, data) {
+        if (err) {
+            console.error('Error getting data:', err);
+            return;
+        }
+        
+        // Process each channel
+        data.channels.forEach(function(channel) {
+            // ===== CONSTELLATION DIAGRAM =====
+            const constCanvas = document.getElementById('constellation-' + channel.channel_id);
+            const constCtx = constCanvas.getContext('2d');
+            const width = constCanvas.width;
+            const height = constCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            const maxVal = Math.max(...channel.iValues.map(Math.abs), ...channel.qValues.map(Math.abs));
+            const scale = (Math.min(width, height) / 2) * 0.8 / maxVal;
+            
+            function drawConstellation() {
+                constCtx.fillStyle = '#1a1a1a';
+                constCtx.fillRect(0, 0, width, height);
+                
+                // Grid
+                constCtx.strokeStyle = '#3d3d3d';
+                constCtx.lineWidth = 0.5;
+                constCtx.beginPath();
+                constCtx.moveTo(0, centerY);
+                constCtx.lineTo(width, centerY);
+                constCtx.moveTo(centerX, 0);
+                constCtx.lineTo(centerX, height);
+                constCtx.stroke();
+                
+                // Decision boundaries
+                const toggle = document.getElementById('toggle-' + channel.channel_id);
+                if (toggle.checked) {
+                    constCtx.strokeStyle = '#FF6C37';
+                    constCtx.lineWidth = 0.5;
+                    constCtx.setLineDash([3, 3]);
+                    const levels = 8;
+                    const step = (maxVal * scale * 2) / levels;
+                    for (let i = -levels/2; i <= levels/2; i++) {
+                        if (i === 0) continue;
+                        const pos = i * step;
+                        constCtx.beginPath();
+                        constCtx.moveTo(centerX + pos, 0);
+                        constCtx.lineTo(centerX + pos, height);
+                        constCtx.stroke();
+                        constCtx.beginPath();
+                        constCtx.moveTo(0, centerY + pos);
+                        constCtx.lineTo(width, centerY + pos);
+                        constCtx.stroke();
+                    }
+                    constCtx.setLineDash([]);
+                }
+                
+                // Soft decision points
+                constCtx.fillStyle = 'rgba(100, 200, 255, 0.3)';
+                for (let i = 0; i < channel.iValues.length; i++) {
+                    const x = centerX + channel.iValues[i] * scale;
+                    const y = centerY - channel.qValues[i] * scale;
+                    constCtx.beginPath();
+                    constCtx.arc(x, y, 1.5, 0, 2 * Math.PI);
+                    constCtx.fill();
+                }
+                
+                // Hard decision crosshairs
+                constCtx.strokeStyle = '#7bc043';
+                constCtx.lineWidth = 1;
+                const crosshairSize = 8;
+                channel.hardDecisions.forEach(function(point) {
+                    const x = centerX + point.i * scale;
+                    const y = centerY - point.q * scale;
+                    constCtx.beginPath();
+                    constCtx.moveTo(x - crosshairSize, y);
+                    constCtx.lineTo(x + crosshairSize, y);
+                    constCtx.moveTo(x, y - crosshairSize);
+                    constCtx.lineTo(x, y + crosshairSize);
+                    constCtx.stroke();
+                });
+            }
+            
+            drawConstellation();
+            document.getElementById('toggle-' + channel.channel_id).addEventListener('change', drawConstellation);
+            
+            // ===== MAGNITUDE RESPONSE GRAPH =====
+            const magCanvas = document.getElementById('magnitude-' + channel.channel_id);
+            const magCtx = magCanvas.getContext('2d');
+            const magWidth = magCanvas.width;
+            const magHeight = magCanvas.height;
+            const padding = 60;
+            const graphWidth = magWidth - 2 * padding;
+            const graphHeight = magHeight - 2 * padding;
+            
+            magCtx.fillStyle = '#1a1a1a';
+            magCtx.fillRect(0, 0, magWidth, magHeight);
+            
+            const minMag = Math.min(...channel.magnitudes);
+            const maxMag = Math.max(...channel.magnitudes);
+            const magRange = maxMag - minMag;
+            
+            // Draw axes
+            magCtx.strokeStyle = '#4d4d4d';
+            magCtx.lineWidth = 1;
+            magCtx.beginPath();
+            magCtx.moveTo(padding, padding);
+            magCtx.lineTo(padding, magHeight - padding);
+            magCtx.lineTo(magWidth - padding, magHeight - padding);
+            magCtx.stroke();
+            
+            // Y-axis labels
+            magCtx.fillStyle = '#b0b0b0';
+            magCtx.font = '11px Arial';
+            magCtx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (graphHeight * i / 5);
+                const val = (maxMag - (magRange * i / 5)).toFixed(2);
+                magCtx.fillText(val, padding - 10, y + 4);
+                magCtx.strokeStyle = '#3d3d3d';
+                magCtx.beginPath();
+                magCtx.moveTo(padding, y);
+                magCtx.lineTo(magWidth - padding, y);
+                magCtx.stroke();
+            }
+            
+            // X-axis labels
+            magCtx.textAlign = 'center';
+            for (let i = 0; i <= 5; i++) {
+                const x = padding + (graphWidth * i / 5);
+                const freqIdx = Math.floor((channel.frequencies.length - 1) * i / 5);
+                const freq = (channel.frequencies[freqIdx] / 1000000).toFixed(1);
+                magCtx.fillText(freq, x, magHeight - padding + 20);
+            }
+            
+            // Axis labels
+            magCtx.fillStyle = '#e0e0e0';
+            magCtx.font = 'bold 12px Arial';
+            magCtx.textAlign = 'center';
+            magCtx.fillText('Frequency (MHz)', magWidth / 2, magHeight - 10);
+            magCtx.save();
+            magCtx.translate(15, magHeight / 2);
+            magCtx.rotate(-Math.PI / 2);
+            magCtx.fillText('Magnitude', 0, 0);
+            magCtx.restore();
+            
+            // Plot magnitude
+            magCtx.strokeStyle = '#FF6C37';
+            magCtx.lineWidth = 2;
+            magCtx.beginPath();
+            for (let i = 0; i < channel.magnitudes.length; i++) {
+                const x = padding + (graphWidth * i / (channel.magnitudes.length - 1));
+                const y = padding + graphHeight - ((channel.magnitudes[i] - minMag) / magRange * graphHeight);
+                if (i === 0) {
+                    magCtx.moveTo(x, y);
+                } else {
+                    magCtx.lineTo(x, y);
+                }
+            }
+            magCtx.stroke();
+            
+            // ===== GROUP DELAY GRAPH =====
+            const gdCanvas = document.getElementById('groupdelay-' + channel.channel_id);
+            const gdCtx = gdCanvas.getContext('2d');
+            const gdWidth = gdCanvas.width;
+            const gdHeight = gdCanvas.height;
+            
+            gdCtx.fillStyle = '#1a1a1a';
+            gdCtx.fillRect(0, 0, gdWidth, gdHeight);
+            
+            const minGD = Math.min(...channel.groupDelay);
+            const maxGD = Math.max(...channel.groupDelay);
+            const gdRange = maxGD - minGD;
+            
+            // Draw axes
+            gdCtx.strokeStyle = '#4d4d4d';
+            gdCtx.lineWidth = 1;
+            gdCtx.beginPath();
+            gdCtx.moveTo(padding, padding);
+            gdCtx.lineTo(padding, gdHeight - padding);
+            gdCtx.lineTo(gdWidth - padding, gdHeight - padding);
+            gdCtx.stroke();
+            
+            // Y-axis labels
+            gdCtx.fillStyle = '#b0b0b0';
+            gdCtx.font = '11px Arial';
+            gdCtx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (graphHeight * i / 5);
+                const val = (maxGD - (gdRange * i / 5)).toFixed(2);
+                gdCtx.fillText(val, padding - 10, y + 4);
+                gdCtx.strokeStyle = '#3d3d3d';
+                gdCtx.beginPath();
+                gdCtx.moveTo(padding, y);
+                gdCtx.lineTo(gdWidth - padding, y);
+                gdCtx.stroke();
+            }
+            
+            // X-axis labels
+            gdCtx.textAlign = 'center';
+            for (let i = 0; i <= 5; i++) {
+                const x = padding + (graphWidth * i / 5);
+                const freqIdx = Math.floor((channel.frequencies.length - 1) * i / 5);
+                const freq = (channel.frequencies[freqIdx] / 1000000).toFixed(1);
+                gdCtx.fillText(freq, x, gdHeight - padding + 20);
+            }
+            
+            // Axis labels
+            gdCtx.fillStyle = '#e0e0e0';
+            gdCtx.font = 'bold 12px Arial';
+            gdCtx.textAlign = 'center';
+            gdCtx.fillText('Frequency (MHz)', gdWidth / 2, gdHeight - 10);
+            gdCtx.save();
+            gdCtx.translate(15, gdHeight / 2);
+            gdCtx.rotate(-Math.PI / 2);
+            gdCtx.fillText('Group Delay (μs)', 0, 0);
+            gdCtx.restore();
+            
+            // Plot group delay
+            gdCtx.strokeStyle = '#7bc043';
+            gdCtx.lineWidth = 2;
+            gdCtx.beginPath();
+            for (let i = 0; i < channel.groupDelay.length; i++) {
+                const x = padding + (graphWidth * i / (channel.groupDelay.length - 1));
+                const y = padding + graphHeight - ((channel.groupDelay[i] - minGD) / gdRange * graphHeight);
+                if (i === 0) {
+                    gdCtx.moveTo(x, y);
+                } else {
+                    gdCtx.lineTo(x, y);
+                }
+            }
+            gdCtx.stroke();
+            
+            // ===== ECHO VISUALIZATION =====
+            if (channel.echo.hasEchoes) {
+                const echoCanvas = document.getElementById('echo-' + channel.channel_id);
+                const echoCtx = echoCanvas.getContext('2d');
+                const echoWidth = echoCanvas.width;
+                const echoHeight = echoCanvas.height;
+                const echoPadding = 60;
+                const echoGraphWidth = echoWidth - 2 * echoPadding;
+                const echoGraphHeight = echoHeight - 2 * echoPadding;
+                
+                echoCtx.fillStyle = '#1a1a1a';
+                echoCtx.fillRect(0, 0, echoWidth, echoHeight);
+                
+                // Draw axes
+                echoCtx.strokeStyle = '#4d4d4d';
+                echoCtx.lineWidth = 1;
+                echoCtx.beginPath();
+                echoCtx.moveTo(echoPadding, echoPadding);
+                echoCtx.lineTo(echoPadding, echoHeight - echoPadding);
+                echoCtx.lineTo(echoWidth - echoPadding, echoHeight - echoPadding);
+                echoCtx.stroke();
+                
+                // Axis labels
+                echoCtx.fillStyle = '#e0e0e0';
+                echoCtx.font = 'bold 12px Arial';
+                echoCtx.textAlign = 'center';
+                echoCtx.fillText('Distance (feet)', echoWidth / 2, echoHeight - 10);
+                echoCtx.save();
+                echoCtx.translate(15, echoHeight / 2);
+                echoCtx.rotate(-Math.PI / 2);
+                echoCtx.fillText('Amplitude', 0, 0);
+                echoCtx.restore();
+                
+                // Find max distance for scaling
+                const maxDist = Math.max(...channel.echo.echoes.map(function(e) { return parseFloat(e.distance_ft); }));
+                
+                // Draw direct path
+                echoCtx.fillStyle = '#7bc043';
+                const directX = echoPadding;
+                const directY = echoHeight - echoPadding;
+                echoCtx.fillRect(directX - 3, directY - echoGraphHeight, 6, echoGraphHeight);
+                echoCtx.fillStyle = '#b0b0b0';
+                echoCtx.font = '11px Arial';
+                echoCtx.textAlign = 'center';
+                echoCtx.fillText('Direct', directX, echoPadding - 10);
+                
+                // Draw echoes
+                channel.echo.echoes.forEach(function(echo, idx) {
+                    const dist = parseFloat(echo.distance_ft);
+                    const amp = parseFloat(echo.amplitude);
+                    const x = echoPadding + (dist / maxDist) * (echoGraphWidth - 50);
+                    const barHeight = amp * echoGraphHeight;
+                    
+                    echoCtx.fillStyle = '#FF6C37';
+                    echoCtx.fillRect(x - 3, echoHeight - echoPadding - barHeight, 6, barHeight);
+                    
+                    echoCtx.fillStyle = '#b0b0b0';
+                    echoCtx.font = '11px Arial';
+                    echoCtx.textAlign = 'center';
+                    echoCtx.fillText(dist.toFixed(1) + ' ft', x, echoHeight - echoPadding + 15);
+                });
+            }
+        });
+    });
+</script>
+`;
+
+function sanitizeMac(value, fallback) {
+    var fb = (fallback === undefined || fallback === null) ? 'N/A' : fallback;
+    if (value === undefined || value === null) return fb;
+    var text = String(value).trim();
+    if (!text) return fb;
+    var compact = text.replace(/[^0-9a-f]/gi, '').toLowerCase();
+    if (compact.length !== 12) return text;
+    if (text.indexOf(':') !== -1) return compact.match(/.{1,2}/g).join(':');
+    if (text.indexOf('-') !== -1) return compact.match(/.{1,2}/g).join('-');
+    if (text.indexOf('_') !== -1) return compact.match(/.{1,2}/g).join('_');
+    return compact;
+}
+
+function sanitizeSystemDescription(_sys) {
+    return {
+        HW_REV: '1.0',
+        VENDOR: 'LANCity',
+        BOOTR: 'NONE',
+        SW_REV: '1.0.0',
+        MODEL: 'LCPET-3'
+    };
+}
+
+function createPayload() {
+    const responseData = pm.response.json();
+    
+    // Extract device info
+    const firstAnalysis = responseData.data.analysis[0];
+    const rawSystemDescription = (((firstAnalysis || {}).device_details || {}).system_description) || {};
+    const sanitizedSystemDescription = sanitizeSystemDescription(rawSystemDescription);
+    const deviceInfo = {
+        mac_address: sanitizeMac(responseData.mac_address, 'N/A'),
+        model: sanitizedSystemDescription.MODEL || 'N/A',
+        vendor: sanitizedSystemDescription.VENDOR || 'N/A',
+        hw_rev: sanitizedSystemDescription.HW_REV || 'N/A',
+        sw_rev: sanitizedSystemDescription.SW_REV || 'N/A',
+        bootr: sanitizedSystemDescription.BOOTR || 'N/A'
+    };
+    
+    // Process channels
+    const channels = responseData.data.analysis.map(function(analysis) {
+        // Get corresponding primitive data
+        const prim = responseData.data.primative.find(function(p) { 
+            return p.channel_id === analysis.channel_id; 
+        });
+        
+        // Extract I and Q values
+        const iValues = prim.values.map(function(v) { return v[0]; });
+        const qValues = prim.values.map(function(v) { return v[1]; });
+        
+        // Calculate hard decisions
+        const uniqueI = Array.from(new Set(iValues.map(function(v) { 
+            return Math.round(v * 2) / 2; 
+        }))).sort(function(a, b) { return a - b; });
+        const uniqueQ = Array.from(new Set(qValues.map(function(v) { 
+            return Math.round(v * 2) / 2; 
+        }))).sort(function(a, b) { return a - b; });
+        
+        const hardDecisions = [];
+        for (let i = 0; i < Math.min(uniqueI.length, 16); i++) {
+            for (let q = 0; q < Math.min(uniqueQ.length, 16); q++) {
+                hardDecisions.push({ i: uniqueI[i], q: uniqueQ[q] });
+            }
+        }
+        
+        // Calculate EVM, MER, SNR
+        let sumErrorSquared = 0;
+        let sumSignalSquared = 0;
+        
+        for (let i = 0; i < iValues.length; i++) {
+            const iVal = iValues[i];
+            const qVal = qValues[i];
+            
+            let minDist = Infinity;
+            let nearestI = 0;
+            let nearestQ = 0;
+            
+            hardDecisions.forEach(function(hd) {
+                const dist = Math.sqrt(Math.pow(iVal - hd.i, 2) + Math.pow(qVal - hd.q, 2));
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearestI = hd.i;
+                    nearestQ = hd.q;
+                }
+            });
+            
+            const errorI = iVal - nearestI;
+            const errorQ = qVal - nearestQ;
+            sumErrorSquared += errorI * errorI + errorQ * errorQ;
+            sumSignalSquared += nearestI * nearestI + nearestQ * nearestQ;
+        }
+        
+        const evmRms = Math.sqrt(sumErrorSquared / iValues.length) / Math.sqrt(sumSignalSquared / iValues.length) * 100;
+        const mer = -20 * Math.log10(evmRms / 100);
+        const snr = mer - 3;
+        
+        // Frequency info
+        const freqStart = (analysis.carrier_values.frequency[0] / 1000000).toFixed(1);
+        const freqEnd = (analysis.carrier_values.frequency[analysis.carrier_values.frequency.length - 1] / 1000000).toFixed(1);
+        const centerFreq = ((parseFloat(freqStart) + parseFloat(freqEnd)) / 2).toFixed(1);
+        
+        // Echo processing
+        const echoReport = analysis.echo.report;
+        const hasEchoes = echoReport.echoes && echoReport.echoes.length > 0;
+        const echoData = {
+            cable_type: echoReport.cable_type || 'N/A',
+            velocity_factor: echoReport.velocity_factor || 'N/A',
+            prop_speed: echoReport.prop_speed_mps ? echoReport.prop_speed_mps.toFixed(2) : 'N/A',
+            hasEchoes: hasEchoes,
+            echoes: hasEchoes ? echoReport.echoes.map(function(e, idx) {
+                return {
+                    echoNum: idx + 1,
+                    time: (e.time_s * 1000000).toFixed(3),
+                    amplitude: e.amplitude.toFixed(6),
+                    distance_m: e.distance_m.toFixed(2),
+                    distance_ft: e.distance_ft.toFixed(2)
+                };
+            }) : []
+        };
+        
+        return {
+            channel_id: analysis.channel_id,
+            iValues: iValues,
+            qValues: qValues,
+            hardDecisions: hardDecisions,
+            evmRms: evmRms.toFixed(2),
+            mer: mer.toFixed(2),
+            snr: snr.toFixed(2),
+            meanPower: analysis.signal_statistics.power.toFixed(2),
+            frequencies: analysis.carrier_values.frequency,
+            magnitudes: analysis.carrier_values.magnitudes,
+            groupDelay: analysis.carrier_values.group_delay.magnitude,
+            stats: {
+                mean: analysis.signal_statistics.mean.toFixed(4),
+                median: analysis.signal_statistics.median.toFixed(4),
+                std: analysis.signal_statistics.std.toFixed(4),
+                variance: analysis.signal_statistics.variance.toFixed(6),
+                power: analysis.signal_statistics.power.toFixed(2),
+                peak_to_peak: analysis.signal_statistics.peak_to_peak.toFixed(4),
+                mad: analysis.signal_statistics.mean_abs_deviation.toFixed(4),
+                skewness: analysis.signal_statistics.skewness.toFixed(4),
+                kurtosis: analysis.signal_statistics.kurtosis.toFixed(4),
+                crest_factor: analysis.signal_statistics.crest_factor.toFixed(4)
+            },
+            freqStart: freqStart,
+            freqEnd: freqEnd,
+            centerFreq: centerFreq,
+            subcarrier_spacing: (prim.subcarrier_spacing / 1000).toFixed(1) + ' kHz',
+            carrier_count: analysis.carrier_values.carrier_count,
+            bandwidth: (prim.occupied_channel_bandwidth / 1000000).toFixed(1),
+            echo: echoData
+        };
+    });
+    
+    // Process measurement stats
+    const measurementStats = responseData.data.measurement_stats.map(function(stat) {
+        return {
+            index: stat.index,
+            channel_id: stat.channel_id,
+            measStatus: stat.entry.docsPnmCmOfdmChEstCoefMeasStatus || 'N/A',
+            statusClass: stat.entry.docsPnmCmOfdmChEstCoefMeasStatus === 'sample_ready' ? 'status-ready' : 'status-other',
+            ampRipplePkToPk: stat.entry.docsPnmCmOfdmChEstCoefAmpRipplePkToPk || 'N/A',
+            ampRippleRms: stat.entry.docsPnmCmOfdmChEstCoefAmpRippleRms || 'N/A',
+            ampSlope: stat.entry.docsPnmCmOfdmChEstCoefAmpSlope || 'N/A',
+            ampMean: stat.entry.docsPnmCmOfdmChEstCoefAmpMean || 'N/A',
+            grpDelayRipplePkToPk: stat.entry.docsPnmCmOfdmChEstCoefGrpDelayRipplePkToPk || 'N/A',
+            grpDelayRippleRms: stat.entry.docsPnmCmOfdmChEstCoefGrpDelayRippleRms || 'N/A',
+            grpDelaySlope: stat.entry.docsPnmCmOfdmChEstCoefGrpDelaySlope || 'N/A',
+            grpDelayMean: stat.entry.docsPnmCmOfdmChEstCoefGrpDelayMean || 'N/A'
+        };
+    });
+    
+    return {
+        deviceInfo: deviceInfo,
+        channels: channels,
+        measurementStats: measurementStats
+    };
+}
+
+pm.visualizer.set(template, createPayload());
