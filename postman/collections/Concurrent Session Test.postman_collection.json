@@ -1,0 +1,116 @@
+{
+  "info": {
+    "name": "Concurrent Session Test",
+    "description": "Lightweight collection for testing concurrent API sessions with non-blocking endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "45031353-cccc-4444-8888-111111111111"
+  },
+  "item": [
+    {
+      "name": "Get System Description",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cable_modem\": {\n    \"mac_address\": \"606c63e43684\",\n    \"ip_address\": \"172.19.8.28\",\n    \"snmp\": {\n      \"snmp_v2c\": {\n        \"community\": \"public\"\n      }\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "http://172.19.8.28:8000/system/sysDescr",
+          "protocol": "http",
+          "host": [
+            "172",
+            "19",
+            "8",
+            "28"
+          ],
+          "port": "8000",
+          "path": [
+            "system",
+            "sysDescr"
+          ]
+        },
+        "description": "Fast non-blocking endpoint to fetch system description"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time under 5 seconds', function() {",
+              "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+              "});",
+              "",
+              "pm.test('Response is valid JSON', function() {",
+              "    pm.response.to.be.json;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get System Uptime",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cable_modem\": {\n    \"mac_address\": \"606c63e43684\",\n    \"ip_address\": \"172.19.8.28\",\n    \"snmp\": {\n      \"snmp_v2c\": {\n        \"community\": \"public\"\n      }\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "http://172.19.8.28:8000/system/upTime",
+          "protocol": "http",
+          "host": [
+            "172",
+            "19",
+            "8",
+            "28"
+          ],
+          "port": "8000",
+          "path": [
+            "system",
+            "upTime"
+          ]
+        },
+        "description": "Fast non-blocking endpoint to retrieve system uptime"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time under 5 seconds', function() {",
+              "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+              "});",
+              "",
+              "pm.test('Response is valid JSON', function() {",
+              "    pm.response.to.be.json;",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
