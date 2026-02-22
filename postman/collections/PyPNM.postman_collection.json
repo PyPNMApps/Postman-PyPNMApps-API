@@ -257,15 +257,15 @@
                   }
                 },
                 "url": {
-                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/start",
+                  "raw": "{{pypnm_url}}/advance/multi/us/ofdmaPreEqualization/start",
                   "host": [
                     "{{pypnm_url}}"
                   ],
                   "path": [
                     "advance",
                     "multi",
-                    "ds",
-                    "channelEstimation",
+                    "us",
+                    "ofdmaPreEqualization",
                     "start"
                   ]
                 }
@@ -288,7 +288,7 @@
                   }
                 },
                 "url": {
-                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/results/{{operation_id}}",
+                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/results/{{op_id}}",
                   "host": [
                     "{{pypnm_url}}"
                   ],
@@ -298,7 +298,7 @@
                     "ds",
                     "channelEstimation",
                     "results",
-                    "{{operation_id}}"
+                    "{{op_id}}"
                   ]
                 }
               },
@@ -320,7 +320,7 @@
                   }
                 },
                 "url": {
-                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/status/{{operation_id}}",
+                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/status/{{op_id}}",
                   "host": [
                     "{{pypnm_url}}"
                   ],
@@ -330,7 +330,7 @@
                     "ds",
                     "channelEstimation",
                     "status",
-                    "{{operation_id}}"
+                    "{{op_id}}"
                   ]
                 }
               },
@@ -343,7 +343,7 @@
                 "method": "DELETE",
                 "header": [],
                 "url": {
-                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/stop/{{operation_id}}",
+                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/stop/{{op_id}}",
                   "host": [
                     "{{pypnm_url}}"
                   ],
@@ -353,7 +353,7 @@
                     "ds",
                     "channelEstimation",
                     "stop",
-                    "{{operation_id}}"
+                    "{{op_id}}"
                   ]
                 }
               },
@@ -367,7 +367,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n  \"analysis\": {\r\n    \"type\": \"{{analysis_min_avg_max}}\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  },\r\n  \"operation_id\": \"{{operation_id}}\"\r\n}",
+                  "raw": "{\r\n  \"analysis\": {\r\n    \"type\": \"{{analysis_min_avg_max}}\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  },\r\n  \"operation_id\": \"{{op_id}}\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -392,6 +392,316 @@
             }
           ],
           "id": "561abcef-b653-43b4-8e21-8b7c824e6e11"
+        },
+        {
+          "name": "RxMER",
+          "item": [
+            {
+              "name": "Ofdm-RxMER-Start",
+              "id": "8eff0f8b-5053-47c5-a5de-c7c2a20176ff",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      },\r\n      \"capture\": {\r\n        \"channel_ids\": [ {{channel_ids}} ]\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"capture\": {\r\n    \"parameters\": {\r\n      \"measurement_duration\": 1,\r\n      \"sample_interval\": 1\r\n    }\r\n  },\r\n  \"measure\": {\r\n    \"mode\": 1\r\n  }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/rxMer/start",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "rxMer",
+                    "start"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Ofdm-rxMER-Results",
+              "id": "18ddb34a-52f6-42a0-9b5d-c344dcda7f40",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/ofdmaPreEqualization/results/{{op_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "ofdmaPreEqualization",
+                    "results",
+                    "{{op_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Ofdm-RxMER-Status",
+              "id": "a946456b-c017-47d2-a3df-c64badeb1edd",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/ofdmaPreEqualization/status/{{op_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "ofdmaPreEqualization",
+                    "status",
+                    "{{op_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Ofdm-RxMER-Stop",
+              "id": "181de9cd-5957-4f1a-b5e4-88ca392f9765",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/ofdmaPreEqualization/stop/{{op_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "ofdmaPreEqualization",
+                    "stop",
+                    "{{op_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Ofdm-RxMER-Analysis",
+              "id": "0c1f2ded-7b6d-4f7d-92ac-954c92174ae1",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"analysis\": {\r\n    \"type\": \"{{analysis_min_avg_max}}\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  },\r\n  \"operation_id\": \"{{op_id}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/ofdmaPreEqualization/analysis",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "ofdmaPreEqualization",
+                    "analysis"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "id": "7387bbf0-03d1-4161-8556-9aac87ca2f80"
+        },
+        {
+          "name": "OFDMA-PreEqualization",
+          "item": [
+            {
+              "name": "Ofdma-PreEqualization-Start",
+              "id": "49836362-bc2b-40f3-a34e-04f0308518a9",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      },\r\n      \"capture\": {\r\n        \"channel_ids\": [ {{channel_ids}} ]\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"capture\": {\r\n    \"parameters\": {\r\n      \"measurement_duration\": 30,\r\n      \"sample_interval\": 1\r\n    }\r\n  },\r\n  \"measure\": {\r\n    \"mode\": 0\r\n  }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/ofdmaPreEqualization/start",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "ofdmaPreEqualization",
+                    "start"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Ofdma-PreEqualization-Results",
+              "id": "d9c001f7-2b6a-4cfd-be34-f1b6215377ab",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/ofdmaPreEqualization/results/{{op_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "ofdmaPreEqualization",
+                    "results",
+                    "{{op_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Ofdma-PreEqualization-Status",
+              "id": "85a594c9-85e3-481c-a11c-618921ec6c4b",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/ofdmaPreEqualization/status/{{op_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "ofdmaPreEqualization",
+                    "status",
+                    "{{op_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Ofdma-PreEqualization-Stop",
+              "id": "90e19452-a88c-4614-b8da-7823a5709355",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/ofdmaPreEqualization/stop/{{op_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "ofdmaPreEqualization",
+                    "stop",
+                    "{{op_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Ofdm-RxMER-Analysis",
+              "id": "a00ccac0-4f6c-4b35-82c6-6804448cb0d5",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"analysis\": {\r\n    \"type\": \"{{analysis_min_avg_max}}\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  },\r\n  \"operation_id\": \"{{op_id}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/ofdmaPreEqualization/analysis",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "ofdmaPreEqualization",
+                    "analysis"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "id": "383512c7-c32f-4c61-9703-0d39d576a40f"
         }
       ],
       "id": "6e988209-8972-4964-b929-7bab9a6cac6b"
