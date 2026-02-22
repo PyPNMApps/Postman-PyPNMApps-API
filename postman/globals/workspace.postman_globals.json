@@ -78,9 +78,65 @@
       "enabled": true,
       "type": "any",
       "description": ""
+    },
+    {
+      "key": "analysis_min_avg_max",
+      "value": "",
+      "enabled": true,
+      "type": "default",
+      "description": ""
+    },
+    {
+      "key": "op_id",
+      "value": "",
+      "enabled": true,
+      "type": "default",
+      "description": ""
+    },
+    {
+      "key": "measurement_duration",
+      "value": "",
+      "enabled": true,
+      "type": "default",
+      "description": ""
+    },
+    {
+      "key": "multi_measurement_duration",
+      "value": "",
+      "enabled": true,
+      "type": "default",
+      "description": ""
+    },
+    {
+      "key": "mac_address",
+      "value": "",
+      "enabled": true,
+      "type": "default",
+      "description": ""
+    },
+    {
+      "key": "transaction_id",
+      "value": "",
+      "enabled": true,
+      "type": "default",
+      "description": ""
+    },
+    {
+      "key": "filename",
+      "value": "",
+      "enabled": true,
+      "type": "default",
+      "description": ""
+    },
+    {
+      "key": "operation_id",
+      "value": "",
+      "enabled": true,
+      "type": "default",
+      "description": ""
     }
   ],
   "_postman_variable_scope": "globals",
-  "_postman_exported_at": "2026-02-22T07:55:20.401Z",
+  "_postman_exported_at": "2026-02-22T09:19:18.584Z",
   "_postman_exported_using": "Postman/11.0.0"
 }
