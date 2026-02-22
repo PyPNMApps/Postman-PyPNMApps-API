@@ -705,6 +705,361 @@
         }
       ],
       "id": "6e988209-8972-4964-b929-7bab9a6cac6b"
+    },
+    {
+      "name": "FileManager",
+      "item": [
+        {
+          "name": "GetMacAddresses",
+          "id": "cf6be22c-13f9-4842-8d9f-3b26be042066",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/files/getMacAddresses/",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "files",
+                "getMacAddresses",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SearchFiles",
+          "id": "c094b49e-f32d-4536-9644-5dd1a8831bbb",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/files/searchFiles/{{mac_address}}",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "files",
+                "searchFiles",
+                "{{mac_address}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download-TransactionID",
+          "id": "be3cafa9-db49-4ebb-80d1-0582a89d018d",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/files/download/transactionID/{{transaction_id}}",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "files",
+                "download",
+                "transactionID",
+                "{{transaction_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download-Filename",
+          "id": "57ab630b-df03-40a7-80c2-16be76e93ba9",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/files/download/filename/{{filename}}",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "files",
+                "download",
+                "filename",
+                "{{filename}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download-MacAddress",
+          "id": "1e968a7a-baff-40f4-a151-1f9a0e244141",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/files/download/macAddress/{{mac_address}}",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "files",
+                "download",
+                "macAddress",
+                "{{mac_address}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download-OperationID",
+          "id": "7a4af843-32a8-41a7-af05-9f731d215047",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/files/download/operationID/{{operation_id}}",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "files",
+                "download",
+                "operationID",
+                "{{operation_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload",
+          "id": "ae07b54c-1072-45fd-be06-ca5b9b58525e",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/files/upload",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "files",
+                "upload"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GetAnalysis",
+          "id": "4c69eb0c-0e3c-4d7a-a9d3-5d98e9207503",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"search\": {\r\n    \"transaction_id\": \"string\"\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/files/getAnalysis",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "files",
+                "getAnalysis"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GetHexdump-TransactionID",
+          "id": "a35cdea6-5890-4d29-9298-9e79870ace0d",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/files/getHexdump/transactionID/{{transaction_id}}",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "files",
+                "getHexdump",
+                "transactionID",
+                "{{transaction_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "9f8c0b34-612b-45d4-85b5-68560c945ac5"
+    },
+    {
+      "name": "Interface",
+      "item": [
+        {
+          "name": "Statistics",
+          "id": "000997ba-4860-4936-99b9-7674b10d3194",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/interface/stats",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "interface",
+                "stats"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "1b8a7624-0d16-4ce1-90df-2f51e4940ec5"
+    },
+    {
+      "name": "DOCSIS-4.0",
+      "item": [
+        {
+          "name": "FDD-Diplexer-BandEdgeCapability",
+          "id": "712cc5a3-d194-43d4-b0c7-2b347162869d",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{pypnm_url}}/docs/fdd/diplexer/bandEdgeCapability",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "fdd",
+                "diplexer",
+                "bandEdgeCapability"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "FDD-System-Diplexer-Configuration",
+          "id": "37136aa9-c67f-485f-be24-da0f5d809df0",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/fdd/system/diplexer/configuration",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "fdd",
+                "system",
+                "diplexer",
+                "configuration"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "bee0cd75-5c62-4ef5-9743-0ed4805ab089"
+    },
+    {
+      "name": "DOCSIS-3.1",
+      "item": [
+        {
+          "name": "System-Diplexer",
+          "id": "4b0599a8-faf6-454d-b603-094e3d589958",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/if31/system/diplexer",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "if31",
+                "system",
+                "diplexer"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "d9f30125-84c0-44c9-8b06-9d1a04ef1d5e"
     }
   ],
   "event": [
