@@ -976,6 +976,15 @@
           "request": {
             "method": "POST",
             "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "{{pypnm_url}}/docs/fdd/diplexer/bandEdgeCapability",
               "host": [
@@ -1057,9 +1066,259 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Ofdm-Profile-Stats",
+          "id": "b54408ac-4a34-4c9c-9542-cc432e70a620",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/if31/ds/ofdm/profile/stats",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "if31",
+                "ds",
+                "ofdm",
+                "profile",
+                "stats"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ofdm-Channel-Stats",
+          "id": "e4c64bfa-c4bb-4e21-8968-f427ffb1cd97",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/if31/ds/ofdm/chan/stats",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "if31",
+                "ds",
+                "ofdm",
+                "chan",
+                "stats"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "BaseCapability",
+          "id": "535109b8-1182-48b0-b8e1-b6e8cfbfbab3",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/if31/docsis/baseCapability",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "if31",
+                "docsis",
+                "baseCapability"
+              ]
+            }
+          },
+          "response": []
         }
       ],
       "id": "d9f30125-84c0-44c9-8b06-9d1a04ef1d5e"
+    },
+    {
+      "name": "Device",
+      "item": [
+        {
+          "name": "EventLog",
+          "id": "05e3d27f-5f28-4eb8-8b77-ac205a31fab1",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/dev/eventLog",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "dev",
+                "eventLog"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset",
+          "id": "aa82f5e4-4fba-4bfe-98ec-ddc8bb00e443",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/dev/reset",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "dev",
+                "reset"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "f6fc668b-3414-484a-9f10-50bfcb129cf1"
+    },
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Log-Download",
+          "id": "67e6309c-77ae-4309-aabe-5e5ded0abb77",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "WebService-Reload",
+          "id": "c5d80de0-8e0f-43af-86f4-95783a50d1b5",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "efb2e55f-b1be-45d1-b055-63139ef3a76c"
+    },
+    {
+      "name": "DOCSIS-System",
+      "item": [
+        {
+          "name": "System-Description",
+          "id": "1cfa70ba-8a99-4dda-84e5-d6d2b732a950",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/system/sysDescr",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "system",
+                "sysDescr"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "UpTime",
+          "id": "8fca341c-d5f4-4bd8-b3e6-8d2133425e7c",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/system/upTime",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "system",
+                "upTime"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "0bc5b8a0-b73f-40f3-a4ce-2036d318a4dc"
     }
   ],
   "event": [
