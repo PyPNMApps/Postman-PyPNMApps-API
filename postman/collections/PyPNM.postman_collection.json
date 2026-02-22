@@ -1515,6 +1515,105 @@
       "name": "DOCSIS-3.1",
       "item": [
         {
+          "name": "Downstream",
+          "item": [
+            {
+              "name": "OFDM-Profile-Stats",
+              "id": "b54408ac-4a34-4c9c-9542-cc432e70a620",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/docs/if31/ds/ofdm/profile/stats",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "docs",
+                    "if31",
+                    "ds",
+                    "ofdm",
+                    "profile",
+                    "stats"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "OFDM-Channel-Stats",
+              "id": "e4c64bfa-c4bb-4e21-8968-f427ffb1cd97",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/docs/if31/ds/ofdm/chan/stats",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "docs",
+                    "if31",
+                    "ds",
+                    "ofdm",
+                    "chan",
+                    "stats"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "id": "b74e2a9c-255e-4133-8e0a-5688013f5d96"
+        },
+        {
+          "name": "Upstream",
+          "item": [
+            {
+              "name": "OFDMA-Channel-Stats",
+              "id": "a335bb4f-edf9-492a-b21f-a2f94869c999",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{pypnm_url}}/docs/if31/us/ofdma/channel/stats",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "docs",
+                    "if31",
+                    "us",
+                    "ofdma",
+                    "channel",
+                    "stats"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "id": "5364325a-1701-4cec-90a8-b8678b6fa15c"
+        },
+        {
           "name": "System-Diplexer",
           "id": "4b0599a8-faf6-454d-b603-094e3d589958",
           "request": {
@@ -1539,70 +1638,6 @@
                 "if31",
                 "system",
                 "diplexer"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Ofdm-Profile-Stats",
-          "id": "b54408ac-4a34-4c9c-9542-cc432e70a620",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{pypnm_url}}/docs/if31/ds/ofdm/profile/stats",
-              "host": [
-                "{{pypnm_url}}"
-              ],
-              "path": [
-                "docs",
-                "if31",
-                "ds",
-                "ofdm",
-                "profile",
-                "stats"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Ofdm-Channel-Stats",
-          "id": "e4c64bfa-c4bb-4e21-8968-f427ffb1cd97",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{pypnm_url}}/docs/if31/ds/ofdm/chan/stats",
-              "host": [
-                "{{pypnm_url}}"
-              ],
-              "path": [
-                "docs",
-                "if31",
-                "ds",
-                "ofdm",
-                "chan",
-                "stats"
               ]
             }
           },
@@ -1837,6 +1872,30 @@
         }
       ],
       "id": "efb2e55f-b1be-45d1-b055-63139ef3a76c"
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health",
+          "id": "d26ec30b-b257-4a61-bb80-38e51a366dc2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{pypnm_url}}/health",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "4e1bf980-4749-4594-a0ef-1ee110dab7bb"
     }
   ],
   "event": [
