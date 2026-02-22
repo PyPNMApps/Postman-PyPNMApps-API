@@ -1,0 +1,119 @@
+{
+  "info": {
+    "_postman_id": "45031353-a1b2-4c3d-8e4f-5f6a7b8c9d0e",
+    "name": "PyPNM",
+    "description": "**Proactive Network Maintenance (PNM) API for DOCSIS devices**\n\nPython-based RESTful API for accessing, analyzing, and visualizing DOCSIS 3.1/4.0 PNM telemetry.\n\n**PyPNM provides structured endpoints for:**\n- Downstream and upstream OFDM/OFDMA diagnostics\n- OFDM RxMER and Channel Estimation Analysis\n- Modulation profile decoding and traffic stats\n- FEC summary and profile-specific correction metrics\n- Spectrum capture, constellation display, and pre-equalization\n- TFTP/SNMP-based file retrieval and modem polling\n\nDesigned for integration into dashboards, automation pipelines, and engineering tools to assist with plant health monitoring, anomaly detection, and DOCSIS signal quality evaluation.\n\n🔗 [**GitHub - PyPNM**](https://github.com/mgarcia01752/PyPNM)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "SingleCapture",
+      "item": [
+        {
+          "name": "Ofdma-PreEq-GetCapture",
+          "id": "c07d5bb0-8f3b-47ea-a32e-1c8e78368194",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      },\r\n      \"capture\": {\r\n        \"channel_ids\": [{{channel_ids}} ]\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{snmp_v2_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/ds/ofdm/rxMer/getCapture",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "ds",
+                "ofdm",
+                "rxMer",
+                "getCapture"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "972f089a-8671-4d5f-ada8-2f38162ba7e2"
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Collection-level test utilities and common validations",
+          "",
+          "// Validate response time is reasonable (under 30 seconds for PNM operations)",
+          "pm.test('Response time is acceptable', function() {",
+          "    pm.expect(pm.response.responseTime).to.be.below(30000);",
+          "});",
+          "",
+          "// Check for common error patterns",
+          "if (pm.response.code >= 400) {",
+          "    pm.test('Error response has proper structure', function() {",
+          "        const jsonData = pm.response.json();",
+          "        pm.expect(jsonData).to.have.property('detail').or.to.have.property('error').or.to.have.property('message');",
+          "    });",
+          "}",
+          "",
+          "// Utility function to validate MAC address format",
+          "pm.globals.set('validateMacAddress', function(mac) {",
+          "    const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;",
+          "    return macRegex.test(mac);",
+          "});",
+          "",
+          "// Utility function to validate IP address format",
+          "pm.globals.set('validateIpAddress', function(ip) {",
+          "    const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;",
+          "    return ipRegex.test(ip);",
+          "});",
+          "",
+          "// Utility function to validate transaction ID format",
+          "pm.globals.set('validateTransactionId', function(txnId) {",
+          "    return typeof txnId === 'string' && txnId.length > 0;",
+          "});",
+          "",
+          "// Check if response has valid JSON content type",
+          "if (pm.response.code < 300) {",
+          "    const contentType = pm.response.headers.get('Content-Type');",
+          "    if (contentType && contentType.includes('application/json')) {",
+          "        pm.test('Response has valid JSON content type', function() {",
+          "            pm.expect(contentType).to.include('application/json');",
+          "        });",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "id": "e3d50603-7e88-448a-a418-a292d57b960a",
+      "key": "base_url",
+      "value": "http://172.19.8.28:8000",
+      "type": "string"
+    },
+    {
+      "id": "3685850f-2412-4c8d-b735-9a809a2cb1ce",
+      "key": "operation_id",
+      "value": "op-001",
+      "type": "string"
+    },
+    {
+      "id": "8814179f-315c-47b5-af8f-4e72a42aab0d",
+      "key": "group_id",
+      "value": "grp-001",
+      "type": "string"
+    }
+  ]
+}

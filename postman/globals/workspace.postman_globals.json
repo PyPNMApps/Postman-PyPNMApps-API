@@ -3,28 +3,49 @@
   "name": "Globals",
   "values": [
     {
-      "key": "validateMacAddress",
+      "key": "channel_ids",
       "value": "",
       "enabled": true,
-      "type": "any",
+      "type": "default",
       "description": ""
     },
     {
-      "key": "validateIpAddress",
+      "key": "cm_mac_address",
       "value": "",
       "enabled": true,
-      "type": "any",
+      "type": "default",
       "description": ""
     },
     {
-      "key": "validateTransactionId",
+      "key": "cm_ip_address",
       "value": "",
       "enabled": true,
-      "type": "any",
+      "type": "default",
+      "description": ""
+    },
+    {
+      "key": "snmp_v2_community_rw",
+      "value": "",
+      "enabled": true,
+      "type": "default",
+      "description": ""
+    },
+    {
+      "key": "tftp_server_ipv4",
+      "value": "",
+      "enabled": true,
+      "type": "default",
+      "description": ""
+    },
+    {
+      "key": "tftp_server_ipv6",
+      "value": "",
+      "enabled": true,
+      "type": "default",
       "description": ""
     }
   ],
   "_postman_variable_scope": "globals",
-  "_postman_exported_at": "2025-12-01T07:09:07.657Z",
+  "_postman_exported_at": "2026-02-22T07:49:11.210Z",
   "_postman_exported_using": "Postman/11.0.0"
 }
