@@ -10,6 +10,49 @@
       "name": "SingleCapture",
       "item": [
         {
+          "name": "SpectrumAnalyzer",
+          "item": [
+            {
+              "name": "SA-File",
+              "item": [
+                {
+                  "name": "GetCapture",
+                  "id": "6cda942e-fed3-485e-803e-f167d6d9c551",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    },\r\n    \"spectrum_analysis\": {\r\n      \"moving_average\": {\r\n        \"points\": 10\r\n      }\r\n    }\r\n  },\r\n  \"capture_parameters\": {\r\n    \"inactivity_timeout\": 60,\r\n    \"first_segment_center_freq\": 300000000,\r\n    \"last_segment_center_freq\": 900000000,\r\n    \"segment_freq_span\": 1000000,\r\n    \"num_bins_per_segment\": 256,\r\n    \"noise_bw\": 150,\r\n    \"window_function\": 1,\r\n    \"num_averages\": 1,\r\n    \"spectrum_retrieval_type\": 1\r\n  }\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture",
+                      "host": [
+                        "{{pypnm_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "pnm",
+                        "ds",
+                        "spectrumAnalyzer",
+                        "getCapture"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ],
+              "id": "bbef1300-bf22-4f63-b058-fcc219b23566"
+            }
+          ],
+          "id": "0c845360-89ab-405d-a46a-c0b16243af9d"
+        },
+        {
           "name": "Ofdma-PreEq-GetCapture",
           "id": "c07d5bb0-8f3b-47ea-a32e-1c8e78368194",
           "request": {
