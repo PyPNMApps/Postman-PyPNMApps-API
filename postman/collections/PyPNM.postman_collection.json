@@ -13,7 +13,7 @@
           "name": "SpectrumAnalyzer",
           "item": [
             {
-              "name": "SA-File",
+              "name": "File-Upload",
               "item": [
                 {
                   "name": "GetCapture",
@@ -45,9 +45,302 @@
                     }
                   },
                   "response": []
+                },
+                {
+                  "name": "GetCapture-Friendly",
+                  "id": "18adb2bf-a8e0-4c36-a962-d39cae79b827",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    },\r\n    \"spectrum_analysis\": {\r\n      \"moving_average\": {\r\n        \"points\": 10\r\n      }\r\n    }\r\n  },\r\n  \"capture_parameters\": {\r\n    \"inactivity_timeout\": 60,\r\n    \"first_segment_center_freq\": 300000000,\r\n    \"last_segment_center_freq\": 900000000,\r\n    \"resolution_bw\": 30000,\r\n    \"noise_bw\": 150,\r\n    \"window_function\": 1,\r\n    \"num_averages\": 1,\r\n    \"spectrum_retrieval_type\": 1\r\n  }\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture/friendly",
+                      "host": [
+                        "{{pypnm_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "pnm",
+                        "ds",
+                        "spectrumAnalyzer",
+                        "getCapture",
+                        "friendly"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GetCapture-FullBandCapture",
+                  "id": "14785618-732e-488e-87bf-e1d22e326424",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"cable_modem\": {\r\n        \"mac_address\": \"{{cm_mac_address}}\",\r\n        \"ip_address\": \"{{cm_ip_address}}\",\r\n        \"pnm_parameters\": {\r\n            \"tftp\": {\r\n                \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n                \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n            }\r\n        },\r\n        \"snmp\": {\r\n            \"snmpV2C\": {\r\n                \"community\": \"{{cm_snmp_community_rw}}\"\r\n            }\r\n        }\r\n    },\r\n    \"analysis\": {\r\n        \"type\": \"basic\",\r\n        \"output\": {\r\n            \"type\": \"json\"\r\n        },\r\n        \"plot\": {\r\n            \"ui\": {\r\n                \"theme\": \"dark\"\r\n            }\r\n        },\r\n        \"spectrum_analysis\": {\r\n            \"moving_average\": {\r\n                \"points\": 10\r\n            }\r\n        }\r\n    },\r\n    \"capture_parameters\": {\r\n        \"inactivity_timeout\": 60,\r\n        \"direction\": \"downstream\",\r\n        \"resolution_bw\": 300000,\r\n        \"noise_bw\": 150,\r\n        \"window_function\": 1,\r\n        \"num_averages\": 1,\r\n        \"spectrum_retrieval_type\": 1\r\n    }\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture/fullBandCapture",
+                      "host": [
+                        "{{pypnm_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "pnm",
+                        "ds",
+                        "spectrumAnalyzer",
+                        "getCapture",
+                        "fullBandCapture"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GetCapture-OFDM",
+                  "id": "7f7403f7-4db2-4e1a-8a37-55888ace89d0",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"cable_modem\": {\r\n        \"mac_address\": \"{{cm_mac_address}}\",\r\n        \"ip_address\": \"{{cm_ip_address}}\",\r\n        \"pnm_parameters\": {\r\n            \"tftp\": {\r\n                \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n                \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n            },\r\n            \"capture\": {\r\n                \"channel_ids\": []\r\n            }\r\n        },\r\n        \"snmp\": {\r\n            \"snmpV2C\": {\r\n                \"community\": \"{{cm_snmp_community_rw}}\"\r\n            }\r\n        }\r\n    },\r\n    \"analysis\": {\r\n        \"type\": \"basic\",\r\n        \"output\": {\r\n            \"type\": \"json\"\r\n        },\r\n        \"plot\": {\r\n            \"ui\": {\r\n                \"theme\": \"dark\"\r\n            }\r\n        },\r\n        \"spectrum_analysis\": {\r\n            \"moving_average\": {\r\n                \"points\": 10\r\n            }\r\n        }\r\n    },\r\n    \"capture_parameters\": {\r\n        \"number_of_averages\": 10,\r\n        \"resolution_bandwidth_hz\": 25000,\r\n        \"spectrum_retrieval_type\": 1\r\n    }\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture/ofdm",
+                      "host": [
+                        "{{pypnm_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "pnm",
+                        "ds",
+                        "spectrumAnalyzer",
+                        "getCapture",
+                        "ofdm"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GetCapture-SCQAM",
+                  "id": "f758dc78-92f5-417b-a904-4d0eca4a61b2",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"cable_modem\": {\r\n        \"mac_address\": \"{{cm_mac_address}}\",\r\n        \"ip_address\": \"{{cm_ip_address}}\",\r\n        \"pnm_parameters\": {\r\n            \"tftp\": {\r\n                \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n                \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n            },\r\n            \"capture\": {\r\n                \"channel_ids\": []\r\n            },\r\n            \"snmp\": {\r\n                \"snmpV2C\": {\r\n                    \"community\": \"{{cm_snmp_community_rw}}\"\r\n                }\r\n            }\r\n        },\r\n        \"analysis\": {\r\n            \"type\": \"basic\",\r\n            \"output\": {\r\n                \"type\": \"json\"\r\n            },\r\n            \"plot\": {\r\n                \"ui\": {\r\n                    \"theme\": \"dark\"\r\n                }\r\n            },\r\n            \"spectrum_analysis\": {\r\n                \"moving_average\": {\r\n                    \"points\": 10\r\n                }\r\n            }\r\n        },\r\n        \"capture_parameters\": {\r\n            \"number_of_averages\": 10,\r\n            \"resolution_bandwidth_hz\": 25000,\r\n            \"spectrum_retrieval_type\": 1\r\n        }\r\n    }",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture/scqam",
+                      "host": [
+                        "{{pypnm_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "pnm",
+                        "ds",
+                        "spectrumAnalyzer",
+                        "getCapture",
+                        "scqam"
+                      ]
+                    }
+                  },
+                  "response": []
                 }
               ],
               "id": "bbef1300-bf22-4f63-b058-fcc219b23566"
+            },
+            {
+              "name": "Snmp-Upload",
+              "item": [
+                {
+                  "name": "GetCapture",
+                  "id": "3a92c966-1fc0-4a92-9b81-c49e777a8c27",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"cable_modem\": {\r\n        \"mac_address\": \"{{cm_mac_address}}\",\r\n        \"ip_address\": \"{{cm_ip_address}}\",\r\n        \"pnm_parameters\": {\r\n            \"tftp\": {\r\n                \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n                \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n            }\r\n        },\r\n        \"snmp\": {\r\n            \"snmpV2C\": {\r\n                \"community\": \"{{cm_snmp_community_rw}}\"\r\n            }\r\n        }\r\n    },\r\n    \"analysis\": {\r\n        \"type\": \"basic\",\r\n        \"output\": {\r\n            \"type\": \"json\"\r\n        },\r\n        \"plot\": {\r\n            \"ui\": {\r\n                \"theme\": \"dark\"\r\n            }\r\n        },\r\n        \"spectrum_analysis\": {\r\n            \"moving_average\": {\r\n                \"points\": 10\r\n            }\r\n        }\r\n    },\r\n    \"capture_parameters\": {\r\n        \"inactivity_timeout\": 60,\r\n        \"first_segment_center_freq\": 300000000,\r\n        \"last_segment_center_freq\": 900000000,\r\n        \"segment_freq_span\": 1000000,\r\n        \"num_bins_per_segment\": 256,\r\n        \"noise_bw\": 150,\r\n        \"window_function\": 1,\r\n        \"num_averages\": 1,\r\n        \"spectrum_retrieval_type\": 2\r\n    }\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture",
+                      "host": [
+                        "{{pypnm_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "pnm",
+                        "ds",
+                        "spectrumAnalyzer",
+                        "getCapture"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GetCapture-Friendly",
+                  "id": "1e7d2b93-0786-488c-adcb-ceca028afa61",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"cable_modem\": {\r\n        \"mac_address\": \"{{cm_mac_address}}\",\r\n        \"ip_address\": \"{{cm_ip_address}}\",\r\n        \"pnm_parameters\": {\r\n            \"tftp\": {\r\n                \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n                \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n            }\r\n        },\r\n        \"snmp\": {\r\n            \"snmpV2C\": {\r\n                \"community\": \"{{cm_snmp_community_rw}}\"\r\n            }\r\n        }\r\n    },\r\n    \"analysis\": {\r\n        \"type\": \"basic\",\r\n        \"output\": {\r\n            \"type\": \"json\"\r\n        },\r\n        \"plot\": {\r\n            \"ui\": {\r\n                \"theme\": \"dark\"\r\n            }\r\n        },\r\n        \"spectrum_analysis\": {\r\n            \"moving_average\": {\r\n                \"points\": 10\r\n            }\r\n        }\r\n    },\r\n    \"capture_parameters\": {\r\n        \"inactivity_timeout\": 60,\r\n        \"first_segment_center_freq\": 300000000,\r\n        \"last_segment_center_freq\": 900000000,\r\n        \"resolution_bw\": 30000,\r\n        \"noise_bw\": 150,\r\n        \"window_function\": 1,\r\n        \"num_averages\": 1,\r\n        \"spectrum_retrieval_type\": 2\r\n    }\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture/friendly",
+                      "host": [
+                        "{{pypnm_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "pnm",
+                        "ds",
+                        "spectrumAnalyzer",
+                        "getCapture",
+                        "friendly"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GetCapture-FullBandCapture",
+                  "id": "4b31e1b8-1da7-44fa-bc03-6a7c07386278",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"cable_modem\": {\r\n        \"mac_address\": \"{{cm_mac_address}}\",\r\n        \"ip_address\": \"{{cm_ip_address}}\",\r\n        \"pnm_parameters\": {\r\n            \"tftp\": {\r\n                \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n                \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n            }\r\n        },\r\n        \"snmp\": {\r\n            \"snmpV2C\": {\r\n                \"community\": \"{{cm_snmp_community_rw}}\"\r\n            }\r\n        }\r\n    },\r\n    \"analysis\": {\r\n        \"type\": \"basic\",\r\n        \"output\": {\r\n            \"type\": \"json\"\r\n        },\r\n        \"plot\": {\r\n            \"ui\": {\r\n                \"theme\": \"dark\"\r\n            }\r\n        },\r\n        \"spectrum_analysis\": {\r\n            \"moving_average\": {\r\n                \"points\": 10\r\n            }\r\n        }\r\n    },\r\n    \"capture_parameters\": {\r\n        \"inactivity_timeout\": 60,\r\n        \"direction\": \"downstream\",\r\n        \"resolution_bw\": 300000,\r\n        \"noise_bw\": 150,\r\n        \"window_function\": 1,\r\n        \"num_averages\": 1,\r\n        \"spectrum_retrieval_type\": 2\r\n    }\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture/fullBandCapture",
+                      "host": [
+                        "{{pypnm_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "pnm",
+                        "ds",
+                        "spectrumAnalyzer",
+                        "getCapture",
+                        "fullBandCapture"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GetCapture-OFDM",
+                  "id": "d2f94de9-d79c-49b6-9b12-fe4d1b54156e",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"cable_modem\": {\r\n        \"mac_address\": \"{{cm_mac_address}}\",\r\n        \"ip_address\": \"{{cm_ip_address}}\",\r\n        \"pnm_parameters\": {\r\n            \"tftp\": {\r\n                \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n                \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n            },\r\n            \"capture\": {\r\n                \"channel_ids\": []\r\n            }\r\n        },\r\n        \"snmp\": {\r\n            \"snmpV2C\": {\r\n                \"community\": \"{{cm_snmp_community_rw}}\"\r\n            }\r\n        }\r\n    },\r\n    \"analysis\": {\r\n        \"type\": \"basic\",\r\n        \"output\": {\r\n            \"type\": \"json\"\r\n        },\r\n        \"plot\": {\r\n            \"ui\": {\r\n                \"theme\": \"dark\"\r\n            }\r\n        },\r\n        \"spectrum_analysis\": {\r\n            \"moving_average\": {\r\n                \"points\": 10\r\n            }\r\n        }\r\n    },\r\n    \"capture_parameters\": {\r\n        \"number_of_averages\": 10,\r\n        \"resolution_bandwidth_hz\": 25000,\r\n        \"spectrum_retrieval_type\": 2\r\n    }\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture/ofdm",
+                      "host": [
+                        "{{pypnm_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "pnm",
+                        "ds",
+                        "spectrumAnalyzer",
+                        "getCapture",
+                        "ofdm"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GetCapture-SCQAM",
+                  "id": "6d025e88-65e1-4792-a98d-cd1f2633f74c",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"cable_modem\": {\r\n        \"mac_address\": \"{{cm_mac_address}}\",\r\n        \"ip_address\": \"{{cm_ip_address}}\",\r\n        \"pnm_parameters\": {\r\n            \"tftp\": {\r\n                \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n                \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n            },\r\n            \"capture\": {\r\n                \"channel_ids\": []\r\n            },\r\n            \"snmp\": {\r\n                \"snmpV2C\": {\r\n                    \"community\": \"{{cm_snmp_community_rw}}\"\r\n                }\r\n            }\r\n        },\r\n        \"analysis\": {\r\n            \"type\": \"basic\",\r\n            \"output\": {\r\n                \"type\": \"json\"\r\n            },\r\n            \"plot\": {\r\n                \"ui\": {\r\n                    \"theme\": \"dark\"\r\n                }\r\n            },\r\n            \"spectrum_analysis\": {\r\n                \"moving_average\": {\r\n                    \"points\": 10\r\n                }\r\n            }\r\n        },\r\n        \"capture_parameters\": {\r\n            \"number_of_averages\": 10,\r\n            \"resolution_bandwidth_hz\": 25000,\r\n            \"spectrum_retrieval_type\": 2\r\n        }\r\n    }",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture/scqam",
+                      "host": [
+                        "{{pypnm_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "pnm",
+                        "ds",
+                        "spectrumAnalyzer",
+                        "getCapture",
+                        "scqam"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ],
+              "id": "65fcf669-d2a8-4f1e-929b-1b00fdf577c4"
             }
           ],
           "id": "0c845360-89ab-405d-a46a-c0b16243af9d"
@@ -1011,11 +1304,11 @@
       "id": "1b8a7624-0d16-4ce1-90df-2f51e4940ec5"
     },
     {
-      "name": "DOCSIS-4.0",
+      "name": "DOCSIS-System",
       "item": [
         {
-          "name": "FDD-Diplexer-BandEdgeCapability",
-          "id": "712cc5a3-d194-43d4-b0c7-2b347162869d",
+          "name": "System-Description",
+          "id": "1cfa70ba-8a99-4dda-84e5-d6d2b732a950",
           "request": {
             "method": "POST",
             "header": [],
@@ -1029,23 +1322,21 @@
               }
             },
             "url": {
-              "raw": "{{pypnm_url}}/docs/fdd/diplexer/bandEdgeCapability",
+              "raw": "{{pypnm_url}}/system/sysDescr",
               "host": [
                 "{{pypnm_url}}"
               ],
               "path": [
-                "docs",
-                "fdd",
-                "diplexer",
-                "bandEdgeCapability"
+                "system",
+                "sysDescr"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "FDD-System-Diplexer-Configuration",
-          "id": "37136aa9-c67f-485f-be24-da0f5d809df0",
+          "name": "UpTime",
+          "id": "8fca341c-d5f4-4bd8-b3e6-8d2133425e7c",
           "request": {
             "method": "POST",
             "header": [],
@@ -1059,23 +1350,166 @@
               }
             },
             "url": {
-              "raw": "{{pypnm_url}}/docs/fdd/system/diplexer/configuration",
+              "raw": "{{pypnm_url}}/system/upTime",
               "host": [
                 "{{pypnm_url}}"
               ],
               "path": [
-                "docs",
-                "fdd",
                 "system",
-                "diplexer",
-                "configuration"
+                "upTime"
               ]
             }
           },
           "response": []
         }
       ],
-      "id": "bee0cd75-5c62-4ef5-9743-0ed4805ab089"
+      "id": "0bc5b8a0-b73f-40f3-a4ce-2036d318a4dc"
+    },
+    {
+      "name": "DOCSIS-3.0",
+      "item": [
+        {
+          "name": "Downstream",
+          "item": [
+            {
+              "name": "SCQAM-Channel-CodeWordErrorRate",
+              "id": "2dac2db0-f794-448d-8d34-b61510ce4fc9",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"capture_parameters\": {\r\n    \"sample_time_elapsed\": 5\r\n  }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/docs/if30/ds/scqam/chan/codewordErrorRate",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "docs",
+                    "if30",
+                    "ds",
+                    "scqam",
+                    "chan",
+                    "codewordErrorRate"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "SCQAM-Channel-Stats",
+              "id": "5c5f9b33-34d2-46a7-b4e5-ecca41aaddaf",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/docs/if30/ds/scqam/chan/stats",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "docs",
+                    "if30",
+                    "ds",
+                    "scqam",
+                    "chan",
+                    "stats"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "id": "b134a06d-834a-4dfd-b751-34944f4d569f"
+        },
+        {
+          "name": "Upstream",
+          "item": [
+            {
+              "name": "ATDMA-Channel-Stats",
+              "id": "e512d0db-861b-4d3c-85fb-515a14925dc8",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/docs/if30/us/atdma/chan/stats",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "docs",
+                    "if30",
+                    "us",
+                    "atdma",
+                    "chan",
+                    "stats"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "ATDMA-Channel-PreEqualization",
+              "id": "16411735-e517-402a-a0c6-f24841f27ae9",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/docs/if30/us/atdma/chan/stats",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "docs",
+                    "if30",
+                    "us",
+                    "atdma",
+                    "chan",
+                    "stats"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "id": "21c45f96-e115-4c96-9b79-4efcb88ebbaa"
+        }
+      ],
+      "id": "e6487262-a705-4936-8dd9-e91067b55b92"
     },
     {
       "name": "DOCSIS-3.1",
@@ -1208,6 +1642,73 @@
       "id": "d9f30125-84c0-44c9-8b06-9d1a04ef1d5e"
     },
     {
+      "name": "DOCSIS-4.0",
+      "item": [
+        {
+          "name": "FDD-Diplexer-BandEdgeCapability",
+          "id": "712cc5a3-d194-43d4-b0c7-2b347162869d",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/fdd/diplexer/bandEdgeCapability",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "fdd",
+                "diplexer",
+                "bandEdgeCapability"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "FDD-System-Diplexer-Configuration",
+          "id": "37136aa9-c67f-485f-be24-da0f5d809df0",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/fdd/system/diplexer/configuration",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "fdd",
+                "system",
+                "diplexer",
+                "configuration"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "bee0cd75-5c62-4ef5-9743-0ed4805ab089"
+    },
+    {
       "name": "Device",
       "item": [
         {
@@ -1280,8 +1781,26 @@
           "request": {
             "method": "GET",
             "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": ""
+              "raw": "{{pypnm_url}}/pypnm/system/log/download",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "pypnm",
+                "system",
+                "log",
+                "download"
+              ]
             }
           },
           "response": []
@@ -1292,76 +1811,32 @@
           "request": {
             "method": "GET",
             "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": ""
+              "raw": "{{pypnm_url}}/pypnm/system/webService/reload",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "pypnm",
+                "system",
+                "webService",
+                "reload"
+              ]
             }
           },
           "response": []
         }
       ],
       "id": "efb2e55f-b1be-45d1-b055-63139ef3a76c"
-    },
-    {
-      "name": "DOCSIS-System",
-      "item": [
-        {
-          "name": "System-Description",
-          "id": "1cfa70ba-8a99-4dda-84e5-d6d2b732a950",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{pypnm_url}}/system/sysDescr",
-              "host": [
-                "{{pypnm_url}}"
-              ],
-              "path": [
-                "system",
-                "sysDescr"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "UpTime",
-          "id": "8fca341c-d5f4-4bd8-b3e6-8d2133425e7c",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{pypnm_url}}/system/upTime",
-              "host": [
-                "{{pypnm_url}}"
-              ],
-              "path": [
-                "system",
-                "upTime"
-              ]
-            }
-          },
-          "response": []
-        }
-      ],
-      "id": "0bc5b8a0-b73f-40f3-a4ce-2036d318a4dc"
     }
   ],
   "event": [
