@@ -17,7 +17,39 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      },\r\n      \"capture\": {\r\n        \"channel_ids\": [{{channel_ids}} ]\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{snmp_v2_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      },\r\n      \"capture\": {\r\n        \"channel_ids\": [{{channel_ids}} ]\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/us/ofdma/preEqualization/getCapture",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "us",
+                "ofdma",
+                "preEqualization",
+                "getCapture"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ofdm-RxMER-GetCapture",
+          "id": "b3432819-f78a-4dda-8157-90604842e033",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      },\r\n      \"capture\": {\r\n        \"channel_ids\": [{{channel_ids}} ]\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  }\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -35,6 +67,133 @@
                 "ds",
                 "ofdm",
                 "rxMer",
+                "getCapture"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ofdm-FecSummary-GetCapture",
+          "id": "579f78a4-a958-459a-be2b-b251809bfb67",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      },\r\n      \"capture\": {\r\n        \"channel_ids\": [{{channel_ids}} ]\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  },\r\n  \"capture_settings\": {\r\n    \"fec_summary_type\": 2\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/ds/ofdm/fecSummary/getCapture",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "ds",
+                "ofdm",
+                "fecSummary",
+                "getCapture"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ofdm-ConstellationDisplay-GetCapture",
+          "id": "d446bec9-aaf8-4dc2-9898-4364e819afbf",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      },\r\n      \"capture\": {\r\n        \"channel_ids\": [{{channel_ids}} ]\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  },\r\n  \"capture_settings\": {\r\n    \"modulation_order_offset\": 0,\r\n    \"number_sample_symbol\": 8192\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/ds/ofdm/constellationDisplay/getCapture",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "ds",
+                "ofdm",
+                "constellationDisplay",
+                "getCapture"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Histogram-GetCapture",
+          "id": "ef2c0d79-6a8d-492b-af4c-26d4261e1041",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  },\r\n  \"capture_settings\": {\r\n    \"sample_duration\": 10\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/ds/histogram/getCapture",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "ds",
+                "histogram",
+                "getCapture"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ofdm-ModulationProfile-GetCapture",
+          "id": "a37c10dd-6a86-4a02-9b01-9e40ee35b125",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      },\r\n      \"capture\": {\r\n        \"channel_ids\": [{{channel_ids}} ]\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/ds/ofdm/modulationProfile/getCapture",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "ds",
+                "ofdm",
+                "modulationProfile",
                 "getCapture"
               ]
             }
