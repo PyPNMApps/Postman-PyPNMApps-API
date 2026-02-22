@@ -199,16 +199,223 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Ofdm-ChannelEstCoeff-GetCapture",
+          "id": "52a685fa-63b8-425a-8708-fc58a6d96337",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      },\r\n      \"capture\": {\r\n        \"channel_ids\": [{{channel_ids}} ]\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{pypnm_url}}/docs/pnm/ds/ofdm/channelEstCoeff/getCapture",
+              "host": [
+                "{{pypnm_url}}"
+              ],
+              "path": [
+                "docs",
+                "pnm",
+                "ds",
+                "ofdm",
+                "channelEstCoeff",
+                "getCapture"
+              ]
+            }
+          },
+          "response": []
         }
       ],
       "id": "972f089a-8671-4d5f-ada8-2f38162ba7e2"
+    },
+    {
+      "name": "MultiCapture",
+      "item": [
+        {
+          "name": "ChannelEstimation",
+          "item": [
+            {
+              "name": "Ofdm-ChannelEstimation-Start",
+              "id": "b3d64f36-7126-475d-afb6-9c491f3a7498",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      },\r\n      \"capture\": {\r\n        \"channel_ids\": [ {{channel_ids}} ]\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"capture\": {\r\n    \"parameters\": {\r\n      \"measurement_duration\": 30,\r\n      \"sample_interval\": 1\r\n    }\r\n  },\r\n  \"measure\": {\r\n    \"mode\": 0\r\n  }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/start",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "channelEstimation",
+                    "start"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Ofdm-ChannelEstimation-Results",
+              "id": "c7454bad-67f8-4593-9f49-46527f43a285",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/results/{{operation_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "channelEstimation",
+                    "results",
+                    "{{operation_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Ofdm-ChannelEstimation-Status",
+              "id": "0ff4794b-0e93-4e27-9f59-009b8771c691",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/status/{{operation_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "channelEstimation",
+                    "status",
+                    "{{operation_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Ofdm-ChannelEstimation-Stop",
+              "id": "252caa16-fc77-442a-b8b6-c6d1a0679129",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/stop/{{operation_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "channelEstimation",
+                    "stop",
+                    "{{operation_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Ofdm-ChannelEstimation-Analysis",
+              "id": "86eeea3a-7e7d-40f8-925b-120614cc5493",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"analysis\": {\r\n    \"type\": \"{{analysis_min_avg_max}}\",\r\n    \"output\": {\r\n      \"type\": \"json\"\r\n    },\r\n    \"plot\": {\r\n      \"ui\": {\r\n        \"theme\": \"dark\"\r\n      }\r\n    }\r\n  },\r\n  \"operation_id\": \"{{operation_id}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/analysis",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "channelEstimation",
+                    "analysis"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "id": "561abcef-b653-43b4-8e21-8b7c824e6e11"
+        }
+      ],
+      "id": "6e988209-8972-4964-b929-7bab9a6cac6b"
     }
   ],
   "event": [
     {
+      "listen": "prerequest",
+      "script": {
+        "id": "b54b327b-472a-4a91-abf5-7607f3b7126d",
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
       "listen": "test",
       "script": {
+        "id": "9f291042-171b-4ec2-8731-1d29d600af2d",
         "type": "text/javascript",
+        "requests": {},
         "exec": [
           "// Collection-level test utilities and common validations",
           "",
@@ -253,26 +460,6 @@
           "}"
         ]
       }
-    }
-  ],
-  "variable": [
-    {
-      "id": "e3d50603-7e88-448a-a418-a292d57b960a",
-      "key": "base_url",
-      "value": "http://172.19.8.28:8000",
-      "type": "string"
-    },
-    {
-      "id": "3685850f-2412-4c8d-b735-9a809a2cb1ce",
-      "key": "operation_id",
-      "value": "op-001",
-      "type": "string"
-    },
-    {
-      "id": "8814179f-315c-47b5-af8f-4e72a42aab0d",
-      "key": "group_id",
-      "value": "grp-001",
-      "type": "string"
     }
   ]
 }
