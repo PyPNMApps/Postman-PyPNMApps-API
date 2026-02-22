@@ -1,0 +1,323 @@
+// Multi-Analysis Visualization Script - Dark Theme
+// Handles both GROUP_DELAY and MIN_AVG_MAX analysis types dynamically
+
+var template = `
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #1a1a2e;
+    }
+    .metadata {
+        background-color: #16213e;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+    .metadata h3 {
+        margin-top: 0;
+        color: #e94560;
+    }
+    .metadata-item {
+        margin: 8px 0;
+        color: #eaeaea;
+    }
+    .metadata-label {
+        font-weight: bold;
+        color: #0f9b8e;
+    }
+    .chart-container {
+        background-color: #16213e;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+    .chart-title {
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #e94560;
+    }
+    .chart-info {
+        text-align: center;
+        font-size: 12px;
+        color: #eaeaea;
+        margin-bottom: 10px;
+    }
+    .no-data {
+        text-align: center;
+        color: #e94560;
+        padding: 40px;
+        font-size: 16px;
+    }
+</style>
+
+<div class="metadata">
+    <h3>{{analysis_type}} Analysis</h3>
+    <div class="metadata-item"><span class="metadata-label">MAC Address:</span> {{mac_address}}</div>
+    <div class="metadata-item"><span class="metadata-label">Status:</span> {{status}}</div>
+    <div class="metadata-item"><span class="metadata-label">Message:</span> {{message}}</div>
+    <div class="metadata-item"><span class="metadata-label">Analysis Type:</span> {{analysis_type}}</div>
+    <div class="metadata-item"><span class="metadata-label">Number of Channels:</span> {{num_channels}}</div>
+    {{#if display_unit}}
+    <div class="metadata-item"><span class="metadata-label">Display Unit:</span> {{display_unit}}</div>
+    {{/if}}
+</div>
+
+{{#if has_data}}
+<div class="chart-container">
+    <div class="chart-title">{{chart_title}}</div>
+    <div class="chart-info">Showing data for {{num_channels}} channel(s)</div>
+    <canvas id="analysisChart" height="100"></canvas>
+</div>
+{{else}}
+<div class="no-data">No analysis data available in the response.</div>
+{{/if}}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+<script>
+    pm.getData(function (err, value) {
+        if (!value.has_data) return;
+        
+        var ctx = document.getElementById("analysisChart").getContext("2d");
+        
+        var colors = [
+            'rgba(233, 69, 96, 1)',
+            'rgba(15, 155, 142, 1)',
+            'rgba(255, 193, 7, 1)',
+            'rgba(0, 188, 212, 1)',
+            'rgba(156, 39, 176, 1)',
+            'rgba(76, 175, 80, 1)',
+            'rgba(255, 87, 34, 1)',
+            'rgba(63, 81, 181, 1)'
+        ];
+        
+        var datasets = value.datasets.map(function(ds, index) {
+            var color = colors[index % colors.length];
+            return {
+                label: ds.label,
+                data: ds.data,
+                borderColor: color,
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                fill: false,
+                tension: 0.1
+            };
+        });
+        
+        var myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: value.frequency_labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                legend: {
+                    display: true,
+                    labels: {
+                        fontColor: '#eaeaea'
+                    }
+                },
+                title: {
+                    display: false
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Frequency (MHz)',
+                            fontColor: '#0f9b8e'
+                        },
+                        ticks: {
+                            fontColor: '#eaeaea',
+                            maxTicksLimit: 15
+                        },
+                        gridLines: {
+                            color: 'rgba(255,255,255,0.1)'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: value.y_axis_label,
+                            fontColor: '#0f9b8e'
+                        },
+                        ticks: {
+                            fontColor: '#eaeaea'
+                        },
+                        gridLines: {
+                            color: 'rgba(255,255,255,0.1)'
+                        }
+                    }]
+                },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(22, 33, 62, 0.9)',
+                    titleFontColor: '#e94560',
+                    bodyFontColor: '#eaeaea',
+                    borderColor: '#0f9b8e',
+                    borderWidth: 1
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                }
+            }
+        });
+    });
+</script>
+`;
+
+function constructVisualizerPayload() {
+    var response = pm.response.json();
+    var results = response.data && response.data.results ? response.data.results : [];
+    var hasData = results.length > 0;
+    var analysisType = response.data && response.data.analysis_type ? response.data.analysis_type : 'UNKNOWN';
+    
+    var datasets = [];
+    var masterFrequencies = [];
+    var displayUnit = '';
+    var yAxisLabel = '';
+    var chartTitle = '';
+    
+    if (analysisType === 'GROUP_DELAY') {
+        // Handle Group Delay analysis
+        chartTitle = 'Group Delay vs Frequency';
+        
+        // Determine the best unit based on magnitude
+        var allValues = [];
+        results.forEach(function(result) {
+            if (result.group_delay_us) {
+                allValues = allValues.concat(result.group_delay_us);
+            }
+        });
+        
+        var maxAbsValue = 0;
+        allValues.forEach(function(val) {
+            var absVal = Math.abs(val);
+            if (absVal > maxAbsValue) maxAbsValue = absVal;
+        });
+        
+        // Choose unit: if max value is very small (< 0.001 us), use nanoseconds
+        var multiplier = 1;
+        if (maxAbsValue < 0.001 && maxAbsValue > 0) {
+            displayUnit = 'ns';
+            multiplier = 1000;
+        } else {
+            displayUnit = 'μs';
+        }
+        yAxisLabel = 'Group Delay (' + displayUnit + ')';
+        
+        results.forEach(function(result, index) {
+            var channelLabel = result.channel_id !== undefined ? 
+                'Channel ' + result.channel_id : 
+                'Result ' + (index + 1);
+            
+            var groupDelayData = [];
+            if (result.group_delay_us) {
+                groupDelayData = result.group_delay_us.map(function(val) {
+                    return val * multiplier;
+                });
+            }
+            
+            datasets.push({
+                label: channelLabel,
+                data: groupDelayData
+            });
+            
+            if (result.frequency && result.frequency.length > masterFrequencies.length) {
+                masterFrequencies = result.frequency;
+            }
+        });
+        
+    } else if (analysisType === 'MIN_AVG_MAX') {
+        // Handle Min/Avg/Max analysis
+        chartTitle = 'Min/Avg/Max vs Frequency';
+        yAxisLabel = 'RxMER (dB)';
+        
+        results.forEach(function(result, index) {
+            var channelLabel = result.channel_id !== undefined ? 
+                'Ch ' + result.channel_id : 
+                'Result ' + (index + 1);
+            
+            // Add Min, Avg, Max datasets for each channel
+            if (result.min) {
+                datasets.push({
+                    label: channelLabel + ' Min',
+                    data: result.min
+                });
+            }
+            if (result.avg) {
+                datasets.push({
+                    label: channelLabel + ' Avg',
+                    data: result.avg
+                });
+            }
+            if (result.max) {
+                datasets.push({
+                    label: channelLabel + ' Max',
+                    data: result.max
+                });
+            }
+            
+            if (result.frequency && result.frequency.length > masterFrequencies.length) {
+                masterFrequencies = result.frequency;
+            }
+        });
+        
+    } else {
+        // Unknown analysis type - try to plot whatever data is available
+        chartTitle = analysisType + ' Analysis';
+        yAxisLabel = 'Value';
+        
+        results.forEach(function(result, index) {
+            var channelLabel = result.channel_id !== undefined ? 
+                'Channel ' + result.channel_id : 
+                'Result ' + (index + 1);
+            
+            // Try to find any array data to plot
+            Object.keys(result).forEach(function(key) {
+                if (Array.isArray(result[key]) && key !== 'frequency') {
+                    datasets.push({
+                        label: channelLabel + ' ' + key,
+                        data: result[key]
+                    });
+                }
+            });
+            
+            if (result.frequency && result.frequency.length > masterFrequencies.length) {
+                masterFrequencies = result.frequency;
+            }
+        });
+    }
+    
+    // Convert frequencies to MHz for display
+    var frequencyLabels = masterFrequencies.map(function(freq) {
+        return (freq / 1000000).toFixed(2);
+    });
+    
+    return {
+        mac_address: response.mac_address || 'N/A',
+        status: response.status !== undefined ? response.status : 'N/A',
+        message: response.message || 'N/A',
+        analysis_type: analysisType,
+        num_channels: results.length,
+        display_unit: displayUnit,
+        has_data: hasData,
+        datasets: datasets,
+        frequency_labels: frequencyLabels,
+        y_axis_label: yAxisLabel,
+        chart_title: chartTitle
+    };
+}
+
+pm.visualizer.set(template, constructVisualizerPayload());

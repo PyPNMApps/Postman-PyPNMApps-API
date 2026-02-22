@@ -1,0 +1,304 @@
+// Postman Visualizer: RXMER Heatmap (fast, dense, no hover)
+// Data shape per channel:
+//   frequency   : number[] (Hz) length N
+//   timestamps  : number[][] (epoch seconds) shape [T][N] (used only for sparse Y labels)
+//   values      : number[][] (RxMER dB)       shape [T][N]
+//
+// Tunables:
+//   CELL_PX     : pixel size per cell (default 4)
+//   MAX_LABELS  : cap number of axis labels to avoid clutter
+//   PANEL_MAX_W : clamp panel width for very wide channels (adds horizontal scroll)
+
+(function () {
+  const resp = pm.response.json();
+
+  const safe = (v, d = null) => (v === undefined || v === null ? d : v);
+  const esc = (s) =>
+    String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+  const isNum = (v) => typeof v === "number" && isFinite(v);
+
+  // -----------------------
+  // TUNABLES
+  // -----------------------
+  const CELL_PX = 8;          // requested ~4x4 pixels
+  const MAX_X_LABELS = 10;    // sparse frequency labels
+  const MAX_Y_LABELS = 10;    // sparse time labels
+  const PANEL_MAX_W = 1200;   // clamp for very wide channels; horizontal scroll
+  const COLORBAR_W = 14;
+  const COLORBAR_PAD = 16;
+  // -----------------------
+
+  const data = safe(resp.data, {});
+  const chKeys = Object.keys(data).sort((a, b) => Number(a) - Number(b));
+
+  function hzToMHz(hz) {
+    if (!isNum(hz)) return "—";
+    return (hz / 1e6).toFixed(3);
+  }
+
+  function epochToHHMM(epochSec) {
+    if (!isNum(epochSec)) return "—";
+    const d = new Date(epochSec * 1000);
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+
+  function matrixDims(values) {
+    const rows = Array.isArray(values) ? values.length : 0;
+    let cols = 0;
+    for (let r = 0; r < rows; r++) {
+      if (Array.isArray(values[r])) cols = Math.max(cols, values[r].length);
+    }
+    return { rows, cols };
+  }
+
+  function matrixRange(values) {
+    let minV = Infinity;
+    let maxV = -Infinity;
+    for (const row of values) {
+      if (!Array.isArray(row)) continue;
+      for (const v of row) {
+        if (isNum(v)) {
+          if (v < minV) minV = v;
+          if (v > maxV) maxV = v;
+        }
+      }
+    }
+    if (!isFinite(minV) || !isFinite(maxV)) return { minV: 0, maxV: 1 };
+    if (Math.abs(maxV - minV) < 1e-9) return { minV: minV - 1, maxV: maxV + 1 };
+    return { minV, maxV };
+  }
+
+  // Fast sequential colormap (avoid hsl() string build per cell where possible)
+  // We still return a string, but keep logic minimal.
+  function colorSequential(v, minV, maxV) {
+    if (!isNum(v)) return "rgba(148,163,184,0.18)";
+    const t = Math.max(0, Math.min(1, (v - minV) / (maxV - minV)));
+    // Blue-ish ramp: low dark, high bright
+    const hue = 205;
+    const sat = 85;
+    const light = 16 + 66 * t; // 16..82
+    return `hsl(${hue} ${sat}% ${light.toFixed(1)}%)`;
+  }
+
+  function buildChannel(chKey, chObj) {
+    const channelId = safe(chObj.channel_id, chKey);
+    const freq = Array.isArray(chObj.frequency) ? chObj.frequency : [];
+    const ts = Array.isArray(chObj.timestamps) ? chObj.timestamps : [];
+    const values = Array.isArray(chObj.values) ? chObj.values : [];
+
+    const { rows: T, cols: N } = matrixDims(values);
+    if (T === 0 || N === 0 || freq.length === 0) {
+      return `
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Channel ${esc(channelId)}</div>
+            <div class="meta">No heatmap matrix found (need frequency + values).</div>
+          </div>
+        </div>
+      `;
+    }
+
+    const bins = Math.min(freq.length, N);
+    const { minV, maxV } = matrixRange(values);
+
+    const gridW = bins * CELL_PX;
+    const gridH = T * CELL_PX;
+
+    // Axis label spacing (sparse)
+    const xEvery = Math.max(1, Math.floor(bins / MAX_X_LABELS));
+    const yEvery = Math.max(1, Math.floor(T / MAX_Y_LABELS));
+
+    // Build rects without stroke + without <title>
+    // Note: SVG with many <rect> can still be heavy. 4x4 helps (fewer rows/cols if you pre-aggregate),
+    // but this removes the tooltip/title overhead and stroke.
+    let rects = "";
+    for (let r = 0; r < T; r++) {
+      const row = Array.isArray(values[r]) ? values[r] : [];
+      const y = r * CELL_PX;
+      for (let c = 0; c < bins; c++) {
+        const v = row[c];
+        const x = c * CELL_PX;
+        rects += `<rect x="${x}" y="${y}" width="${CELL_PX}" height="${CELL_PX}" fill="${colorSequential(v, minV, maxV)}" />`;
+      }
+    }
+
+    // Labels (few)
+    let xLabels = "";
+    for (let c = 0; c < bins; c += xEvery) {
+      const x = c * CELL_PX + 2;
+      xLabels += `<text x="${x}" y="${gridH + 14}" class="axis mono">${esc(hzToMHz(freq[c]))}</text>`;
+    }
+
+    let yLabels = "";
+    for (let r = 0; r < T; r += yEvery) {
+      const y = r * CELL_PX + 10;
+      // Use timestamps[r][0] if present
+      const tsRow = Array.isArray(ts[r]) ? ts[r] : [];
+      const t0 = tsRow.length > 0 ? tsRow[0] : null;
+      yLabels += `<text x="-6" y="${y}" text-anchor="end" class="axis mono">${esc(epochToHHMM(t0))}</text>`;
+    }
+
+    // Colorbar
+    const cbH = gridH;
+    const cbX = gridW + COLORBAR_PAD;
+    const cbY = 0;
+    const cbSteps = Math.min(60, Math.max(24, Math.floor(cbH / 6))); // scale with height
+
+    let cbRects = "";
+    for (let i = 0; i < cbSteps; i++) {
+      const tt = i / (cbSteps - 1);
+      const v = minV + tt * (maxV - minV);
+      const y = cbY + (1 - tt) * cbH;
+      cbRects += `<rect x="${cbX}" y="${y.toFixed(2)}" width="${COLORBAR_W}" height="${(cbH / cbSteps).toFixed(
+        2
+      )}" fill="${colorSequential(v, minV, maxV)}" />`;
+    }
+
+    const svgW = gridW + COLORBAR_PAD + COLORBAR_W + 54;
+    const svgH = gridH + 22;
+
+    const fMin = freq[0];
+    const fMax = freq[bins - 1];
+
+    // Clamp rendering width with scroll container
+    const renderW = Math.min(svgW + 60, PANEL_MAX_W);
+
+    return `
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Channel ${esc(channelId)} · RxMER Heatmap</div>
+            <div class="meta mono">
+              bins=${esc(String(bins))} · rows=${esc(String(T))} · cell=${esc(String(CELL_PX))}px ·
+              f=${esc(hzToMHz(fMin))}..${esc(hzToMHz(fMax))} MHz ·
+              rxmer=${esc(minV.toFixed(2))}..${esc(maxV.toFixed(2))} dB
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <div class="scroll" style="max-width:${renderW}px;">
+            <svg viewBox="0 0 ${svgW} ${svgH}" class="hm-svg" role="img" aria-label="RxMER heatmap dense">
+              <g transform="translate(54, 6)">
+                ${rects}
+                ${yLabels}
+                ${xLabels}
+
+                ${cbRects}
+                <text x="${cbX + COLORBAR_W + 8}" y="10" class="axis mono">${esc(maxV.toFixed(1))}</text>
+                <text x="${cbX + COLORBAR_W + 8}" y="${(cbH + 2).toFixed(2)}" class="axis mono">${esc(minV.toFixed(1))}</text>
+                <text x="${cbX - 2}" y="${(cbH + 18).toFixed(2)}" text-anchor="end" class="axis mono">dB</text>
+              </g>
+            </svg>
+          </div>
+
+          <div class="meta">
+            Dense render (no hover, no borders). X=frequency bins, Y=time rows. Use rxmer range above for context.
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const template = `
+    <style>
+      :root {
+        --bg: #0b1220;
+        --panel: #0f1a2b;
+        --panel2: #0c1727;
+        --text: #e6edf3;
+        --muted: #94a3b8;
+        --border: rgba(148,163,184,0.18);
+        --shadow: rgba(0,0,0,0.35);
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      }
+
+      body {
+        margin: 0;
+        padding: 18px 18px 26px 18px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+      }
+
+      .top { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: baseline; margin-bottom: 12px; }
+      .title { font-size: 18px; font-weight: 700; letter-spacing: 0.2px; }
+      .sub { color: var(--muted); font-size: 12px; }
+
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+      .chip { background: rgba(148,163,184,0.10); border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; font-size: 12px; }
+      .mono { font-family: var(--mono); }
+      .meta { color: var(--muted); font-size: 12px; }
+
+      .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+
+      .panel {
+        background: linear-gradient(180deg, var(--panel), var(--panel2));
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 10px 24px var(--shadow);
+        overflow: hidden;
+      }
+
+      .panel-head {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+
+      .panel-title { font-size: 14px; font-weight: 700; }
+
+      .panel-body { padding: 12px 14px 14px 14px; display: grid; gap: 10px; }
+
+      .scroll {
+        overflow-x: auto;
+        padding-bottom: 6px;
+      }
+
+      .hm-svg {
+        width: auto;            /* allow natural width */
+        height: auto;
+        border-radius: 10px;
+        border: 1px solid rgba(148,163,184,0.18);
+        background: rgba(148,163,184,0.06);
+      }
+
+      .axis {
+        fill: rgba(148,163,184,0.92);
+        font-size: 10px;
+        font-family: var(--mono);
+      }
+    </style>
+
+    <div class="top">
+      <div class="title">RxMER Heatmaps</div>
+      <div class="sub">Dense · No Hover · ${esc(String(CELL_PX))}×${esc(String(CELL_PX))} px cells</div>
+    </div>
+
+    <div class="chips">
+      ${resp.mac_address ? `<div class="chip"><span class="meta">MAC</span> <span class="mono">${esc(resp.mac_address)}</span></div>` : ""}
+      ${resp.status !== undefined ? `<div class="chip"><span class="meta">Status</span> <span class="mono">${esc(String(resp.status))}</span></div>` : ""}
+      ${resp.message ? `<div class="chip"><span class="meta">Message</span> <span>${esc(resp.message)}</span></div>` : ""}
+      <div class="chip"><span class="meta">Channels</span> <span class="mono">${esc(String(chKeys.length))}</span></div>
+    </div>
+
+    <div class="grid">
+      ${chKeys.map((k) => buildChannel(k, data[k] || {})).join("")}
+    </div>
+  `;
+
+  pm.visualizer.set(template, {});
+})();

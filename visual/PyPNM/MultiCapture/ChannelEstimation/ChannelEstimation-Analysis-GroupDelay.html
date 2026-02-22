@@ -1,0 +1,307 @@
+// Visualization Script - Multiple Channel Line Charts (Dark Mode) + Aligned "All Channels" Chart
+// - Adds a top chart that aligns all channels on a master frequency axis
+// - Does NOT assume channel_id exists (falls back to stable per-result index label)
+// - Keeps per-channel charts as-is (no dots)
+
+const template = `
+<div id="mainContainer" style="font-family: Arial, sans-serif; padding: 20px;">
+    <h2 id="mainTitle" style="margin-bottom: 20px;">Group Delay Analysis - Multi-Channel View</h2>
+    <div id="chartsContainer"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+<script>
+    pm.getData(function (err, value) {
+        if (err) {
+            console.error('Error getting data:', err);
+            return;
+        }
+
+        const container = document.getElementById('chartsContainer');
+
+        // Check if this is a group-delay analysis
+        if (value.analysis_type !== 'GROUP_DELAY') {
+            container.innerHTML =
+                '<p style="color: #ff6b6b; font-size: 16px;">This visualization is only available for GROUP_DELAY analysis type. Current analysis type: ' +
+                (value.analysis_type || 'Unknown') +
+                '</p>';
+            return;
+        }
+
+        const results = Array.isArray(value.results) ? value.results : [];
+
+        // Force dark theme
+        const theme = 'dark';
+
+        const mainContainer = document.getElementById('mainContainer');
+        const mainTitle = document.getElementById('mainTitle');
+
+        mainContainer.style.backgroundColor = '#1e1e1e';
+        mainContainer.style.color = '#ffffff';
+        mainTitle.style.color = '#ffffff';
+
+        if (!results || results.length === 0) {
+            container.innerHTML = '<p style="color:#cccccc;">No channel data available</p>';
+            return;
+        }
+
+        const gridColor = 'rgba(255,255,255,0.12)';
+        const tickColor = '#cccccc';
+        const labelColor = '#ffffff';
+
+        // Color palette for different channels - consistent mapping by stable label
+        const colorPalette = [
+            'rgb(75, 192, 192)',
+            'rgb(255, 99, 132)',
+            'rgb(54, 162, 235)',
+            'rgb(255, 206, 86)',
+            'rgb(153, 102, 255)',
+            'rgb(255, 159, 64)',
+            'rgb(199, 199, 199)',
+            'rgb(83, 102, 255)'
+        ];
+
+        const toMHz = (hz) => hz / 1000000;
+
+        const safeLabel = (r, idx) => {
+            if (r && r.channel_id !== undefined && r.channel_id !== null && r.channel_id !== '') {
+                return 'Channel ' + String(r.channel_id);
+            }
+            return 'Result ' + String(idx + 1);
+        };
+
+        const rgbaFill = (rgb, a) => rgb.replace('rgb', 'rgba').replace(')', ', ' + a + ')');
+
+        // Build master frequency axis (MHz) across all channels
+        function uniqSortedNumeric(arr) {
+            const m = Object.create(null);
+            for (let i = 0; i < arr.length; i++) {
+                const n = Number(arr[i]);
+                if (!isFinite(n)) continue;
+                m[String(n)] = true;
+            }
+            return Object.keys(m).map(k => Number(k)).sort((a, b) => a - b);
+        }
+
+        function alignSeries(masterMHz, freqHzArr, valuesArr) {
+            const map = Object.create(null);
+            const n = Math.min(Array.isArray(freqHzArr) ? freqHzArr.length : 0, Array.isArray(valuesArr) ? valuesArr.length : 0);
+            for (let i = 0; i < n; i++) {
+                const fMHz = toMHz(Number(freqHzArr[i]));
+                const v = Number(valuesArr[i]);
+                if (!isFinite(fMHz)) continue;
+                map[String(fMHz)] = isFinite(v) ? v : null;
+            }
+            const out = new Array(masterMHz.length);
+            for (let j = 0; j < masterMHz.length; j++) {
+                const key = String(masterMHz[j]);
+                out[j] = (key in map) ? map[key] : null;
+            }
+            return out;
+        }
+
+        // Create top aligned chart container
+        (function renderAlignedAllChannels() {
+            const chartDiv = document.createElement('div');
+            chartDiv.style.marginBottom = '30px';
+            chartDiv.style.padding = '15px';
+            chartDiv.style.border = '1px solid #444';
+            chartDiv.style.borderRadius = '8px';
+            chartDiv.style.backgroundColor = '#2a2a2a';
+
+            const title = document.createElement('div');
+            title.style.color = '#ffffff';
+            title.style.fontSize = '14px';
+            title.style.fontWeight = 'bold';
+            title.style.marginBottom = '10px';
+            title.style.textAlign = 'center';
+            title.textContent = 'All Channels Aligned By Frequency - Group Delay (μs)';
+
+            const canvas = document.createElement('canvas');
+            canvas.id = 'chart-all-aligned';
+            canvas.height = 90;
+
+            chartDiv.appendChild(title);
+            chartDiv.appendChild(canvas);
+            container.appendChild(chartDiv);
+
+            const allFreqHz = [];
+            for (let i = 0; i < results.length; i++) {
+                const freq = (results[i] && Array.isArray(results[i].frequency)) ? results[i].frequency : [];
+                for (let j = 0; j < freq.length; j++) allFreqHz.push(freq[j]);
+            }
+
+            const masterMHz = uniqSortedNumeric(allFreqHz.map(toMHz));
+
+            const datasets = results.map((r, idx) => {
+                const label = safeLabel(r, idx);
+                const color = colorPalette[idx % colorPalette.length];
+                const freq = (r && Array.isArray(r.frequency)) ? r.frequency : [];
+                const gd = (r && Array.isArray(r.group_delay_us)) ? r.group_delay_us : [];
+                return {
+                    label: label,
+                    data: alignSeries(masterMHz, freq, gd),
+                    borderColor: color,
+                    backgroundColor: rgbaFill(color, 0.08),
+                    borderWidth: 1.5,
+                    fill: false,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    tension: 0.1,
+                    spanGaps: false
+                };
+            });
+
+            const ctx = canvas.getContext('2d');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: masterMHz,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    legend: {
+                        display: true,
+                        labels: { fontColor: labelColor }
+                    },
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    hover: {
+                        mode: 'nearest',
+                        intersect: false
+                    },
+                    scales: {
+                        xAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Frequency (MHz)',
+                                fontColor: labelColor
+                            },
+                            ticks: {
+                                fontColor: tickColor,
+                                maxRotation: 45,
+                                minRotation: 45,
+                                maxTicksLimit: 12
+                            },
+                            gridLines: { color: gridColor }
+                        }],
+                        yAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Group Delay (μs)',
+                                fontColor: labelColor
+                            },
+                            ticks: { fontColor: tickColor },
+                            gridLines: { color: gridColor }
+                        }]
+                    }
+                }
+            });
+        })();
+
+        // Per-channel color map (do not assume channel_id; use stable labels)
+        const labelsSorted = results.map((r, idx) => safeLabel(r, idx)).slice().sort();
+        const labelToColor = {};
+        labelsSorted.forEach((lbl, index) => {
+            labelToColor[lbl] = colorPalette[index % colorPalette.length];
+        });
+
+        // Create a chart for each channel
+        results.forEach((channelData, index) => {
+            const chartDiv = document.createElement('div');
+            chartDiv.style.marginBottom = '30px';
+            chartDiv.style.padding = '15px';
+            chartDiv.style.border = '1px solid #444';
+            chartDiv.style.borderRadius = '8px';
+            chartDiv.style.backgroundColor = '#2a2a2a';
+
+            const canvas = document.createElement('canvas');
+            canvas.id = 'chart-' + index;
+            canvas.height = 80;
+
+            chartDiv.appendChild(canvas);
+            container.appendChild(chartDiv);
+
+            const ctx = canvas.getContext('2d');
+
+            const freq = (channelData && Array.isArray(channelData.frequency)) ? channelData.frequency : [];
+            const gd = (channelData && Array.isArray(channelData.group_delay_us)) ? channelData.group_delay_us : [];
+            const frequencyMHz = freq.map(f => f / 1000000);
+
+            const label = safeLabel(channelData, index);
+            const channelColor = labelToColor[label] || colorPalette[index % colorPalette.length];
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: frequencyMHz,
+                    datasets: [{
+                        label: label + ' - Group Delay (μs)',
+                        data: gd,
+                        borderColor: channelColor,
+                        backgroundColor: rgbaFill(channelColor, 0.1),
+                        borderWidth: 1.5,
+                        fill: false,
+                        pointRadius: 0,
+                        pointHoverRadius: 0,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    legend: {
+                        display: true,
+                        labels: { fontColor: labelColor }
+                    },
+                    title: {
+                        display: true,
+                        text: label + ' Group Delay',
+                        fontColor: labelColor,
+                        fontSize: 14
+                    },
+                    scales: {
+                        xAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Frequency (MHz)',
+                                fontColor: labelColor
+                            },
+                            ticks: { fontColor: tickColor },
+                            gridLines: { color: gridColor }
+                        }],
+                        yAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Group Delay (μs)',
+                                fontColor: labelColor
+                            },
+                            ticks: { fontColor: tickColor },
+                            gridLines: { color: gridColor }
+                        }]
+                    }
+                }
+            });
+        });
+    });
+</script>
+`;
+
+function constructVisualizerPayload() {
+    const responseData = pm.response.json();
+    return {
+        analysis_type: responseData?.data?.analysis_type,
+        results: responseData?.data?.results || []
+    };
+}
+
+pm.visualizer.set(template, constructVisualizerPayload());

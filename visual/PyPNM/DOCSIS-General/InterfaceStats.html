@@ -1,0 +1,581 @@
+// Postman "Tests" tab script
+// Renders: (1) readable tables (zebra + sticky headers + pills) and (2) SVG topology
+// Assumes the response body is the PyPNM JSON you shared.
+
+(function () {
+  const payload = pm.response.json();
+
+  function esc(v) {
+    if (v === null || v === undefined) {
+      return "";
+    }
+    return String(v)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function fmtInt(v) {
+    if (v === null || v === undefined || v === "") {
+      return "";
+    }
+    const n = Number(v);
+    if (!Number.isFinite(n)) {
+      return String(v);
+    }
+    return Math.trunc(n).toLocaleString("en-US");
+  }
+
+  function toAdminOper(v) {
+    if (v === 1) {
+      return "up";
+    }
+    if (v === 2) {
+      return "down";
+    }
+    if (v === 3) {
+      return "testing";
+    }
+    return "unknown";
+  }
+
+  function pickIfName(item) {
+    const ifx = item && item.ifXEntry ? item.ifXEntry : null;
+    if (ifx && typeof ifx.ifName === "string" && ifx.ifName.length > 0) {
+      return ifx.ifName;
+    }
+    return "";
+  }
+
+  function normalizeRow(item) {
+    const ife = item && item.ifEntry ? item.ifEntry : {};
+    const ifx = item && item.ifXEntry ? item.ifXEntry : null;
+
+    const ifIndex = ife.ifIndex ?? "";
+    const ifDescr = ife.ifDescr ?? "";
+    const ifType = ife.ifType ?? "";
+    const ifSpeed = ife.ifSpeed ?? "";
+    const ifInOctets = ife.ifInOctets ?? "";
+    const ifOutOctets = ife.ifOutOctets ?? "";
+
+    const admin = toAdminOper(ife.ifAdminStatus);
+    const oper = toAdminOper(ife.ifOperStatus);
+
+    const ifHighSpeed = ifx && ifx.ifHighSpeed !== null && ifx.ifHighSpeed !== undefined ? ifx.ifHighSpeed : "";
+
+    return {
+      ifIndex,
+      ifName: pickIfName(item),
+      ifDescr,
+      ifType,
+      admin,
+      oper,
+      speed_bps: ifSpeed,
+      highSpeed_mbps: ifHighSpeed,
+      inOctets: ifInOctets,
+      outOctets: ifOutOctets
+    };
+  }
+
+  function sumAgg(rows) {
+    let inOctets = 0;
+    let outOctets = 0;
+
+    for (const r of rows) {
+      const inV = Number(r.inOctets);
+      const outV = Number(r.outOctets);
+
+      if (Number.isFinite(inV)) {
+        inOctets += inV;
+      }
+      if (Number.isFinite(outV)) {
+        outOctets += outV;
+      }
+    }
+
+    return {
+      count: rows.length,
+      inOctets,
+      outOctets
+    };
+  }
+
+  function getInterfaces(key) {
+    const arr = payload && payload.results && Array.isArray(payload.results[key]) ? payload.results[key] : [];
+    return arr.map(normalizeRow);
+  }
+
+  function buildGroups() {
+    const groups = [];
+
+    const docsCableMaclayer = getInterfaces("docsCableMaclayer");
+    const docsOfdmDownstream = getInterfaces("docsOfdmDownstream");
+    const docsCableDownstream = getInterfaces("docsCableDownstream");
+    const docsOfdmaUpstream = getInterfaces("docsOfdmaUpstream");
+    const docsCableUpstream = getInterfaces("docsCableUpstream");
+
+    groups.push({
+      key: "docsCableMaclayer",
+      title: "DOCSIS MAC Layer (docsCableMaclayer)",
+      rows: docsCableMaclayer
+    });
+
+    groups.push({
+      key: "docsOfdmDownstream",
+      title: "OFDM Downstream (docsOfdmDownstream)",
+      rows: docsOfdmDownstream
+    });
+
+    groups.push({
+      key: "docsCableDownstream",
+      title: "SC-QAM Downstream (docsCableDownstream)",
+      rows: docsCableDownstream
+    });
+
+    groups.push({
+      key: "docsOfdmaUpstream",
+      title: "OFDMA Upstream (docsOfdmaUpstream)",
+      rows: docsOfdmaUpstream
+    });
+
+    groups.push({
+      key: "docsCableUpstream",
+      title: "SC-QAM Upstream (docsCableUpstream)",
+      rows: docsCableUpstream
+    });
+
+    for (const g of groups) {
+      g.agg = sumAgg(g.rows);
+    }
+
+    return groups.filter((g) => g.rows.length > 0);
+  }
+
+  function maxSpeedBps(rows) {
+    let max = 0;
+    for (const r of rows) {
+      const n = Number(r.speed_bps);
+      if (Number.isFinite(n) && n > max) {
+        max = n;
+      }
+    }
+    return max;
+  }
+
+  function humanBps(bps) {
+    const n = Number(bps);
+    if (!Number.isFinite(n) || n <= 0) {
+      return "";
+    }
+    const kb = 1000;
+    const mb = 1000 * kb;
+    const gb = 1000 * mb;
+
+    if (n >= gb) {
+      return `${(n / gb).toFixed(2)} Gbps`;
+    }
+    if (n >= mb) {
+      return `${(n / mb).toFixed(2)} Mbps`;
+    }
+    if (n >= kb) {
+      return `${(n / kb).toFixed(2)} Kbps`;
+    }
+    return `${n.toFixed(0)} bps`;
+  }
+
+  function svgTopology(groups) {
+    const mac = payload.mac_address ? String(payload.mac_address) : "unknown";
+
+    const macLayer = groups.find((g) => g.key === "docsCableMaclayer");
+    const ofdmDs = groups.find((g) => g.key === "docsOfdmDownstream");
+    const scqamDs = groups.find((g) => g.key === "docsCableDownstream");
+    const ofdmaUs = groups.find((g) => g.key === "docsOfdmaUpstream");
+    const scqamUs = groups.find((g) => g.key === "docsCableUpstream");
+
+    const summaryNodes = [];
+    if (ofdmDs) {
+      summaryNodes.push({
+        id: "OFDM_DS",
+        title: "OFDM Downstream",
+        detail: [
+          `count: ${ofdmDs.agg.count}`,
+          `max speed: ${humanBps(maxSpeedBps(ofdmDs.rows))}`,
+          `in: ${fmtInt(ofdmDs.agg.inOctets)}`,
+          `out: ${fmtInt(ofdmDs.agg.outOctets)}`
+        ]
+      });
+    }
+    if (scqamDs) {
+      summaryNodes.push({
+        id: "SCQAM_DS",
+        title: "SC-QAM Downstream",
+        detail: [
+          `count: ${scqamDs.agg.count}`,
+          `max speed: ${humanBps(maxSpeedBps(scqamDs.rows))}`,
+          `in: ${fmtInt(scqamDs.agg.inOctets)}`,
+          `out: ${fmtInt(scqamDs.agg.outOctets)}`
+        ]
+      });
+    }
+    if (ofdmaUs) {
+      summaryNodes.push({
+        id: "OFDMA_US",
+        title: "OFDMA Upstream",
+        detail: [
+          `count: ${ofdmaUs.agg.count}`,
+          `max speed: ${humanBps(maxSpeedBps(ofdmaUs.rows))}`,
+          `in: ${fmtInt(ofdmaUs.agg.inOctets)}`,
+          `out: ${fmtInt(ofdmaUs.agg.outOctets)}`
+        ]
+      });
+    }
+    if (scqamUs) {
+      summaryNodes.push({
+        id: "SCQAM_US",
+        title: "SC-QAM Upstream",
+        detail: [
+          `count: ${scqamUs.agg.count}`,
+          `max speed: ${humanBps(maxSpeedBps(scqamUs.rows))}`,
+          `in: ${fmtInt(scqamUs.agg.inOctets)}`,
+          `out: ${fmtInt(scqamUs.agg.outOctets)}`
+        ]
+      });
+    }
+
+    const width = 1200;
+    const pad = 24;
+
+    const boxW = 320;
+    const boxH = 92;
+
+    const cmX = (width - boxW) / 2;
+    const cmY = 20;
+
+    const macX = (width - boxW) / 2;
+    const macY = cmY + 120;
+
+    const cols = Math.max(summaryNodes.length, 1);
+    const gap = 16;
+    const totalRowW = cols * boxW + (cols - 1) * gap;
+    const startX = (width - totalRowW) / 2;
+    const rowY = macY + 140;
+
+    const height = rowY + 140;
+
+    function rect(x, y, w, h) {
+      return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14" ry="14"></rect>`;
+    }
+
+    function textBlock(x, y, lines) {
+      const lineH = 16;
+      const safe = lines.map((l) => esc(l));
+      return safe
+        .map((l, i) => `<text x="${x}" y="${y + i * lineH}" font-size="13">${l}</text>`)
+        .join("");
+    }
+
+    function centerLine(x1, y1, x2, y2) {
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="2"></line>`;
+    }
+
+    let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
+
+    // CM box
+    svg += rect(cmX, cmY, boxW, boxH);
+    svg += textBlock(cmX + 16, cmY + 30, ["CM", mac]);
+
+    // RF MAC box
+    svg += rect(macX, macY, boxW, boxH);
+    if (macLayer && macLayer.rows.length > 0) {
+      const r0 = macLayer.rows[0];
+      svg += textBlock(macX + 16, macY + 30, [
+        "RF MAC",
+        `ifIndex: ${r0.ifIndex}`,
+        r0.ifName ? `ifName: ${r0.ifName}` : "ifName: (none)"
+      ]);
+    } else {
+      svg += textBlock(macX + 16, macY + 30, ["RF MAC", "not present"]);
+    }
+
+    // CM -> RF MAC line
+    svg += centerLine(cmX + boxW / 2, cmY + boxH, macX + boxW / 2, macY);
+
+    // Summary nodes
+    for (let i = 0; i < summaryNodes.length; i++) {
+      const n = summaryNodes[i];
+      const x = startX + i * (boxW + gap);
+      const y = rowY;
+
+      svg += rect(x, y, boxW, boxH);
+      svg += textBlock(x + 16, y + 28, [n.title, ...n.detail.slice(0, 3)]);
+      svg += centerLine(macX + boxW / 2, macY + boxH, x + boxW / 2, y);
+    }
+
+    svg += `</svg>`;
+    return svg;
+  }
+
+  const renderedGroups = buildGroups();
+  const diagramSvg = svgTopology(renderedGroups);
+
+  pm.visualizer.set(
+    `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root{
+        --bg: #0b1220;
+        --panel: #0f1a2b;
+        --panel2: #0c1727;
+        --text: #e5e7eb;
+        --muted: #9aa7b6;
+        --border: #1f2a3a;
+        --header: #122037;
+        --rowA: rgba(255,255,255,0.03);
+        --rowB: rgba(255,255,255,0.06);
+        --hover: rgba(255,255,255,0.10);
+        --accent: #93c5fd;
+        --good: #34d399;
+        --warn: #fbbf24;
+        --bad:  #fb7185;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        margin: 16px;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      h1 { font-size: 18px; margin: 0 0 10px 0; color: var(--text); }
+      h2 { font-size: 14px; margin: 18px 0 10px 0; color: var(--text); }
+
+      .meta { display: grid; grid-template-columns: 160px 1fr; gap: 6px 10px; max-width: 1100px; }
+      .card {
+        background: linear-gradient(180deg, var(--panel), var(--panel2));
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        margin-top: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      }
+
+      .muted { color: var(--muted); }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+      .pill {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.04);
+        color: var(--text);
+      }
+
+      .pill.good { border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.12); color: var(--good); }
+      .pill.warn { border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.12); color: var(--warn); }
+      .pill.bad  { border-color: rgba(251,113,133,0.35); background: rgba(251,113,133,0.12); color: var(--bad); }
+
+      .svgWrap {
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        background: rgba(255,255,255,0.02);
+      }
+
+      .tableWrap {
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.02);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 12px;
+        min-width: 980px;
+      }
+
+      thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--header);
+        color: var(--text);
+        text-align: left;
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+
+      tbody td {
+        padding: 7px 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        vertical-align: top;
+      }
+
+      tbody tr:nth-child(odd)  td { background: var(--rowA); }
+      tbody tr:nth-child(even) td { background: var(--rowB); }
+
+      tbody tr:hover td { background: var(--hover); }
+
+      .num { text-align: right; font-variant-numeric: tabular-nums; }
+      .nowrap { white-space: nowrap; }
+      .tag { color: var(--accent); }
+
+      .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+      .legend .pill { font-size: 11px; }
+
+      /* SVG inherits dark theme */
+      svg rect { fill: rgba(255,255,255,0.04) !important; stroke: rgba(255,255,255,0.18) !important; }
+      svg text { fill: var(--text) !important; }
+      svg line { stroke: rgba(255,255,255,0.35) !important; }
+    </style>
+  </head>
+  <body>
+    <h1>PyPNM Interface Statistics</h1>
+
+    <div class="card">
+      <div class="meta">
+        <div class="muted">mac_address</div><div class="mono">{{mac_address}}</div>
+        <div class="muted">status</div><div><span class="pill">{{status}}</span></div>
+        <div class="muted">message</div><div>{{message}}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Topology</h2>
+      <div class="muted">SVG is supported directly in Postman Visualizer (no Mermaid dependency).</div>
+      <div class="svgWrap">{{{diagramSvg}}}</div>
+    </div>
+
+    <div class="card">
+      <h2>Rollups</h2>
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Group</th>
+              <th class="num">Count</th>
+              <th class="num">Total InOctets</th>
+              <th class="num">Total OutOctets</th>
+              <th class="num">Max ifSpeed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#groups}}
+            <tr>
+              <td>{{title}}</td>
+              <td class="num mono">{{agg.count}}</td>
+              <td class="num mono">{{agg.inOctets}}</td>
+              <td class="num mono">{{agg.outOctets}}</td>
+              <td class="num mono">{{agg.maxSpeedHuman}}</td>
+            </tr>
+            {{/groups}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {{#groups}}
+    <div class="card">
+      <h2>{{title}}</h2>
+      <div class="legend">
+        <span class="pill good">oper up</span>
+        <span class="pill bad">oper down</span>
+        <span class="pill warn">admin down</span>
+        <span class="pill">unknown</span>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="nowrap">ifIndex</th>
+              <th class="nowrap">ifName</th>
+              <th>ifDescr</th>
+              <th class="nowrap">ifType</th>
+              <th class="nowrap">Admin</th>
+              <th class="nowrap">Oper</th>
+              <th class="num nowrap">ifSpeed (bps)</th>
+              <th class="num nowrap">ifHighSpeed (Mbps)</th>
+              <th class="num nowrap">InOctets</th>
+              <th class="num nowrap">OutOctets</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#rows}}
+            <tr>
+              <td class="mono nowrap">{{ifIndex}}</td>
+              <td class="mono nowrap tag">{{ifName}}</td>
+              <td>{{ifDescr}}</td>
+              <td class="mono nowrap">{{ifType}}</td>
+              <td class="mono nowrap">{{{adminPill}}}</td>
+              <td class="mono nowrap">{{{operPill}}}</td>
+              <td class="mono num nowrap">{{speed_bps}}</td>
+              <td class="mono num nowrap">{{highSpeed_mbps}}</td>
+              <td class="mono num nowrap">{{inOctets}}</td>
+              <td class="mono num nowrap">{{outOctets}}</td>
+            </tr>
+            {{/rows}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {{/groups}}
+  </body>
+</html>
+`,
+    {
+      mac_address: payload.mac_address ?? "",
+      status: String(payload.status ?? ""),
+      message: payload.message ?? "",
+      diagramSvg,
+      groups: renderedGroups.map((g) => {
+        const maxBps = maxSpeedBps(g.rows);
+        return {
+          title: g.title,
+          agg: {
+            count: g.agg.count,
+            inOctets: fmtInt(g.agg.inOctets),
+            outOctets: fmtInt(g.agg.outOctets),
+            maxSpeedHuman: humanBps(maxBps)
+          },
+          rows: g.rows.map((r) => {
+            const admin = String(r.admin ?? "").toLowerCase();
+            const oper = String(r.oper ?? "").toLowerCase();
+
+            const adminClass =
+              admin.includes("down") ? "warn" :
+              admin.includes("up") ? "good" : "";
+
+            const operClass =
+              oper.includes("down") ? "bad" :
+              oper.includes("up") ? "good" : "";
+
+            return {
+              ifIndex: r.ifIndex,
+              ifName: esc(r.ifName),
+              ifDescr: esc(r.ifDescr),
+              ifType: r.ifType,
+              adminPill: `<span class="pill ${adminClass}">${esc(r.admin ?? "")}</span>`,
+              operPill: `<span class="pill ${operClass}">${esc(r.oper ?? "")}</span>`,
+              speed_bps: fmtInt(r.speed_bps),
+              highSpeed_mbps: fmtInt(r.highSpeed_mbps),
+              inOctets: fmtInt(r.inOctets),
+              outOctets: fmtInt(r.outOctets)
+            };
+          })
+        };
+      })
+    }
+  );
+})();

@@ -1,0 +1,431 @@
+// Visualization Script - Dark Mode Always for Multi-Channel Min/Avg/Max Analysis
+// - Dark theme is forced (ignores request body)
+// - Removes point dots (pointRadius = 0)
+// - Adds an "All Results Aligned By Frequency" chart (Avg/RxMER) using a master frequency axis
+// - Does NOT assume channel_id exists (uses stable per-result index label if missing)
+
+var template = `
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: {{bodyBgColor}};
+    }
+    .metadata {
+        background-color: {{containerBgColor}};
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+    .metadata h3 {
+        margin-top: 0;
+        color: {{headingColor}};
+    }
+    .metadata-item {
+        margin: 8px 0;
+        color: {{textColor}};
+    }
+    .metadata-label {
+        font-weight: bold;
+        color: {{headingColor}};
+    }
+    .chart-container {
+        background-color: {{containerBgColor}};
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+    .chart-title {
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: {{headingColor}};
+    }
+    .chart-info {
+        text-align: center;
+        font-size: 12px;
+        color: {{textColor}};
+        margin-bottom: 10px;
+    }
+</style>
+
+<div class="metadata">
+    <h3>Analysis Metadata</h3>
+    <div class="metadata-item"><span class="metadata-label">MAC Address:</span> {{mac_address}}</div>
+    <div class="metadata-item"><span class="metadata-label">Status:</span> {{status}}</div>
+    <div class="metadata-item"><span class="metadata-label">Message:</span> {{message}}</div>
+    <div class="metadata-item"><span class="metadata-label">Analysis Type:</span> {{analysis_type}}</div>
+</div>
+
+<div class="chart-container">
+    <div class="chart-title">All Results Aligned By Frequency (Avg/RxMER)</div>
+    <div class="chart-info">
+        Master Axis: {{master_freq_start}} MHz - {{master_freq_end}} MHz ({{master_total_points}} points, showing {{master_display_points}} sampled)
+    </div>
+    <canvas id="chart_all_aligned" height="90"></canvas>
+</div>
+
+{{#each channels}}
+<div class="chart-container">
+    <div class="chart-title">{{title}} - Min/Avg/Max Analysis</div>
+    <div class="chart-info">
+        Frequency Range: {{freq_start}} MHz - {{freq_end}} MHz ({{total_points}} points, showing {{display_points}} sampled)
+    </div>
+    <canvas id="chart_{{canvas_id}}" height="80"></canvas>
+</div>
+{{/each}}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+<script>
+    pm.getData(function (err, value) {
+        if (err) {
+            console.error(err);
+            return;
+        }
+
+        var gridColor = 'rgba(255,255,255,0.12)';
+        var tickColor = '#eaeaea';
+
+        // --- All aligned chart (Avg/RxMER) ---
+        (function renderAlignedChart() {
+            var ctx = document.getElementById('chart_all_aligned');
+            if (!ctx) return;
+
+            var colors = [
+                { border: 'rgba(255, 99, 132, 1)', fill: 'rgba(255, 99, 132, 0.06)' },
+                { border: 'rgba(54, 162, 235, 1)', fill: 'rgba(54, 162, 235, 0.06)' },
+                { border: 'rgba(255, 206, 86, 1)', fill: 'rgba(255, 206, 86, 0.06)' },
+                { border: 'rgba(75, 192, 192, 1)', fill: 'rgba(75, 192, 192, 0.06)' },
+                { border: 'rgba(153, 102, 255, 1)', fill: 'rgba(153, 102, 255, 0.06)' }
+            ];
+
+            var datasets = (value.aligned && value.aligned.datasets) ? value.aligned.datasets : [];
+            var labels = (value.aligned && value.aligned.labels) ? value.aligned.labels : [];
+
+            var chartDatasets = datasets.map(function(ds, idx) {
+                var c = colors[idx % colors.length];
+                return {
+                    label: ds.label,
+                    data: ds.data,
+                    borderColor: c.border,
+                    backgroundColor: c.fill,
+                    fill: false,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                    lineTension: 0.1,
+                    spanGaps: false
+                };
+            });
+
+            new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: chartDatasets },
+                options: {
+                    responsive: true,
+                    legend: {
+                        display: true,
+                        labels: { fontColor: tickColor }
+                    },
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    hover: {
+                        mode: 'nearest',
+                        intersect: false
+                    },
+                    scales: {
+                        xAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Frequency (MHz)',
+                                fontColor: tickColor
+                            },
+                            ticks: {
+                                fontColor: tickColor,
+                                maxRotation: 45,
+                                minRotation: 45,
+                                maxTicksLimit: 12
+                            },
+                            gridLines: { color: gridColor }
+                        }],
+                        yAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Avg (RxMER)',
+                                fontColor: tickColor
+                            },
+                            ticks: { fontColor: tickColor },
+                            gridLines: { color: gridColor }
+                        }]
+                    }
+                }
+            });
+        })();
+
+        // --- Per-result charts (Min/Avg/Max) ---
+        (value.channels || []).forEach(function(channel) {
+            var ctx = document.getElementById('chart_' + channel.canvas_id);
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: channel.labels,
+                    datasets: [
+                        {
+                            label: 'Max',
+                            data: channel.max,
+                            borderColor: '#ff6384',
+                            backgroundColor: 'rgba(255, 99, 132, 0.06)',
+                            fill: false,
+                            pointRadius: 0,
+                            borderWidth: 2,
+                            lineTension: 0.1,
+                            spanGaps: false
+                        },
+                        {
+                            label: 'Avg',
+                            data: channel.avg,
+                            borderColor: '#36a2eb',
+                            backgroundColor: 'rgba(54, 162, 235, 0.06)',
+                            fill: false,
+                            pointRadius: 0,
+                            borderWidth: 2,
+                            lineTension: 0.1,
+                            spanGaps: false
+                        },
+                        {
+                            label: 'Min',
+                            data: channel.min,
+                            borderColor: '#4bc0c0',
+                            backgroundColor: 'rgba(75, 192, 192, 0.06)',
+                            fill: false,
+                            pointRadius: 0,
+                            borderWidth: 2,
+                            lineTension: 0.1,
+                            spanGaps: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    legend: {
+                        display: true,
+                        labels: { fontColor: tickColor }
+                    },
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    hover: {
+                        mode: 'nearest',
+                        intersect: false
+                    },
+                    scales: {
+                        xAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Frequency (MHz)',
+                                fontColor: tickColor
+                            },
+                            ticks: {
+                                fontColor: tickColor,
+                                maxRotation: 45,
+                                minRotation: 45,
+                                maxTicksLimit: 10
+                            },
+                            gridLines: { color: gridColor }
+                        }],
+                        yAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Value',
+                                fontColor: tickColor
+                            },
+                            ticks: { fontColor: tickColor },
+                            gridLines: { color: gridColor }
+                        }]
+                    }
+                }
+            });
+        });
+    });
+</script>
+`;
+
+function constructVisualizerPayload() {
+    var response = pm.response.json();
+
+    // Force dark theme (ignore request body)
+    var isDarkTheme = true;
+
+    // Dark theme colors
+    var bodyBgColor = '#1a1a2e';
+    var containerBgColor = '#16213e';
+    var headingColor = '#e94560';
+    var textColor = '#eaeaea';
+
+    function toMHzLabel(freqHz) {
+        return (freqHz / 1000000).toFixed(2);
+    }
+
+    function sampleIndices(length, maxPoints) {
+        if (!length || length <= maxPoints) {
+            var all = [];
+            for (var i = 0; i < length; i++) all.push(i);
+            return all;
+        }
+        var step = Math.ceil(length / maxPoints);
+        var idxs = [];
+        for (var j = 0; j < length; j += step) idxs.push(j);
+        return idxs;
+    }
+
+    function sampleByIndices(arr, idxs) {
+        if (!arr || !arr.length) return [];
+        var out = [];
+        for (var i = 0; i < idxs.length; i++) out.push(arr[idxs[i]]);
+        return out;
+    }
+
+    function uniqueSortedNumeric(arr) {
+        var map = Object.create(null);
+        for (var i = 0; i < arr.length; i++) {
+            var n = Number(arr[i]);
+            if (!isFinite(n)) continue;
+            map[String(n)] = true;
+        }
+        return Object.keys(map).map(function(k) { return Number(k); }).sort(function(a,b){ return a-b; });
+    }
+
+    function alignSeries(masterFreqHz, freqHzArr, valuesArr) {
+        var m = Object.create(null);
+        var n = Math.min(freqHzArr ? freqHzArr.length : 0, valuesArr ? valuesArr.length : 0);
+        for (var i = 0; i < n; i++) {
+            var f = Number(freqHzArr[i]);
+            var v = Number(valuesArr[i]);
+            if (!isFinite(f)) continue;
+            m[String(f)] = isFinite(v) ? v : null;
+        }
+        var out = new Array(masterFreqHz.length);
+        for (var j = 0; j < masterFreqHz.length; j++) {
+            var key = String(masterFreqHz[j]);
+            out[j] = (key in m) ? m[key] : null;
+        }
+        return out;
+    }
+
+    var maxDisplayPoints = 140;
+
+    // Extract results array from response
+    var results = [];
+    if (response && response.data && response.data.results && Array.isArray(response.data.results)) {
+        results = response.data.results;
+    }
+
+    // Build per-result chart payload without assuming channel_id
+    var channels = results.map(function(result, idx) {
+        var freq = (result && Array.isArray(result.frequency)) ? result.frequency : [];
+        var totalPoints = freq.length;
+
+        var idxs = sampleIndices(totalPoints, maxDisplayPoints);
+
+        var sampledFreq = sampleByIndices(freq, idxs);
+        var sampledMin = sampleByIndices((result && Array.isArray(result.min)) ? result.min : [], idxs);
+        var sampledAvg = sampleByIndices((result && Array.isArray(result.avg)) ? result.avg : [], idxs);
+        var sampledMax = sampleByIndices((result && Array.isArray(result.max)) ? result.max : [], idxs);
+
+        var labels = sampledFreq.map(function(f) { return toMHzLabel(f); });
+
+        var freqStart = totalPoints > 0 ? toMHzLabel(freq[0]) : 'N/A';
+        var freqEnd = totalPoints > 0 ? toMHzLabel(freq[totalPoints - 1]) : 'N/A';
+
+        var title = (result && result.channel_id !== undefined && result.channel_id !== null)
+            ? ('Channel ' + String(result.channel_id))
+            : ('Result ' + String(idx + 1));
+
+        return {
+            title: title,
+            canvas_id: 'r_' + String(idx + 1),
+            labels: labels,
+            min: sampledMin,
+            avg: sampledAvg,
+            max: sampledMax,
+            freq_start: freqStart,
+            freq_end: freqEnd,
+            total_points: totalPoints,
+            display_points: sampledFreq.length,
+            _raw_frequency: freq,
+            _raw_avg: (result && Array.isArray(result.avg)) ? result.avg : []
+        };
+    });
+
+    // Build master frequency axis across all results and align AVG series (RxMER)
+    var allFreq = [];
+    for (var i = 0; i < channels.length; i++) {
+        var fArr = channels[i]._raw_frequency || [];
+        for (var j = 0; j < fArr.length; j++) allFreq.push(fArr[j]);
+    }
+    var masterFreqHz = uniqueSortedNumeric(allFreq);
+
+    // Sample master axis for performance (keep consistent alignment)
+    var masterIdxs = sampleIndices(masterFreqHz.length, maxDisplayPoints);
+    var masterFreqSampled = sampleByIndices(masterFreqHz, masterIdxs);
+    var masterLabels = masterFreqSampled.map(function(f) { return toMHzLabel(f); });
+
+    var alignedDatasets = channels.map(function(ch) {
+        var alignedFull = alignSeries(masterFreqHz, ch._raw_frequency || [], ch._raw_avg || []);
+        var alignedSampled = sampleByIndices(alignedFull, masterIdxs);
+        return { label: ch.title, data: alignedSampled };
+    });
+
+    var masterFreqStart = masterFreqSampled.length ? toMHzLabel(masterFreqSampled[0]) : 'N/A';
+    var masterFreqEnd = masterFreqSampled.length ? toMHzLabel(masterFreqSampled[masterFreqSampled.length - 1]) : 'N/A';
+
+    // Strip private helpers before returning
+    channels = channels.map(function(ch) {
+        return {
+            title: ch.title,
+            canvas_id: ch.canvas_id,
+            labels: ch.labels,
+            min: ch.min,
+            avg: ch.avg,
+            max: ch.max,
+            freq_start: ch.freq_start,
+            freq_end: ch.freq_end,
+            total_points: ch.total_points,
+            display_points: ch.display_points
+        };
+    });
+
+    return {
+        mac_address: response.mac_address || 'N/A',
+        status: response.status !== undefined ? response.status : 'N/A',
+        message: response.message || 'N/A',
+        analysis_type: response.data ? response.data.analysis_type : 'N/A',
+        bodyBgColor: bodyBgColor,
+        containerBgColor: containerBgColor,
+        headingColor: headingColor,
+        textColor: textColor,
+        isDarkTheme: isDarkTheme,
+        channels: channels,
+        aligned: {
+            labels: masterLabels,
+            datasets: alignedDatasets
+        },
+        master_freq_start: masterFreqStart,
+        master_freq_end: masterFreqEnd,
+        master_total_points: masterFreqHz.length,
+        master_display_points: masterFreqSampled.length
+    };
+}
+
+pm.visualizer.set(template, constructVisualizerPayload());

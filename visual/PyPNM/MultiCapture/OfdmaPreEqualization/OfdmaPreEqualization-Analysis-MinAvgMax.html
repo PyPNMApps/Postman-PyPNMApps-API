@@ -1,0 +1,95 @@
+// Visualization Script
+var template = `
+<canvas id="analysisChart" height="80"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+<script>
+    var ctx = document.getElementById("analysisChart");
+    var analysisChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Min',
+                    data: [],
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    borderWidth: 1,
+                    fill: false,
+                    tension: 0.1
+                },
+                {
+                    label: 'Avg',
+                    data: [],
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 1,
+                    fill: false,
+                    tension: 0.1
+                },
+                {
+                    label: 'Max',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 92)',
+                    backgroundColor: 'rgba(75, 192, 92, 0.1)',
+                    borderWidth: 1,
+                    fill: false,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            title: {
+                display: true,
+                text: 'Analysis Results - Min/Avg/Max',
+                fontSize: 16
+            },
+            scales: {
+                xAxes: [{
+                    display: true,
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Frequency (Hz)'
+                    }
+                }],
+                yAxes: [{
+                    display: true,
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Value'
+                    }
+                }]
+            }
+        }
+    });
+
+    pm.getData(function (err, value) {
+        if (err) {
+            console.error('Error getting data:', err);
+            return;
+        }
+        
+        var responseData = value.response;
+        if (responseData && responseData.data && responseData.data.results && responseData.data.results.length > 0) {
+            var result = responseData.data.results[0];
+            
+            analysisChart.data.labels = result.frequency;
+            analysisChart.data.datasets[0].data = result.min;
+            analysisChart.data.datasets[1].data = result.avg;
+            analysisChart.data.datasets[2].data = result.max;
+            analysisChart.update();
+        }
+    });
+
+</script>`;
+
+function constructVisualizerPayload() {
+    return {response: pm.response.json()};
+}
+
+pm.visualizer.set(template, constructVisualizerPayload());

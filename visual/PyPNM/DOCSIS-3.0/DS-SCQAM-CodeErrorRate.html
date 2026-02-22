@@ -1,0 +1,87 @@
+// Visualization Script
+// Visualization Script
+var template = `
+<canvas id="myChart" height="100"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script> 
+<script>
+    var ctx = document.getElementById("myChart");
+    var myChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Total Codewords',
+                    data: [],
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Total Errors',
+                    data: [],
+                    backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            legend: { display: true },
+            title: {
+                display: true,
+                text: 'Codeword Error Rate by Channel ID'
+            },
+            scales: {
+                xAxes: [{
+                    display: true,
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Channel ID'
+                    }
+                }],
+                yAxes: [{
+                    display: true,
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Count'
+                    },
+                    ticks: {
+                        beginAtZero: true
+                    }
+                }]
+            }
+        }
+    });
+
+    pm.getData(function (err, value) {
+        myChart.data.labels = value.channelIds;
+        myChart.data.datasets[0].data = value.totalCodewords;
+        myChart.data.datasets[1].data = value.totalErrors;
+        myChart.update();
+    });
+
+</script>`;
+
+function createPayload() {
+    var responseData = pm.response.json();
+    var results = responseData.results || [];
+    
+    var channelIds = [];
+    var totalCodewords = [];
+    var totalErrors = [];
+    
+    for (var i = 0; i < results.length; i++) {
+        channelIds.push(results[i].channel_id.toString());
+        totalCodewords.push(results[i].codeword_totals.total_codewords);
+        totalErrors.push(results[i].codeword_totals.total_errors);
+    }
+    
+    return {
+        channelIds: channelIds,
+        totalCodewords: totalCodewords,
+        totalErrors: totalErrors
+    };
+}
+
+pm.visualizer.set(template, createPayload());

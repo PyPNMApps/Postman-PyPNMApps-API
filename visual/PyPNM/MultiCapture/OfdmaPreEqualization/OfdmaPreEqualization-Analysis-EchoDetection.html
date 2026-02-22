@@ -1,0 +1,161 @@
+// Echo Detection IFFT Visualization - Dark Theme
+// Displays metadata, channel info, time response graph, and echoes table
+
+var template = '\
+<style>\
+    body { font-family: Arial, sans-serif; padding: 20px; background-color: #1a1a2e; color: #eee; }\
+    .card { background-color: #16213e; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }\
+    .card h3 { margin-top: 0; color: #00d9ff; border-bottom: 1px solid #0f3460; padding-bottom: 8px; }\
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }\
+    .info-item { padding: 8px; background: #0f3460; border-radius: 4px; }\
+    .info-label { font-weight: bold; color: #00d9ff; font-size: 12px; }\
+    .info-value { color: #fff; margin-top: 4px; }\
+    .chart-container { position: relative; height: 400px; }\
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }\
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #0f3460; }\
+    th { background: #0f3460; color: #00d9ff; }\
+    tr:hover { background: #1a1a4e; }\
+    .no-echoes { text-align: center; padding: 20px; color: #888; }\
+</style>\
+\
+<div class="card">\
+    <h3>Analysis Metadata</h3>\
+    <div class="info-grid">\
+        <div class="info-item"><div class="info-label">MAC Address</div><div class="info-value">{{mac_address}}</div></div>\
+        <div class="info-item"><div class="info-label">Status</div><div class="info-value">{{status}}</div></div>\
+        <div class="info-item"><div class="info-label">Analysis Type</div><div class="info-value">{{analysis_type}}</div></div>\
+        <div class="info-item"><div class="info-label">Message</div><div class="info-value">{{message}}</div></div>\
+    </div>\
+</div>\
+\
+<div class="card">\
+    <h3>Channel Information</h3>\
+    <div class="info-grid">\
+        <div class="info-item"><div class="info-label">Channel ID</div><div class="info-value">{{channel.channel_id}}</div></div>\
+        <div class="info-item"><div class="info-label">Cable Type</div><div class="info-value">{{channel.cable_type}}</div></div>\
+        <div class="info-item"><div class="info-label">Velocity Factor</div><div class="info-value">{{channel.velocity_factor}}</div></div>\
+        <div class="info-item"><div class="info-label">Sample Rate</div><div class="info-value">{{channel.sample_rate_mhz}} MHz</div></div>\
+        <div class="info-item"><div class="info-label">Direct Path Amplitude</div><div class="info-value">{{channel.direct_path_amplitude}}</div></div>\
+        <div class="info-item"><div class="info-label">Subcarriers</div><div class="info-value">{{channel.subcarriers}}</div></div>\
+    </div>\
+</div>\
+\
+<div class="card">\
+    <h3>Time Response (Impulse Response)</h3>\
+    <div class="chart-container">\
+        <canvas id="timeResponseChart"></canvas>\
+    </div>\
+</div>\
+\
+<div class="card">\
+    <h3>Detected Echoes</h3>\
+    {{#if hasEchoes}}\
+    <table>\
+        <thead><tr><th>Index</th><th>Time (μs)</th><th>Amplitude</th><th>Distance (ft)</th></tr></thead>\
+        <tbody>\
+        {{#each echoes}}\
+            <tr><td>{{this.index}}</td><td>{{this.time_us}}</td><td>{{this.amplitude}}</td><td>{{this.distance_ft}}</td></tr>\
+        {{/each}}\
+        </tbody>\
+    </table>\
+    {{else}}\
+    <div class="no-echoes">No echoes detected above threshold</div>\
+    {{/if}}\
+</div>\
+\
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>\
+<script>\
+    pm.getData(function(err, value) {\
+        var ctx = document.getElementById("timeResponseChart").getContext("2d");\
+        new Chart(ctx, {\
+            type: "line",\
+            data: {\
+                labels: value.timeLabels,\
+                datasets: [{\
+                    label: "Amplitude (Magnitude)",\
+                    data: value.amplitudes,\
+                    borderColor: "#00d9ff",\
+                    backgroundColor: "rgba(0, 217, 255, 0.1)",\
+                    borderWidth: 2,\
+                    pointRadius: 0,\
+                    fill: true\
+                }]\
+            },\
+            options: {\
+                responsive: true,\
+                maintainAspectRatio: false,\
+                legend: { labels: { fontColor: "#eee" } },\
+                title: { display: true, text: "Impulse Response", fontColor: "#00d9ff" },\
+                scales: {\
+                    xAxes: [{\
+                        display: true,\
+                        scaleLabel: { display: true, labelString: "Time (μs)", fontColor: "#eee" },\
+                        ticks: { fontColor: "#aaa", maxTicksLimit: 10 },\
+                        gridLines: { color: "#333" }\
+                    }],\
+                    yAxes: [{\
+                        display: true,\
+                        scaleLabel: { display: true, labelString: "Amplitude", fontColor: "#eee" },\
+                        ticks: { fontColor: "#aaa" },\
+                        gridLines: { color: "#333" }\
+                    }]\
+                }\
+            }\
+        });\
+    });\
+</script>';
+
+function constructVisualizerPayload() {
+    var response = pm.response.json();
+    var result = response.data && response.data.results && response.data.results[0] ? response.data.results[0] : {};
+    var timeResponse = result.time_response || {};
+    var timeAxis = timeResponse.time_axis_s || [];
+    var complexData = timeResponse.time_response || [];
+    
+    // Limit to first 150 points for clarity
+    var maxPoints = 150;
+    var timeLabels = [];
+    var amplitudes = [];
+    
+    for (var i = 0; i < Math.min(maxPoints, timeAxis.length); i++) {
+        // Convert seconds to microseconds
+        timeLabels.push((timeAxis[i] * 1e6).toFixed(4));
+        // Calculate magnitude: sqrt(real^2 + imag^2)
+        var real = complexData[i] ? complexData[i][0] : 0;
+        var imag = complexData[i] ? complexData[i][1] : 0;
+        amplitudes.push(Math.sqrt(real * real + imag * imag));
+    }
+    
+    // Process echoes
+    var echoes = (result.echoes || []).map(function(echo, idx) {
+        return {
+            index: idx + 1,
+            time_us: echo.time_s ? (echo.time_s * 1e6).toFixed(4) : "N/A",
+            amplitude: echo.amplitude ? echo.amplitude.toFixed(6) : "N/A",
+            distance_ft: echo.distance_ft ? echo.distance_ft.toFixed(2) : "N/A"
+        };
+    });
+    
+    var directPath = result.direct_path || {};
+    
+    return {
+        mac_address: response.mac_address || "N/A",
+        status: response.status === 0 ? "Success" : "Status: " + response.status,
+        message: response.message || "N/A",
+        analysis_type: response.data ? response.data.analysis_type : "N/A",
+        channel: {
+            channel_id: result.channel_id || "N/A",
+            cable_type: result.cable_type || "N/A",
+            velocity_factor: result.velocity_factor || "N/A",
+            sample_rate_mhz: result.sample_rate_hz ? (result.sample_rate_hz / 1e6).toFixed(2) : "N/A",
+            direct_path_amplitude: directPath.amplitude ? directPath.amplitude.toFixed(6) : "N/A",
+            subcarriers: timeResponse.n_fft || "N/A"
+        },
+        timeLabels: timeLabels,
+        amplitudes: amplitudes,
+        echoes: echoes,
+        hasEchoes: echoes.length > 0
+    };
+}
+
+pm.visualizer.set(template, constructVisualizerPayload());
