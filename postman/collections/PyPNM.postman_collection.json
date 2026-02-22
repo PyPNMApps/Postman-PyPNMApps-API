@@ -245,34 +245,6 @@
                 },
                 {
                   "name": "GetCapture-FullBandCapture",
-                  "id": "4b31e1b8-1da7-44fa-bc03-6a7c07386278",
-                  "request": {
-                    "method": "POST",
-                    "header": [],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\r\n    \"cable_modem\": {\r\n        \"mac_address\": \"{{cm_mac_address}}\",\r\n        \"ip_address\": \"{{cm_ip_address}}\",\r\n        \"pnm_parameters\": {\r\n            \"tftp\": {\r\n                \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n                \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n            }\r\n        },\r\n        \"snmp\": {\r\n            \"snmpV2C\": {\r\n                \"community\": \"{{cm_snmp_community_rw}}\"\r\n            }\r\n        }\r\n    },\r\n    \"analysis\": {\r\n        \"type\": \"basic\",\r\n        \"output\": {\r\n            \"type\": \"json\"\r\n        },\r\n        \"plot\": {\r\n            \"ui\": {\r\n                \"theme\": \"dark\"\r\n            }\r\n        },\r\n        \"spectrum_analysis\": {\r\n            \"moving_average\": {\r\n                \"points\": 10\r\n            }\r\n        }\r\n    },\r\n    \"capture_parameters\": {\r\n        \"inactivity_timeout\": 60,\r\n        \"direction\": \"downstream\",\r\n        \"resolution_bw\": 300000,\r\n        \"noise_bw\": 150,\r\n        \"window_function\": 1,\r\n        \"num_averages\": 1,\r\n        \"spectrum_retrieval_type\": 2\r\n    }\r\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture/fullBandCapture",
-                      "host": [
-                        "{{pypnm_url}}"
-                      ],
-                      "path": [
-                        "docs",
-                        "pnm",
-                        "ds",
-                        "spectrumAnalyzer",
-                        "getCapture",
-                        "fullBandCapture"
-                      ]
-                    }
-                  },
                   "event": [
                     {
                       "listen": "test",
@@ -280,12 +252,53 @@
                         "type": "text/javascript",
                         "exec": [
                           "var template = `",
-                          "<canvas id=\"spectrumChart\" height=\"75\"></canvas>",
-                          "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js\"></script>",
+                          "<style>",
+                          "    .device-details-container {",
+                          "        background-color: #2d2d2d;",
+                          "        border-radius: 8px;",
+                          "        padding: 15px;",
+                          "        margin-bottom: 20px;",
+                          "        font-family: Arial, sans-serif;",
+                          "    }",
+                          "    .device-details-title {",
+                          "        color: #ffffff;",
+                          "        font-size: 16px;",
+                          "        font-weight: bold;",
+                          "        margin-bottom: 10px;",
+                          "        border-bottom: 1px solid #444;",
+                          "        padding-bottom: 8px;",
+                          "    }",
+                          "    .device-details-table {",
+                          "        width: 100%;",
+                          "        border-collapse: collapse;",
+                          "    }",
+                          "    .device-details-table td {",
+                          "        padding: 6px 10px;",
+                          "        color: #e0e0e0;",
+                          "        font-size: 13px;",
+                          "    }",
+                          "    .device-details-table td:first-child {",
+                          "        font-weight: bold;",
+                          "        color: #9cdcfe;",
+                          "        width: 120px;",
+                          "    }",
+                          "</style>",
+                          "<div class=\\\"device-details-container\\\">",
+                          "    <div class=\\\"device-details-title\\\">Device Details</div>",
+                          "    <table class=\\\"device-details-table\\\">",
+                          "        <tr><td>Vendor</td><td>{{deviceDetails.VENDOR}}</td></tr>",
+                          "        <tr><td>Model</td><td>{{deviceDetails.MODEL}}</td></tr>",
+                          "        <tr><td>HW Revision</td><td>{{deviceDetails.HW_REV}}</td></tr>",
+                          "        <tr><td>SW Revision</td><td>{{deviceDetails.SW_REV}}</td></tr>",
+                          "        <tr><td>Boot ROM</td><td>{{deviceDetails.BOOTR}}</td></tr>",
+                          "    </table>",
+                          "</div>",
+                          "<canvas id=\\\"spectrumChart\\\" height=\\\"75\\\"></canvas>",
+                          "<script src=\\\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js\\\"></script>",
                           "<script>",
-                          "    var ctx = document.getElementById(\"spectrumChart\");",
+                          "    var ctx = document.getElementById(\\\"spectrumChart\\\");",
                           "    var spectrumChart = new Chart(ctx, {",
-                          "        type: \"line\",",
+                          "        type: \\\"line\\\",",
                           "        data: {",
                           "            labels: [],",
                           "            datasets: [",
@@ -343,10 +356,12 @@
                           "function constructVisualizerPayload() {",
                           "    var response = pm.response.json();",
                           "    var signalAnalysis = response.data.analysis[0].signal_analysis;",
+                          "    var deviceDetails = response.data.analysis[0].device_details.system_description;",
                           "    return {",
                           "        frequencies: signalAnalysis.frequencies,",
                           "        magnitudes: signalAnalysis.magnitudes,",
-                          "        movingAverageMagnitudes: signalAnalysis.window_average.magnitudes",
+                          "        movingAverageMagnitudes: signalAnalysis.window_average.magnitudes,",
+                          "        deviceDetails: deviceDetails",
                           "    };",
                           "}",
                           "",
@@ -355,6 +370,34 @@
                       }
                     }
                   ],
+                  "id": "4b31e1b8-1da7-44fa-bc03-6a7c07386278",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"cable_modem\": {\r\n        \"mac_address\": \"{{cm_mac_address}}\",\r\n        \"ip_address\": \"{{cm_ip_address}}\",\r\n        \"pnm_parameters\": {\r\n            \"tftp\": {\r\n                \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n                \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n            }\r\n        },\r\n        \"snmp\": {\r\n            \"snmpV2C\": {\r\n                \"community\": \"{{cm_snmp_community_rw}}\"\r\n            }\r\n        }\r\n    },\r\n    \"analysis\": {\r\n        \"type\": \"basic\",\r\n        \"output\": {\r\n            \"type\": \"json\"\r\n        },\r\n        \"plot\": {\r\n            \"ui\": {\r\n                \"theme\": \"dark\"\r\n            }\r\n        },\r\n        \"spectrum_analysis\": {\r\n            \"moving_average\": {\r\n                \"points\": 10\r\n            }\r\n        }\r\n    },\r\n    \"capture_parameters\": {\r\n        \"inactivity_timeout\": 60,\r\n        \"direction\": \"downstream\",\r\n        \"resolution_bw\": 300000,\r\n        \"noise_bw\": 150,\r\n        \"window_function\": 1,\r\n        \"num_averages\": 1,\r\n        \"spectrum_retrieval_type\": 2\r\n    }\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture/fullBandCapture",
+                      "host": [
+                        "{{pypnm_url}}"
+                      ],
+                      "path": [
+                        "docs",
+                        "pnm",
+                        "ds",
+                        "spectrumAnalyzer",
+                        "getCapture",
+                        "fullBandCapture"
+                      ]
+                    }
+                  },
                   "response": []
                 },
                 {
@@ -1571,7 +1614,7 @@
                   }
                 },
                 "url": {
-                  "raw": "{{pypnm_url}}/docs/if30/us/atdma/chan/stats",
+                  "raw": "{{pypnm_url}}/docs/if30/us/atdma/chan/preEqualization",
                   "host": [
                     "{{pypnm_url}}"
                   ],
@@ -1581,7 +1624,7 @@
                     "us",
                     "atdma",
                     "chan",
-                    "stats"
+                    "preEqualization"
                   ]
                 }
               },
@@ -1675,6 +1718,15 @@
               "request": {
                 "method": "POST",
                 "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{pypnm_url}}/docs/if31/us/ofdma/channel/stats",
                   "host": [
