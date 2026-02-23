@@ -64,7 +64,7 @@ tools/docs/build_visual_docs.py
 | `GetCapture-RxMER` | yes | yes | [`open`](SingleCapture/OFDM/GetCapture-RxMER.md) |
 | `GetCapture-PreEqualization` | yes | yes | [`open`](SingleCapture/OFDMA/GetCapture-PreEqualization.md) |
 | `GetCapture` | yes | no | [`open`](SingleCapture/SpectrumAnalysis/GetCapture.md) |
-| `GetCapture-FBC` | yes | no | [`open`](SingleCapture/SpectrumAnalysis/GetCapture-FBC.md) |
+| `GetCapture-FBC` | yes | yes | [`open`](SingleCapture/SpectrumAnalysis/GetCapture-FBC.md) |
 | `GetCapture-Friendly` | yes | no | [`open`](SingleCapture/SpectrumAnalysis/GetCapture-Friendly.md) |
 | `GetCapture-OFDM` | yes | no | [`open`](SingleCapture/SpectrumAnalysis/GetCapture-OFDM.md) |
 | `GetCapture-SCQAM` | yes | no | [`open`](SingleCapture/SpectrumAnalysis/GetCapture-SCQAM.md) |
