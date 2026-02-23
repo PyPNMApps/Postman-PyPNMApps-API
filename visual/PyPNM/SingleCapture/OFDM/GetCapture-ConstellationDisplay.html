@@ -8,11 +8,12 @@
   const res = pm.response.json();
 
   const MAX_POINTS_PER_CH = parseInt(pm.environment.get("CONST_MAX_POINTS_PER_CH") || "5000", 10);
-  const COLS = parseInt(pm.environment.get("CONST_COLS") || "2", 10);
+  const ENV_COLS = parseInt(pm.environment.get("CONST_COLS") || "", 10);
   const SERIES_MODE = (pm.environment.get("CONST_SERIES_MODE") || "both").toLowerCase();
 
   function isFiniteNum(v) { return typeof v === "number" && isFinite(v); }
   function isPair(p) { return Array.isArray(p) && p.length >= 2 && isFiniteNum(p[0]) && isFiniteNum(p[1]); }
+  function isPresent(v) { return v !== undefined && v !== null && String(v).trim() !== ""; }
 
   function asPoints(any) {
     if (Array.isArray(any)) return any.filter(isPair);
@@ -59,30 +60,56 @@
   }
 
   function sanitizeSystemDescription(_sys) {
+    const sys = (_sys && typeof _sys === "object") ? _sys : {};
     return {
-      HW_REV: "1.0",
-      VENDOR: "LANCity",
-      BOOTR: "NONE",
-      SW_REV: "1.0.0",
-      MODEL: "LCPET-3"
+      MODEL: isPresent(sys.MODEL) ? String(sys.MODEL).trim() : "N/A",
+      VENDOR: isPresent(sys.VENDOR) ? String(sys.VENDOR).trim() : "N/A",
+      SW_REV: isPresent(sys.SW_REV) ? String(sys.SW_REV).trim() : "N/A",
+      HW_REV: isPresent(sys.HW_REV) ? String(sys.HW_REV).trim() : "N/A",
+      BOOTR: isPresent(sys.BOOTR) ? String(sys.BOOTR).trim() : "N/A"
     };
+  }
+
+  function formatCaptureTime(raw) {
+    if (raw === undefined || raw === null || raw === "") return null;
+    if (typeof raw === "number" && isFinite(raw)) {
+      var ms = raw > 1e12 ? raw : raw * 1000;
+      var d = new Date(ms);
+      if (isNaN(d.getTime())) return null;
+      return d.toISOString().slice(0, 19).replace("T", " ") + " UTC";
+    }
+    var n = Number(raw);
+    if (!isNaN(n) && isFinite(n)) return formatCaptureTime(n);
+    var d2 = new Date(raw);
+    if (isNaN(d2.getTime())) return String(raw);
+    return d2.toISOString().slice(0, 19).replace("T", " ") + " UTC";
   }
 
   const list = pickList(res);
 
   // Build metadata (best-effort)
-  const mac = sanitizeMac(res?.mac_address || res?.data?.mac_address, "N/A");
-  const device = res?.data?.device_details || res?.device_details || {};
+  const firstItem = (Array.isArray(list) && list.length) ? (list[0] || {}) : {};
+  const mac = sanitizeMac(firstItem?.mac_address || res?.mac_address || res?.data?.mac_address, "N/A");
+  const device = firstItem?.device_details || res?.data?.device_details || res?.device_details || {};
   const sys = sanitizeSystemDescription(
     res?.data?.device_details?.system_description || device?.system_description || device?.sysDescr || {}
   );
+  const deviceInfo = {
+    macAddress: mac,
+    MODEL: safeStr(sys?.MODEL || device?.model),
+    VENDOR: safeStr(sys?.VENDOR || device?.vendor),
+    SW_REV: safeStr(sys?.SW_REV || device?.sw_rev),
+    HW_REV: safeStr(sys?.HW_REV || device?.hw_rev),
+    BOOTR: safeStr(sys?.BOOTR || device?.bootr)
+  };
+  const captureTime = formatCaptureTime(firstItem?.pnm_header?.capture_time);
 
   const devLine = [
-    `MAC: ${mac}`,
-    `VENDOR: ${safeStr(sys?.VENDOR || device?.vendor)}`,
-    `MODEL: ${safeStr(sys?.MODEL || device?.model)}`,
-    `SW: ${safeStr(sys?.SW_REV || device?.sw_rev)}`,
-    `HW: ${safeStr(sys?.HW_REV || device?.hw_rev)}`
+    `MAC: ${deviceInfo.macAddress}`,
+    `VENDOR: ${deviceInfo.VENDOR}`,
+    `MODEL: ${deviceInfo.MODEL}`,
+    `SW: ${deviceInfo.SW_REV}`,
+    `HW: ${deviceInfo.HW_REV}`
   ].join(" · ");
 
   if (!Array.isArray(list) || list.length === 0) {
@@ -138,6 +165,8 @@
         channel_id: e?.channel_id ?? null,
         modulation_order: e?.modulation_order ?? null,
         num_sample_symbols: e?.num_sample_symbols ?? null,
+        soft_count: softRaw.length,
+        hard_count: hardRaw.length,
         soft: soft,
         hard: hard,
         bounds: { xmin: cx - half, xmax: cx + half, ymin: cy - half, ymax: cy + half }
@@ -145,8 +174,17 @@
     })
     .sort((a, b) => Number(a.channel_id) - Number(b.channel_id));
 
-  // Layout sizing (cap canvas growth if many channels)
-  const cols = Math.max(1, Math.min(4, COLS));
+  const channelRows = channels.map((ch) => ({
+    channel_id: ch.channel_id,
+    modulation_order: ch.modulation_order,
+    num_sample_symbols: ch.num_sample_symbols,
+    soft_count: ch.soft_count,
+    hard_count: ch.hard_count
+  }));
+
+  // Layout sizing (cap canvas growth if many channels). Default to 3 columns for 5+ plots.
+  const autoCols = channels.length >= 5 ? 3 : (channels.length >= 2 ? 2 : 1);
+  const cols = Math.max(1, Math.min(4, Number.isFinite(ENV_COLS) ? ENV_COLS : autoCols));
   const rows = Math.ceil(channels.length / cols);
 
   const TILE_W = 540;
@@ -163,17 +201,85 @@
   <meta charset="utf-8" />
   <style>
     body { margin:0; padding:14px; background:#0b0b0b; color:#eaeaea; font-family: Arial, sans-serif; }
-    .hdr { font-size:14px; font-weight:700; margin-bottom:6px; }
-    .sub { font-size:12px; color:#cfcfcf; margin-top:4px; }
+    .device-info { border:1px solid #2a2a2a; border-radius:10px; background:#111; margin-top:10px; overflow-x:auto; }
+    .device-info-title { font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:#dbe3ff; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); }
+    .device-table { width:100%; min-width:720px; border-collapse:collapse; }
+    .device-table th { text-align:left; white-space:nowrap; padding:8px 12px; font-size:11px; text-transform:uppercase; letter-spacing:0.45px; color:#dbe3ff; background:rgba(255,255,255,0.02); }
+    .device-table td { padding:10px 12px; font-size:12px; color:#fff; white-space:nowrap; border-top:1px solid rgba(255,255,255,0.08); }
+    .summary { border:1px solid #2a2a2a; border-radius:10px; background:#111; margin-top:10px; overflow-x:auto; }
+    .summary-title { font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:#dbe3ff; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); }
+    .summary-table { width:100%; min-width:720px; border-collapse:collapse; }
+    .summary-table th { text-align:left; white-space:nowrap; padding:8px 12px; font-size:11px; text-transform:uppercase; letter-spacing:0.45px; color:#dbe3ff; background:rgba(255,255,255,0.02); }
+    .summary-table td { padding:10px 12px; font-size:12px; color:#fff; white-space:nowrap; border-top:1px solid rgba(255,255,255,0.08); }
+    .summary-table th.soft-col { color:rgba(47,98,255,0.95); }
+    .summary-table th.hard-col { color:rgba(220,70,70,0.95); }
+    .mono { font-family: Consolas, "Liberation Mono", Menlo, monospace; }
+    .header-row { display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; gap:8px; margin-bottom:10px; }
+    .hdr { font-size:18px; font-weight:700; margin:0; color:#f2f2f2; text-align:center; grid-column:2; }
+    .capture-time { grid-column:3; justify-self:end; font-size:12px; color:#d7deec; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:999px; padding:6px 10px; white-space:nowrap; }
     .box { border:1px solid #2a2a2a; border-radius:10px; background:#050505; padding:10px; margin-top:10px; }
+    .plot-meta { font-size:12px; color:#cfcfcf; margin-top:8px; }
     .err { margin-top:10px; padding:10px; border:1px solid rgba(255,120,120,0.5); border-radius:10px; background:rgba(255,0,0,0.06); color:#ffd1d1; white-space:pre-wrap; font-size:12px; }
-    canvas { display:block; }
+    canvas { display:block; margin:0 auto; }
   </style>
 </head>
 <body>
-  <div class="hdr">CONSTELLATION GRID · Channels: {{chCount}} · Series: {{seriesMode}}</div>
-  <div class="sub">{{devLine}}</div>
-  <div class="sub">Per-channel cap: {{cap}} points · Columns: {{cols}}</div>
+  <div class="header-row">
+    <div class="hdr">OFDM Constellation Display</div>
+    {{#if captureTime}}<div class="capture-time">Capture Time: {{captureTime}}</div>{{/if}}
+  </div>
+
+  <div class="device-info">
+    <div class="device-info-title">Device Info</div>
+    <table class="device-table">
+      <thead>
+        <tr>
+          <th>MacAddress</th>
+          <th>Model</th>
+          <th>Vendor</th>
+          <th>SW Version</th>
+          <th>HW Version</th>
+          <th>Boot ROM</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">{{deviceInfo.macAddress}}</td>
+          <td>{{deviceInfo.MODEL}}</td>
+          <td>{{deviceInfo.VENDOR}}</td>
+          <td class="mono">{{deviceInfo.SW_REV}}</td>
+          <td class="mono">{{deviceInfo.HW_REV}}</td>
+          <td class="mono">{{deviceInfo.BOOTR}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="summary">
+    <div class="summary-title">Channel Summary</div>
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>Channel</th>
+          <th>QAM</th>
+          <th>Sample Symbols</th>
+          <th class="soft-col">Soft Points</th>
+          <th class="hard-col">Hard Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each channelRows}}
+          <tr>
+            <td>{{channel_id}}</td>
+            <td>{{modulation_order}}</td>
+            <td>{{num_sample_symbols}}</td>
+            <td>{{soft_count}}</td>
+            <td>{{hard_count}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
 
   <div class="box">
     <canvas id="cv" width="{{cw}}" height="{{ch}}"></canvas>
@@ -208,12 +314,11 @@
 
         // Theme
         var BG = "#000";
-        var GRID = "rgba(255,255,255,0.14)";
-        var FRAME = "rgba(255,255,255,0.80)";
+        var FRAME = "rgba(255,255,255,0.98)";
         var TXT = "rgba(255,255,255,0.88)";
         var SUBTXT = "rgba(255,255,255,0.72)";
         var SOFT = "rgba(47,98,255,0.75)";
-        var HARD = "rgba(60,255,130,0.60)";
+        var HARD = "rgba(220,70,70,0.75)";
 
         // Tile geometry
         var cols = data.cols;
@@ -221,8 +326,8 @@
         var tileH = data.tileH;
         var pad = data.pad;
 
-        // Plot margins inside tile
-        var mL = 58, mR = 14, mT = 28, mB = 48;
+        // Plot margins inside tile (balanced now that I/Q labels are removed)
+        var mL = 18, mR = 18, mT = 34, mB = 18;
 
         // Background
         ctx.fillStyle = BG;
@@ -230,29 +335,16 @@
 
         function drawTile(tileX, tileY, tileW, tileH, ch) {
           // Tile frame
-          ctx.strokeStyle = "rgba(255,255,255,0.20)";
+          ctx.strokeStyle = "rgba(255,255,255,0.55)";
           ctx.lineWidth = 1;
           ctx.strokeRect(tileX + 0.5, tileY + 0.5, tileW - 1, tileH - 1);
 
-          // Title
+          // Centered channel label above the plot area (outside the scatter region)
           ctx.fillStyle = TXT;
-          ctx.font = "bold 13px Arial";
-          ctx.textAlign = "left";
+          ctx.font = "bold 12px Arial";
+          ctx.textAlign = "center";
           ctx.textBaseline = "top";
-
-          var title = "Channel: " + (ch.channel_id ?? "N/A") +
-                      " · QAM: " + (ch.modulation_order ?? "N/A") +
-                      " · Samples: " + (ch.num_sample_symbols ?? "N/A");
-          ctx.fillText(title, tileX + 10, tileY + 8);
-
-          // Legend
-          ctx.fillStyle = SUBTXT;
-          ctx.font = "12px Arial";
-          var legend = "";
-          if (seriesMode === "soft") legend = "Soft only";
-          else if (seriesMode === "hard") legend = "Hard only";
-          else legend = "Soft (blue) + Hard (green)";
-          ctx.fillText(legend, tileX + 10, tileY + 26);
+          ctx.fillText("Channel " + (ch.channel_id == null ? "N/A" : ch.channel_id), tileX + (tileW / 2), tileY + 8);
 
           // Plot area
           var px = tileX + mL;
@@ -264,35 +356,6 @@
           ctx.strokeStyle = FRAME;
           ctx.lineWidth = 1.2;
           ctx.strokeRect(px, py, pw, ph);
-
-          // Grid
-          ctx.strokeStyle = GRID;
-          ctx.lineWidth = 1;
-          ctx.setLineDash([6,4]);
-          var ticks = 6;
-
-          for (var i=1;i<ticks;i++){
-            var gx = px + (i*pw/ticks);
-            ctx.beginPath(); ctx.moveTo(gx, py); ctx.lineTo(gx, py+ph); ctx.stroke();
-          }
-          for (var j=1;j<ticks;j++){
-            var gy = py + (j*ph/ticks);
-            ctx.beginPath(); ctx.moveTo(px, gy); ctx.lineTo(px+pw, gy); ctx.stroke();
-          }
-          ctx.setLineDash([]);
-
-          // Labels
-          ctx.fillStyle = SUBTXT;
-          ctx.font = "12px Arial";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("I", px + pw/2, tileY + tileH - 20);
-
-          ctx.save();
-          ctx.translate(tileX + 18, py + ph/2);
-          ctx.rotate(-Math.PI/2);
-          ctx.fillText("Q", 0, 0);
-          ctx.restore();
 
           if (!ch.bounds) {
             ctx.fillStyle = SUBTXT;
@@ -333,7 +396,11 @@
         for (var idx=0; idx<channels.length; idx++){
           var r = Math.floor(idx / cols);
           var c = idx % cols;
-          var x = pad + c * tileW;
+          var rowStart = r * cols;
+          var rowCount = Math.min(cols, channels.length - rowStart);
+          var rowWidth = rowCount * tileW;
+          var rowOffset = Math.max(0, Math.floor((cv.width - rowWidth) / 2));
+          var x = rowOffset + c * tileW;
           var y = pad + r * tileH;
           drawTile(x, y, tileW - pad, tileH - pad, channels[idx]);
         }
@@ -347,6 +414,9 @@
   `;
 
   pm.visualizer.set(template, {
+    deviceInfo: deviceInfo,
+    captureTime: captureTime,
+    channelRows: channelRows,
     devLine: devLine,
     chCount: channels.length,
     seriesMode: SERIES_MODE,
@@ -369,6 +439,9 @@
   // (Some Postman versions don't preserve renamed keys reliably if you shadow them.)
   // So we provide duplicates:
   pm.visualizer.set(template, {
+    deviceInfo: deviceInfo,
+    captureTime: captureTime,
+    channelRows: channelRows,
     devLine: devLine,
     chCount: channels.length,
     seriesMode: SERIES_MODE,

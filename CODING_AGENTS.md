@@ -31,11 +31,28 @@
 ## Visual Development Rules (Required)
 
 - `visual/` is the source of truth for visual HTML (`*.html`) and sample JSON (`*.json`) in this repo version.
+- Start new visual work from `visual/templates/Postman-Visualizer-SectionTemplate.md` and build the page section-by-section from that scaffold.
 - Do not manually edit generated visual docs (`docs/visual/`, `docs/visual-previews/`); regenerate from `visual/`.
 - No comments in visual code/templates unless explicitly requested.
 - At the top of each visual HTML file, maintain the visual rules/constraints and indicate that `CODING_AGENTS.md` defines the canonical rules so they are not forgotten.
 - Visuals should support dark/light mode behavior and check system settings when rendering theme-sensitive output.
 - If `sysDescr` / `system_description` is present in the JSON response, show it prominently at the top of the visual.
+- Standardize `sysDescr` / `system_description` presentation as a dedicated `Device Info` block separate from channel/capture graph blocks.
+- `Device Info` should render before channel-specific charts/content.
+- Prefer a horizontal one-row table for common modem identity fields with display labels exactly:
+- `MacAddress`, `Model`, `Vendor`, `SW Version`, `HW Version`, `Boot ROM`
+- Use proper display casing/spacing for labels (for example `SW Version`, not `SW_REV`; `Boot ROM`, not `BOOTR`).
+- When a capture timestamp is available (for example `pnm_header.capture_time`), place `Capture Time` next to the visual title/header as a layout-only element (not inside chart/graph sections).
+- Format capture timestamps as a human-readable date/time string (not raw epoch seconds).
+- Keep channel metadata in a separate block below `Device Info` (for example `Channel`, center/subcarrier frequency).
+- Display frequencies in `MHz` for UI-facing labels; raw `Hz` may be shown secondarily in parentheses when useful.
+- Default UI frequency labels/ticks to whole-number `MHz` (no decimal floats) unless precision is required for the specific visual.
+- Include units in graph titles/axis labels for measured values (for example `Magnitude (dB)` instead of `Magnitude`).
+- Center graph/panel titles for scanability and consistent visual layout.
+- When a visual can plot both raw values and moving-average/smoothed values, prefer a per-graph `Actual / Moving Avg` radio toggle instead of showing both at once by default (reduces clutter).
+- For `Moving Avg` overlays, use the same base color as `Actual` with a dashed line style.
+- Avoid redundant repetition of values already shown in `Device Info` (for example, do not repeat `MacAddress` in the channel header if it is already in the device table).
+- If `system_description` is missing/partial, render `N/A` for missing fields instead of vendor-specific fallback values.
 - JSON responses may contain multiple upstream/downstream channels; each channel must render as its own graph for the selected graph type.
 - Multi-channel views should also include a combined graph at the bottom with all channels lined up by frequency in a single graph.
 
@@ -49,3 +66,6 @@
 - Warning = yellow
 - OK = green
 - NOK = red
+- Regression / trend / fitted reference lines must use a high-contrast color distinct from waveform traces (prefer dashed).
+- Default regression/reference line color: white.
+- If white reduces readability against the chart/waveform palette, use a dark red contrast line (for example `#c62828`) or another clearly contrasting color and document the choice in the visual remarks.
