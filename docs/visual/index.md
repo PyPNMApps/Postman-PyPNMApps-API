@@ -66,5 +66,5 @@ tools/docs/build_visual_docs.py
 | `GetCapture` | yes | no | [`open`](SingleCapture/SpectrumAnalysis/GetCapture.md) |
 | `GetCapture-FBC` | yes | yes | [`open`](SingleCapture/SpectrumAnalysis/GetCapture-FBC.md) |
 | `GetCapture-Friendly` | yes | no | [`open`](SingleCapture/SpectrumAnalysis/GetCapture-Friendly.md) |
-| `GetCapture-OFDM` | yes | no | [`open`](SingleCapture/SpectrumAnalysis/GetCapture-OFDM.md) |
+| `GetCapture-OFDM` | yes | yes | [`open`](SingleCapture/SpectrumAnalysis/GetCapture-OFDM.md) |
 | `GetCapture-SCQAM` | yes | no | [`open`](SingleCapture/SpectrumAnalysis/GetCapture-SCQAM.md) |
