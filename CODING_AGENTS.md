@@ -27,3 +27,25 @@
 - Avoid redundant wording and avoid repeating the exact prior commit message suggestion unless the diff is unchanged and the user explicitly asks to reuse it.
 - If the user asks for "in a text box", return plain text only (no markdown fence).
 - If the user asks for "in a markdown text box", return the commit message inside a fenced code block with `text`.
+
+## Visual Development Rules (Required)
+
+- `visual/` is the source of truth for visual HTML (`*.html`) and sample JSON (`*.json`) in this repo version.
+- Do not manually edit generated visual docs (`docs/visual/`, `docs/visual-previews/`); regenerate from `visual/`.
+- No comments in visual code/templates unless explicitly requested.
+- At the top of each visual HTML file, maintain the visual rules/constraints and indicate that `CODING_AGENTS.md` defines the canonical rules so they are not forgotten.
+- Visuals should support dark/light mode behavior and check system settings when rendering theme-sensitive output.
+- If `sysDescr` / `system_description` is present in the JSON response, show it prominently at the top of the visual.
+- JSON responses may contain multiple upstream/downstream channels; each channel must render as its own graph for the selected graph type.
+- Multi-channel views should also include a combined graph at the bottom with all channels lined up by frequency in a single graph.
+
+## Visual Color Rules (Required)
+
+- High / max = red
+- Mid / avg = blue
+- Low / min = green
+- Downstream (`DS`) lines = blue
+- Upstream (`US`) lines = green
+- Warning = yellow
+- OK = green
+- NOK = red
