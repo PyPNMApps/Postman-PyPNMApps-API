@@ -98,6 +98,11 @@ def run_quality_gates(root: Path) -> None:
         print("[check] sanitize (check mode)")
         run([python_bin, str(sanitize_script), "--check"])
 
+    visual_docs_script = root / "tools" / "docs" / "build_visual_docs.py"
+    if visual_docs_script.exists():
+        print("[check] visual docs generated output")
+        run([python_bin, str(visual_docs_script), "--check"])
+
     bump_script = root / BUMP_SCRIPT_PATH
     if bump_script.exists():
         print("[check] version sync")
@@ -114,6 +119,17 @@ def run_quality_gates(root: Path) -> None:
     else:
         print("[check] pytest (python -m pytest)")
         run([python_bin, "-m", "pytest", "-q"])
+
+    mkdocs_candidates = [
+        root / ".venv" / "bin" / "mkdocs",
+    ]
+    mkdocs_bin = next((str(p) for p in mkdocs_candidates if p.exists()), None)
+    if mkdocs_bin is not None:
+        print("[check] mkdocs build --strict")
+        run([mkdocs_bin, "build", "--strict"])
+    else:
+        print("[check] mkdocs build --strict (python -m mkdocs)")
+        run([python_bin, "-m", "mkdocs", "build", "--strict"])
 
 
 def bump_version_files(root: Path, version: str) -> None:

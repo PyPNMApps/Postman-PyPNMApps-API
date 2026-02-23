@@ -6,10 +6,10 @@ Use this guide after installing Postman and cloning the repository.
 
 In Postman, import the following files:
 
-- [`postman/collections/PyPNM.postman_collection.json`](../postman/collections/PyPNM.postman_collection.json)
-- [`postman/collections/PyPNM-CMTS.postman_collection.json`](../postman/collections/PyPNM-CMTS.postman_collection.json)
-- [`postman/environments/PyPNM Remote Server.postman_environment.json`](../postman/environments/PyPNM%20Remote%20Server.postman_environment.json)
-- [`postman/globals/workspace.postman_globals.json`](../postman/globals/workspace.postman_globals.json)
+- [`postman/collections/PyPNM.postman_collection.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/collections/PyPNM.postman_collection.json)
+- [`postman/collections/PyPNM-CMTS.postman_collection.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/collections/PyPNM-CMTS.postman_collection.json)
+- [`postman/environments/PyPNM Remote Server.postman_environment.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/environments/PyPNM%20Remote%20Server.postman_environment.json)
+- [`postman/globals/workspace.postman_globals.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/globals/workspace.postman_globals.json)
 
 Recommended import flow:
 
@@ -44,7 +44,7 @@ Important:
 
 Use a simple health check first:
 
-1. Open [`PyPNM` collection](../postman/collections/PyPNM.postman_collection.json)
+1. Open [`PyPNM` collection](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/collections/PyPNM.postman_collection.json)
 2. Open `Health` folder
 3. Open `Health` request
 4. Confirm `pypnm_url` is set
@@ -59,6 +59,6 @@ Use a simple health check first:
 
 ## Troubleshooting Import Setup
 
-- If requests fail immediately, confirm `pypnm_url` is set in [Globals (`workspace.postman_globals.json`)](../postman/globals/workspace.postman_globals.json)
-- If variables appear unresolved, verify [`workspace.postman_globals.json`](../postman/globals/workspace.postman_globals.json) imported successfully
-- If you use the environment value (`base_url`) instead, verify the imported environment [`PyPNM Remote Server.postman_environment.json`](../postman/environments/PyPNM%20Remote%20Server.postman_environment.json) and ensure request URLs in [`PyPNM.postman_collection.json`](../postman/collections/PyPNM.postman_collection.json) were updated from `{{pypnm_url}}`
+- If requests fail immediately, confirm `pypnm_url` is set in [Globals (`workspace.postman_globals.json`)](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/globals/workspace.postman_globals.json)
+- If variables appear unresolved, verify [`workspace.postman_globals.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/globals/workspace.postman_globals.json) imported successfully
+- If you use the environment value (`base_url`) instead, verify the imported environment [`PyPNM Remote Server.postman_environment.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/environments/PyPNM%20Remote%20Server.postman_environment.json) and ensure request URLs in [`PyPNM.postman_collection.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/collections/PyPNM.postman_collection.json) were updated from `{{pypnm_url}}`
