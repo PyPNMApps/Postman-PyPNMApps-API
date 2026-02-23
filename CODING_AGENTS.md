@@ -46,7 +46,8 @@
 - Format capture timestamps as a human-readable date/time string (not raw epoch seconds).
 - Keep channel metadata in a separate block below `Device Info` (for example `Channel`, center/subcarrier frequency).
 - Display frequencies in `MHz` for UI-facing labels; raw `Hz` may be shown secondarily in parentheses when useful.
-- Default UI frequency labels/ticks to whole-number `MHz` (no decimal floats) unless precision is required for the specific visual.
+- Default UI frequency labels/ticks to whole-number `MHz` (frequency is not a float in the UI by default; no decimal floats) unless precision is required for the specific visual.
+- If the axis title already includes the unit (for example `Frequency (MHz)`), do not repeat the unit on every tick label.
 - Include units in graph titles/axis labels for measured values (for example `Magnitude (dB)` instead of `Magnitude`).
 - Center graph/panel titles for scanability and consistent visual layout.
 - When a visual can plot both raw values and moving-average/smoothed values, prefer a per-graph `Actual / Moving Avg` radio toggle instead of showing both at once by default (reduces clutter).
