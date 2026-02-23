@@ -1,4 +1,11 @@
 {
+    "system_description": {
+        "HW_REV": "1.0",
+        "VENDOR": "LANCity",
+        "BOOTR": "NONE",
+        "SW_REV": "1.0.0",
+        "MODEL": "LCPET-3"
+    },
     "mac_address": "aabbccddeeff",
     "status": 0,
     "message": "Analysis GROUP_DELAY completed for group 01c46a0dcd6e4a91",

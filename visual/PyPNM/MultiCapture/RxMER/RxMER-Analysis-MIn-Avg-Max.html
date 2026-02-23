@@ -1,7 +1,3 @@
-// Remarks (CODING_AGENTS visual standard)
-// - Capture Time (when available) is shown next to the title
-// - Device Info block is shown when system_description is available in payload
-// - Frequency axes use MHz with whole-number tick labels
 const template = `
 <style>
   body {
@@ -197,14 +193,14 @@ const template = `
     </div>
   </div>
 
+  <div id="perChannelCharts" class="channel-grid"></div>
+
   <div class="chart-container">
     <div class="chart-title">All Channels · RxMER (Avg) Aligned by Frequency</div>
     <div class="chart-wrap tall">
       <canvas id="rxmerAllChart" class="chart-canvas"></canvas>
     </div>
   </div>
-
-  <div id="perChannelCharts" class="channel-grid"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
@@ -354,8 +350,8 @@ pm.getData(function (err, value) {
       data: {
         labels: labels,
         datasets: [
-          { label: 'Min', data: minArr, borderColor: '#54a3ff', borderWidth: 1, fill: false, tension: 0.1, pointRadius: 0 },
-          { label: 'Avg', data: avgArr, borderColor: '#39c28e', borderWidth: 1, fill: false, tension: 0.1, pointRadius: 0 },
+          { label: 'Min', data: minArr, borderColor: '#39c28e', borderWidth: 1, fill: false, tension: 0.1, pointRadius: 0 },
+          { label: 'Avg', data: avgArr, borderColor: '#54a3ff', borderWidth: 1, fill: false, tension: 0.1, pointRadius: 0 },
           { label: 'Max', data: maxArr, borderColor: '#ff6b6b', borderWidth: 1, fill: false, tension: 0.1, pointRadius: 0 }
         ]
       },
@@ -378,6 +374,10 @@ function sanitizeMac(value, fallback) {
 
 function sanitizeSystemDescription(_sys) {
   var sys = (_sys && typeof _sys === 'object') ? _sys : {};
+  var hasKeys = ['HW_REV', 'VENDOR', 'BOOTR', 'SW_REV', 'MODEL'].some(function (k) {
+    return sys[k] !== undefined && sys[k] !== null && String(sys[k]).trim() !== '';
+  });
+  if (!hasKeys) return null;
   function present(v) { return v !== undefined && v !== null && String(v).trim() !== ''; }
   return {
     HW_REV: present(sys.HW_REV) ? String(sys.HW_REV).trim() : 'N/A',
@@ -438,16 +438,30 @@ function constructVisualizerPayload() {
   };
   let captureTime = null;
 
+  const rootSys = sanitizeSystemDescription(response.system_description || (((response || {}).data || {}).system_description) || {});
+  if (rootSys) {
+    deviceInfo = mergeDeviceInfo(deviceInfo, {
+      macAddress: sanitizeMac(response.mac_address, 'N/A'),
+      MODEL: rootSys.MODEL,
+      VENDOR: rootSys.VENDOR,
+      SW_REV: rootSys.SW_REV,
+      HW_REV: rootSys.HW_REV,
+      BOOTR: rootSys.BOOTR
+    });
+  }
+
   channelData.forEach((c) => {
     const sys = sanitizeSystemDescription((((c || {}).device_details || {}).system_description) || {});
-    deviceInfo = mergeDeviceInfo(deviceInfo, {
-      macAddress: sanitizeMac(c.mac_address || response.mac_address, 'N/A'),
-      MODEL: sys.MODEL,
-      VENDOR: sys.VENDOR,
-      SW_REV: sys.SW_REV,
-      HW_REV: sys.HW_REV,
-      BOOTR: sys.BOOTR
-    });
+    if (sys) {
+      deviceInfo = mergeDeviceInfo(deviceInfo, {
+        macAddress: sanitizeMac(c.mac_address || response.mac_address, 'N/A'),
+        MODEL: sys.MODEL,
+        VENDOR: sys.VENDOR,
+        SW_REV: sys.SW_REV,
+        HW_REV: sys.HW_REV,
+        BOOTR: sys.BOOTR
+      });
+    }
     if (!captureTime) captureTime = formatCaptureTime((((c || {}).pnm_header) || {}).capture_time);
   });
 
