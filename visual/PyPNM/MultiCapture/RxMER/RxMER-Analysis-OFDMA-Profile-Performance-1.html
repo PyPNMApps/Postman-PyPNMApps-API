@@ -181,6 +181,10 @@ const template = `
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
 <script>
+(function waitForChart() {
+  if (typeof Chart === 'undefined') {
+    return setTimeout(waitForChart, 50);
+  }
 pm.getData(function (err, value) {
   var channelData = Array.isArray(value.channelData) ? value.channelData : [];
   var root = document.getElementById('channelCards');
@@ -341,6 +345,7 @@ pm.getData(function (err, value) {
     root.appendChild(card);
   });
 });
+})();
 </script>
 `;
 
