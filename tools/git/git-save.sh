@@ -44,15 +44,15 @@ run_quality_gates() {
   py_bin="$(preferred_python)"
 
   if [[ -f "./tools/sanitize.py" ]]; then
-    run_check "sanitize --check" "${py_bin}" ./tools/sanitize.py --check
+    run_check "sanitize --fix" "${py_bin}" ./tools/sanitize.py --fix
   else
-    echo "[skip]  sanitize --check (tools/sanitize.py not found)"
+    echo "[skip]  sanitize --fix (tools/sanitize.py not found)"
   fi
 
   if [[ -f "./tools/docs/build_visual_docs.py" ]]; then
-    run_check "visual docs build --check" "${py_bin}" ./tools/docs/build_visual_docs.py --check
+    run_check "visual docs build" "${py_bin}" ./tools/docs/build_visual_docs.py
   else
-    echo "[skip]  visual docs build --check (tools/docs/build_visual_docs.py not found)"
+    echo "[skip]  visual docs build (tools/docs/build_visual_docs.py not found)"
   fi
 
   if [[ -d "tests" ]]; then
@@ -123,7 +123,7 @@ if git diff --quiet && git diff --cached --quiet; then
   exit 0
 fi
 
-echo "Running quality and sanitize checks..."
+echo "Running sanitize/docs fixes and quality checks..."
 run_quality_gates
 
 echo "Staging changes..."

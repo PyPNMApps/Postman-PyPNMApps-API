@@ -59,3 +59,6 @@
 - Warning = yellow
 - OK = green
 - NOK = red
+- Regression / trend / fitted reference lines must use a high-contrast color distinct from waveform traces (prefer dashed).
+- Default regression/reference line color: white.
+- If white reduces readability against the chart/waveform palette, use a dark red contrast line (for example `#c62828`) or another clearly contrasting color and document the choice in the visual remarks.
