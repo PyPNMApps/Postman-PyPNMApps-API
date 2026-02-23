@@ -459,7 +459,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 
 ````json
 {
-    "mac_address": "606c63f48fb8",
+    "mac_address": "aabbccddeeff",
     "status": 0,
     "message": null,
     "data": {
@@ -467,14 +467,14 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
             {
                 "device_details": {
                     "system_description": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "2022.01-MXL-v-4.0.369.F",
-                        "SW_REV": "8.5.0.0.4b1",
-                        "MODEL": "CODA60"
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
-                "mac_address": "60:6c:63:f4:8f:b8",
+                "mac_address": "aa:bb:cc:dd:ee:ff",
                 "channel_id": 160,
                 "num_sample_symbols": 8192,
                 "modulation_order": 256,
@@ -34279,14 +34279,14 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
             {
                 "device_details": {
                     "system_description": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "2022.01-MXL-v-4.0.369.F",
-                        "SW_REV": "8.5.0.0.4b1",
-                        "MODEL": "CODA60"
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
-                "mac_address": "60:6c:63:f4:8f:b8",
+                "mac_address": "aa:bb:cc:dd:ee:ff",
                 "channel_id": 159,
                 "num_sample_symbols": 8192,
                 "modulation_order": 256,
@@ -68102,7 +68102,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "capture_time": 1771820410
                 },
                 "channel_id": 160,
-                "mac_address": "60:6c:63:f4:8f:b8",
+                "mac_address": "aa:bb:cc:dd:ee:ff",
                 "subcarrier_zero_frequency": 683600000,
                 "first_active_subcarrier_index": -1,
                 "subcarrier_spacing": 50000,
@@ -100893,7 +100893,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "capture_time": 1771820412
                 },
                 "channel_id": 159,
-                "mac_address": "60:6c:63:f4:8f:b8",
+                "mac_address": "aa:bb:cc:dd:ee:ff",
                 "subcarrier_zero_frequency": 575600000,
                 "first_active_subcarrier_index": -1,
                 "subcarrier_spacing": 50000,
@@ -133683,7 +133683,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "docsPnmCmDsConstDispNumSampleSymb": 8192,
                     "docsPnmCmDsConstDispSelModOrder": "qam256",
                     "docsPnmCmDsConstDispMeasStatus": "sample_ready",
-                    "docsPnmCmDsConstDispFileName": "ds_constellation_disp_606c63f48fb8_160_1771820411.bin"
+                    "docsPnmCmDsConstDispFileName": "ds_constellation_disp_aabbccddeeff_160_1771820411.bin"
                 }
             },
             {
@@ -133695,7 +133695,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "docsPnmCmDsConstDispNumSampleSymb": 8192,
                     "docsPnmCmDsConstDispSelModOrder": "qam256",
                     "docsPnmCmDsConstDispMeasStatus": "sample_ready",
-                    "docsPnmCmDsConstDispFileName": "ds_constellation_disp_606c63f48fb8_159_1771820413.bin"
+                    "docsPnmCmDsConstDispFileName": "ds_constellation_disp_aabbccddeeff_159_1771820413.bin"
                 }
             }
         ]
