@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyPNM / DOCSIS-3.0 / DS-SCQAM-CodeErrorRate</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 12px;
+      background: #f8fafc;
+      color: #111827;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .frame {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .error {
+      white-space: pre-wrap;
+      color: #fecaca;
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      padding: 8px;
+      border-radius: 6px;
+    }
+    .note {
+      margin-bottom: 8px;
+      color: #475569;
+      font-size: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #0f172a;
+        color: #e5e7eb;
+      }
+      .frame {
+        background: #111827;
+        border-color: #374151;
+      }
+      .note {
+        color: #cbd5e1;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/handlebars@4.7.8/dist/handlebars.min.js"></script>
+</head>
+<body>
+  <div class="note">Preview uses a lightweight Postman visualizer shim (`pm.response.json`, `pm.getData`, `pm.visualizer.set`).</div>
+  <div id="app" class="frame"></div>
+  <script>
+  (function() {
+    const sampleData = {"mac_address": "aa:bb:cc:dd:ee:ff", "status": 0, "message": "Successfully retrieved codeword error rate", "results": [{"index": 3, "channel_id": 3, "codeword_totals": {"total_codewords": 801466, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 160293.2, "errors_per_second": 0.0}}, {"index": 50, "channel_id": 32, "codeword_totals": {"total_codewords": 801254, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 160250.8, "errors_per_second": 0.0}}, {"index": 51, "channel_id": 31, "codeword_totals": {"total_codewords": 803484, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 160696.8, "errors_per_second": 0.0}}, {"index": 52, "channel_id": 30, "codeword_totals": {"total_codewords": 805598, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 161119.6, "errors_per_second": 0.0}}, {"index": 53, "channel_id": 29, "codeword_totals": {"total_codewords": 799451, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 159890.2, "errors_per_second": 0.0}}, {"index": 54, "channel_id": 28, "codeword_totals": {"total_codewords": 799208, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 159841.6, "errors_per_second": 0.0}}, {"index": 55, "channel_id": 27, "codeword_totals": {"total_codewords": 798799, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 159759.8, "errors_per_second": 0.0}}, {"index": 56, "channel_id": 26, "codeword_totals": {"total_codewords": 798983, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 159796.6, "errors_per_second": 0.0}}, {"index": 57, "channel_id": 25, "codeword_totals": {"total_codewords": 798555, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 159711.0, "errors_per_second": 0.0}}, {"index": 58, "channel_id": 24, "codeword_totals": {"total_codewords": 765770, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 153154.0, "errors_per_second": 0.0}}, {"index": 59, "channel_id": 23, "codeword_totals": {"total_codewords": 674493, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 134898.6, "errors_per_second": 0.0}}, {"index": 60, "channel_id": 22, "codeword_totals": {"total_codewords": 664659, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 132931.8, "errors_per_second": 0.0}}, {"index": 61, "channel_id": 21, "codeword_totals": {"total_codewords": 658032, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 131606.4, "errors_per_second": 0.0}}, {"index": 62, "channel_id": 20, "codeword_totals": {"total_codewords": 663866, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 132773.2, "errors_per_second": 0.0}}, {"index": 63, "channel_id": 19, "codeword_totals": {"total_codewords": 666260, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 133252.0, "errors_per_second": 0.0}}, {"index": 64, "channel_id": 18, "codeword_totals": {"total_codewords": 667387, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 133477.4, "errors_per_second": 0.0}}, {"index": 65, "channel_id": 17, "codeword_totals": {"total_codewords": 659818, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 131963.6, "errors_per_second": 0.0}}, {"index": 66, "channel_id": 16, "codeword_totals": {"total_codewords": 663416, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 132683.2, "errors_per_second": 0.0}}, {"index": 67, "channel_id": 15, "codeword_totals": {"total_codewords": 775145, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 155029.0, "errors_per_second": 0.0}}, {"index": 68, "channel_id": 14, "codeword_totals": {"total_codewords": 793486, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 158697.2, "errors_per_second": 0.0}}, {"index": 69, "channel_id": 13, "codeword_totals": {"total_codewords": 794895, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 158979.0, "errors_per_second": 0.0}}, {"index": 70, "channel_id": 12, "codeword_totals": {"total_codewords": 792756, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 158551.2, "errors_per_second": 0.0}}, {"index": 71, "channel_id": 11, "codeword_totals": {"total_codewords": 796557, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 159311.4, "errors_per_second": 0.0}}, {"index": 72, "channel_id": 10, "codeword_totals": {"total_codewords": 793542, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 158708.4, "errors_per_second": 0.0}}, {"index": 73, "channel_id": 9, "codeword_totals": {"total_codewords": 799482, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 159896.4, "errors_per_second": 0.0}}, {"index": 74, "channel_id": 8, "codeword_totals": {"total_codewords": 799303, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 159860.6, "errors_per_second": 0.0}}, {"index": 75, "channel_id": 7, "codeword_totals": {"total_codewords": 801459, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 160291.8, "errors_per_second": 0.0}}, {"index": 76, "channel_id": 6, "codeword_totals": {"total_codewords": 801542, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 160308.4, "errors_per_second": 0.0}}, {"index": 77, "channel_id": 5, "codeword_totals": {"total_codewords": 796760, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 159352.0, "errors_per_second": 0.0}}, {"index": 78, "channel_id": 4, "codeword_totals": {"total_codewords": 795338, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 159067.6, "errors_per_second": 0.0}}, {"index": 79, "channel_id": 2, "codeword_totals": {"total_codewords": 795617, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 159123.4, "errors_per_second": 0.0}}, {"index": 112, "channel_id": 1, "codeword_totals": {"total_codewords": 799526, "total_errors": 0, "time_elapsed": 5.0, "error_rate": 0.0, "codewords_per_second": 159905.2, "errors_per_second": 0.0}}]};
+    const visualSource = "// Visualization Script\n// Visualization Script\nvar template = `\n<canvas id=\"myChart\" height=\"100\"></canvas>\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js\"></script> \n<script>\n    var ctx = document.getElementById(\"myChart\");\n    var myChart = new Chart(ctx, {\n        type: \"bar\",\n        data: {\n            labels: [],\n            datasets: [\n                {\n                    label: 'Total Codewords',\n                    data: [],\n                    backgroundColor: 'rgba(54, 162, 235, 0.6)',\n                    borderColor: 'rgba(54, 162, 235, 1)',\n                    borderWidth: 1\n                },\n                {\n                    label: 'Total Errors',\n                    data: [],\n                    backgroundColor: 'rgba(255, 99, 132, 0.6)',\n                    borderColor: 'rgba(255, 99, 132, 1)',\n                    borderWidth: 1\n                }\n            ]\n        },\n        options: {\n            legend: { display: true },\n            title: {\n                display: true,\n                text: 'Codeword Error Rate by Channel ID'\n            },\n            scales: {\n                xAxes: [{\n                    display: true,\n                    scaleLabel: {\n                        display: true,\n                        labelString: 'Channel ID'\n                    }\n                }],\n                yAxes: [{\n                    display: true,\n                    scaleLabel: {\n                        display: true,\n                        labelString: 'Count'\n                    },\n                    ticks: {\n                        beginAtZero: true\n                    }\n                }]\n            }\n        }\n    });\n\n    pm.getData(function (err, value) {\n        myChart.data.labels = value.channelIds;\n        myChart.data.datasets[0].data = value.totalCodewords;\n        myChart.data.datasets[1].data = value.totalErrors;\n        myChart.update();\n    });\n\n</script>`;\n\nfunction createPayload() {\n    var responseData = pm.response.json();\n    var results = responseData.results || [];\n    \n    var channelIds = [];\n    var totalCodewords = [];\n    var totalErrors = [];\n    \n    for (var i = 0; i < results.length; i++) {\n        channelIds.push(results[i].channel_id.toString());\n        totalCodewords.push(results[i].codeword_totals.total_codewords);\n        totalErrors.push(results[i].codeword_totals.total_errors);\n    }\n    \n    return {\n        channelIds: channelIds,\n        totalCodewords: totalCodewords,\n        totalErrors: totalErrors\n    };\n}\n\npm.visualizer.set(template, createPayload());";
+    const app = document.getElementById("app");
+    let visualizerData = sampleData;
+    let lastTemplate = null;
+
+    function executeRenderedScripts(root) {
+      const scripts = Array.from(root.querySelectorAll("script"));
+      for (const oldScript of scripts) {
+        const newScript = document.createElement("script");
+        for (const attr of oldScript.attributes) {
+          newScript.setAttribute(attr.name, attr.value);
+        }
+        newScript.textContent = oldScript.textContent;
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+      }
+    }
+
+    function renderTemplate(template, data) {
+      lastTemplate = template;
+      visualizerData = data == null ? sampleData : data;
+      try {
+        if (window.Handlebars && typeof template === "string") {
+          const compiled = window.Handlebars.compile(template);
+          app.innerHTML = compiled(visualizerData);
+          executeRenderedScripts(app);
+        } else if (typeof template === "string") {
+          app.innerHTML = template;
+          executeRenderedScripts(app);
+        } else {
+          app.textContent = String(template);
+        }
+      } catch (err) {
+        app.innerHTML = '<div class="error">Template render error\n' + String(err && err.stack || err) + '</div>';
+      }
+    }
+
+    function makeKVStore() {
+      const store = Object.create(null);
+      return {
+        get: function(key) { return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : undefined; },
+        set: function(key, value) { store[key] = value; return value; },
+        unset: function(key) { delete store[key]; }
+      };
+    }
+
+    window.pm = {
+      response: {
+        json: function() { return sampleData; },
+        text: function() { return JSON.stringify(sampleData); }
+      },
+      request: {
+        body: {
+          raw: "{}"
+        }
+      },
+      environment: makeKVStore(),
+      globals: makeKVStore(),
+      variables: makeKVStore(),
+      getData: function(cb) {
+        if (typeof cb === "function") cb(null, visualizerData);
+      },
+      visualizer: {
+        set: function(template, data) {
+          renderTemplate(template, data);
+        }
+      }
+    };
+
+    window.console = window.console || { log(){}, warn(){}, error(){} };
+
+    try {
+      const fn = new Function(visualSource);
+      fn();
+      if (!lastTemplate && !app.innerHTML.trim()) {
+        app.innerHTML = '<div class="error">No visualizer output produced. The script may require unsupported Postman APIs.</div>';
+      }
+    } catch (err) {
+      app.innerHTML = '<div class="error">Script execution error\n' + String(err && err.stack || err) + '</div>';
+    }
+  })();
+  </script>
+</body>
+</html>

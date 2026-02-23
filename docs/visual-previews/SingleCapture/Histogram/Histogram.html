@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyPNM / SingleCapture / Histogram / Histogram</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 12px;
+      background: #f8fafc;
+      color: #111827;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .frame {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .error {
+      white-space: pre-wrap;
+      color: #fecaca;
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      padding: 8px;
+      border-radius: 6px;
+    }
+    .note {
+      margin-bottom: 8px;
+      color: #475569;
+      font-size: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #0f172a;
+        color: #e5e7eb;
+      }
+      .frame {
+        background: #111827;
+        border-color: #374151;
+      }
+      .note {
+        color: #cbd5e1;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/handlebars@4.7.8/dist/handlebars.min.js"></script>
+</head>
+<body>
+  <div class="note">Preview uses a lightweight Postman visualizer shim (`pm.response.json`, `pm.getData`, `pm.visualizer.set`).</div>
+  <div id="app" class="frame"></div>
+  <script>
+  (function() {
+    const sampleData = {"mac_address": "aabbccddeeff", "status": 0, "message": null, "data": {"analysis": [{"device_details": {"system_description": {"HW_REV": "1.0", "VENDOR": "LANCity", "BOOTR": "NONE", "SW_REV": "1.0.0", "MODEL": "LCPET-3"}}, "pnm_header": {"file_type": "PNN", "file_type_version": 5, "major_version": 1, "minor_version": 0, "capture_time": 1740236465}, "mac_address": "aa:bb:cc:dd:ee:ff", "symmetry": 2, "dwell_counts": [1406249999], "hit_counts": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7, 20, 111, 215, 552, 1311, 3073, 6881, 15401, 31408, 63828, 123760, 234654, 432294, 764677, 1297511, 2191743, 3491751, 5508147, 8208783, 12140702, 17338270, 23528753, 31530249, 40950495, 51020014, 61428442, 72321749, 82467167, 91065068, 96064371, 100079085, 99864515, 97105477, 90225910, 82343616, 73238688, 61788155, 50576999, 41370050, 31516931, 23989402, 17051591, 12222733, 8385387, 5532446, 3506651, 2202638, 1329581, 767116, 434536, 239625, 126263, 62850, 31553, 14659, 6724, 3068, 1329, 604, 262, 85, 33, 20, 6, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}], "measurement_stats": [{"index": 2, "entry": {"docsPnmCmDsHistEnable": true, "docsPnmCmDsHistTimeOut": 10, "docsPnmCmDsHistMeasStatus": "sample_ready", "docsPnmCmDsHistFileName": "ds_histogram_aabbccddeeff_0_1771803166.bin"}}]}};
+    const visualSource = "// Visualization Script\nconst template = `\n<style>\n    body {\n        font-family: Arial, sans-serif;\n        padding: 20px;\n        background-color: #1e1e1e;\n        color: #e0e0e0;\n    }\n    .container {\n        max-width: 1200px;\n        margin: 0 auto;\n    }\n    .header {\n        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);\n        color: #e0e0e0;\n        padding: 20px;\n        border-radius: 8px;\n        margin-bottom: 20px;\n    }\n    .header h1 {\n        margin: 0 0 10px 0;\n        font-size: 24px;\n        color: #e0e0e0;\n    }\n    .header p {\n        margin: 5px 0;\n        opacity: 0.9;\n        color: #b0b0b0;\n    }\n    .device-info {\n        background: #2d2d2d;\n        padding: 20px;\n        border-radius: 8px;\n        margin-bottom: 20px;\n        box-shadow: 0 2px 4px rgba(0,0,0,0.3);\n    }\n    .device-info h2 {\n        margin-top: 0;\n        color: #e0e0e0;\n        border-bottom: 2px solid #4a5568;\n        padding-bottom: 10px;\n    }\n    .info-grid {\n        display: grid;\n        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));\n        gap: 15px;\n        margin-top: 15px;\n    }\n    .info-item {\n        padding: 10px;\n        background: #3d3d3d;\n        border-radius: 4px;\n    }\n    .info-label {\n        font-weight: bold;\n        color: #7c9cbf;\n        font-size: 12px;\n        text-transform: uppercase;\n    }\n    .info-value {\n        color: #e0e0e0;\n        font-size: 16px;\n        margin-top: 5px;\n    }\n    .chart-container {\n        background: #2d2d2d;\n        padding: 20px;\n        border-radius: 8px;\n        margin-bottom: 20px;\n        box-shadow: 0 2px 4px rgba(0,0,0,0.3);\n    }\n    .chart-container h2 {\n        margin-top: 0;\n        color: #e0e0e0;\n        border-bottom: 2px solid #4a5568;\n        padding-bottom: 10px;\n    }\n    .stats-table {\n        width: 100%;\n        border-collapse: collapse;\n        margin-top: 10px;\n    }\n    .stats-table th {\n        background: #3d3d3d;\n        color: #e0e0e0;\n        padding: 10px;\n        text-align: left;\n        border-bottom: 2px solid #4a5568;\n    }\n    .stats-table td {\n        padding: 8px 10px;\n        border-bottom: 1px solid #3d3d3d;\n        color: #b0b0b0;\n    }\n    .stats-table tr:hover {\n        background: #3d3d3d;\n    }\n    canvas {\n        max-width: 100%;\n        height: auto !important;\n    }\n</style>\n\n<div class=\"container\">\n    <div class=\"header\">\n        <h1>📊 Histogram Capture Analysis</h1>\n        <p><strong>MAC Address:</strong> {{mac_address}}</p>\n        <p><strong>Status:</strong> {{status_message}}</p>\n    </div>\n\n    {{#if device_details}}\n    <div class=\"device-info\">\n        <h2>🖥️ Device Information</h2>\n        <div class=\"info-grid\">\n            <div class=\"info-item\">\n                <div class=\"info-label\">Vendor</div>\n                <div class=\"info-value\">{{device_details.VENDOR}}</div>\n            </div>\n            <div class=\"info-item\">\n                <div class=\"info-label\">Model</div>\n                <div class=\"info-value\">{{device_details.MODEL}}</div>\n            </div>\n            <div class=\"info-item\">\n                <div class=\"info-label\">Hardware Rev</div>\n                <div class=\"info-value\">{{device_details.HW_REV}}</div>\n            </div>\n            <div class=\"info-item\">\n                <div class=\"info-label\">Software Rev</div>\n                <div class=\"info-value\">{{device_details.SW_REV}}</div>\n            </div>\n        </div>\n    </div>\n    {{/if}}\n\n    {{#if measurement_stats}}\n    <div class=\"device-info\">\n        <h2>📈 Measurement Statistics</h2>\n        <table class=\"stats-table\">\n            <thead>\n                <tr>\n                    <th>Parameter</th>\n                    <th>Value</th>\n                </tr>\n            </thead>\n            <tbody>\n                {{#each measurement_stats}}\n                <tr>\n                    <td>{{this.label}}</td>\n                    <td>{{this.value}}</td>\n                </tr>\n                {{/each}}\n            </tbody>\n        </table>\n    </div>\n    {{/if}}\n\n    <div class=\"chart-container\">\n        <h2>📊 Histogram Distribution</h2>\n        <canvas id=\"histogramChart\"></canvas>\n    </div>\n</div>\n\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js\"><\/script>\n<script>\n    pm.getData(function (err, data) {\n        if (err) {\n            console.error('Error getting data:', err);\n            return;\n        }\n\n        const ctx = document.getElementById('histogramChart').getContext('2d');\n        \n        new Chart(ctx, {\n            type: 'bar',\n            data: {\n                labels: data.chart_labels,\n                datasets: [{\n                    label: 'Hit Count',\n                    data: data.chart_data,\n                    backgroundColor: 'rgba(75, 192, 192, 0.6)',\n                    borderColor: 'rgba(75, 192, 192, 1)',\n                    borderWidth: 1\n                }]\n            },\n            options: {\n                responsive: true,\n                maintainAspectRatio: true,\n                scales: {\n                    yAxes: [{\n                        ticks: {\n                            beginAtZero: true,\n                            fontColor: '#e0e0e0'\n                        },\n                        gridLines: {\n                            color: '#3d3d3d'\n                        },\n                        scaleLabel: {\n                            display: true,\n                            labelString: 'Hit Count',\n                            fontColor: '#e0e0e0'\n                        }\n                    }],\n                    xAxes: [{\n                        ticks: {\n                            fontColor: '#e0e0e0'\n                        },\n                        gridLines: {\n                            color: '#3d3d3d'\n                        },\n                        scaleLabel: {\n                            display: true,\n                            labelString: 'Bin Index',\n                            fontColor: '#e0e0e0'\n                        }\n                    }]\n                },\n                legend: {\n                    labels: {\n                        fontColor: '#e0e0e0'\n                    }\n                }\n            }\n        });\n    });\n<\/script>\n`;\n\nfunction constructVisualizerPayload() {\n    const response = pm.response.json();\n    \n    // Extract basic info\n    const macAddress = response.mac_address || 'N/A';\n    const status = response.status;\n    const statusMessage = status === 0 ? '✅ Success' : '❌ Failed';\n    \n    // Extract device details\n    let deviceDetails = null;\n    if (response.data && response.data.analysis && response.data.analysis.length > 0) {\n        const analysis = response.data.analysis[0];\n        if (analysis.device_details && analysis.device_details.system_description) {\n            deviceDetails = analysis.device_details.system_description;\n        }\n    }\n    \n    // Extract measurement stats\n    let measurementStats = [];\n    if (response.data && response.data.measurement_stats && response.data.measurement_stats.length > 0) {\n        const stats = response.data.measurement_stats[0].entry;\n        measurementStats = [\n            { label: 'Histogram Enabled', value: stats.docsPnmCmDsHistEnable ? 'Yes' : 'No' },\n            { label: 'Timeout (seconds)', value: stats.docsPnmCmDsHistTimeOut },\n            { label: 'Measurement Status', value: stats.docsPnmCmDsHistMeasStatus },\n            { label: 'File Name', value: stats.docsPnmCmDsHistFileName }\n        ];\n    }\n    \n    // Extract histogram data for chart - MODIFIED TO REMOVE \"Bin_\" PREFIX\n    let chartLabels = [];\n    let chartData = [];\n    \n    if (response.data && response.data.analysis && response.data.analysis.length > 0) {\n        const analysis = response.data.analysis[0];\n        if (analysis.hit_counts && Array.isArray(analysis.hit_counts)) {\n            chartData = analysis.hit_counts;\n            // Generate labels as just the numeric index (0, 1, 2, 3, ...)\n            chartLabels = analysis.hit_counts.map((_, index) => String(index));\n        }\n    }\n    \n    return {\n        mac_address: macAddress,\n        status_message: statusMessage,\n        device_details: deviceDetails,\n        measurement_stats: measurementStats,\n        chart_labels: chartLabels,\n        chart_data: chartData\n    };\n}\n\npm.visualizer.set(template, constructVisualizerPayload());";
+    const app = document.getElementById("app");
+    let visualizerData = sampleData;
+    let lastTemplate = null;
+
+    function executeRenderedScripts(root) {
+      const scripts = Array.from(root.querySelectorAll("script"));
+      for (const oldScript of scripts) {
+        const newScript = document.createElement("script");
+        for (const attr of oldScript.attributes) {
+          newScript.setAttribute(attr.name, attr.value);
+        }
+        newScript.textContent = oldScript.textContent;
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+      }
+    }
+
+    function renderTemplate(template, data) {
+      lastTemplate = template;
+      visualizerData = data == null ? sampleData : data;
+      try {
+        if (window.Handlebars && typeof template === "string") {
+          const compiled = window.Handlebars.compile(template);
+          app.innerHTML = compiled(visualizerData);
+          executeRenderedScripts(app);
+        } else if (typeof template === "string") {
+          app.innerHTML = template;
+          executeRenderedScripts(app);
+        } else {
+          app.textContent = String(template);
+        }
+      } catch (err) {
+        app.innerHTML = '<div class="error">Template render error\n' + String(err && err.stack || err) + '</div>';
+      }
+    }
+
+    function makeKVStore() {
+      const store = Object.create(null);
+      return {
+        get: function(key) { return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : undefined; },
+        set: function(key, value) { store[key] = value; return value; },
+        unset: function(key) { delete store[key]; }
+      };
+    }
+
+    window.pm = {
+      response: {
+        json: function() { return sampleData; },
+        text: function() { return JSON.stringify(sampleData); }
+      },
+      request: {
+        body: {
+          raw: "{}"
+        }
+      },
+      environment: makeKVStore(),
+      globals: makeKVStore(),
+      variables: makeKVStore(),
+      getData: function(cb) {
+        if (typeof cb === "function") cb(null, visualizerData);
+      },
+      visualizer: {
+        set: function(template, data) {
+          renderTemplate(template, data);
+        }
+      }
+    };
+
+    window.console = window.console || { log(){}, warn(){}, error(){} };
+
+    try {
+      const fn = new Function(visualSource);
+      fn();
+      if (!lastTemplate && !app.innerHTML.trim()) {
+        app.innerHTML = '<div class="error">No visualizer output produced. The script may require unsupported Postman APIs.</div>';
+      }
+    } catch (err) {
+      app.innerHTML = '<div class="error">Script execution error\n' + String(err && err.stack || err) + '</div>';
+    }
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,2518 @@
+# PyPNM / DOCSIS-General / InterfaceStats
+
+## Source Files
+
+- HTML/script: `visual/PyPNM/DOCSIS-General/InterfaceStats.html`
+- JSON sample: `visual/PyPNM/DOCSIS-General/InterfaceStats.json`
+
+## Preview
+
+<iframe src="/visual-previews/DOCSIS-General/InterfaceStats.html" style="width:100%;height:900px;border:1px solid #ccc;border-radius:6px;"></iframe>
+
+Preview is best-effort. Some templates may rely on Postman-specific APIs that are not yet shimmed.
+
+<details>
+<summary>Visualizer HTML/script source</summary>
+
+````html
+// Postman "Tests" tab script
+// Renders: (1) readable tables (zebra + sticky headers + pills) and (2) SVG topology
+// Assumes the response body is the PyPNM JSON you shared.
+
+(function () {
+  const payload = pm.response.json();
+
+  function esc(v) {
+    if (v === null || v === undefined) {
+      return "";
+    }
+    return String(v)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function fmtInt(v) {
+    if (v === null || v === undefined || v === "") {
+      return "";
+    }
+    const n = Number(v);
+    if (!Number.isFinite(n)) {
+      return String(v);
+    }
+    return Math.trunc(n).toLocaleString("en-US");
+  }
+
+  function toAdminOper(v) {
+    if (v === 1) {
+      return "up";
+    }
+    if (v === 2) {
+      return "down";
+    }
+    if (v === 3) {
+      return "testing";
+    }
+    return "unknown";
+  }
+
+  function pickIfName(item) {
+    const ifx = item && item.ifXEntry ? item.ifXEntry : null;
+    if (ifx && typeof ifx.ifName === "string" && ifx.ifName.length > 0) {
+      return ifx.ifName;
+    }
+    return "";
+  }
+
+  function normalizeRow(item) {
+    const ife = item && item.ifEntry ? item.ifEntry : {};
+    const ifx = item && item.ifXEntry ? item.ifXEntry : null;
+
+    const ifIndex = ife.ifIndex ?? "";
+    const ifDescr = ife.ifDescr ?? "";
+    const ifType = ife.ifType ?? "";
+    const ifSpeed = ife.ifSpeed ?? "";
+    const ifInOctets = ife.ifInOctets ?? "";
+    const ifOutOctets = ife.ifOutOctets ?? "";
+
+    const admin = toAdminOper(ife.ifAdminStatus);
+    const oper = toAdminOper(ife.ifOperStatus);
+
+    const ifHighSpeed = ifx && ifx.ifHighSpeed !== null && ifx.ifHighSpeed !== undefined ? ifx.ifHighSpeed : "";
+
+    return {
+      ifIndex,
+      ifName: pickIfName(item),
+      ifDescr,
+      ifType,
+      admin,
+      oper,
+      speed_bps: ifSpeed,
+      highSpeed_mbps: ifHighSpeed,
+      inOctets: ifInOctets,
+      outOctets: ifOutOctets
+    };
+  }
+
+  function sumAgg(rows) {
+    let inOctets = 0;
+    let outOctets = 0;
+
+    for (const r of rows) {
+      const inV = Number(r.inOctets);
+      const outV = Number(r.outOctets);
+
+      if (Number.isFinite(inV)) {
+        inOctets += inV;
+      }
+      if (Number.isFinite(outV)) {
+        outOctets += outV;
+      }
+    }
+
+    return {
+      count: rows.length,
+      inOctets,
+      outOctets
+    };
+  }
+
+  function getInterfaces(key) {
+    const arr = payload && payload.results && Array.isArray(payload.results[key]) ? payload.results[key] : [];
+    return arr.map(normalizeRow);
+  }
+
+  function buildGroups() {
+    const groups = [];
+
+    const docsCableMaclayer = getInterfaces("docsCableMaclayer");
+    const docsOfdmDownstream = getInterfaces("docsOfdmDownstream");
+    const docsCableDownstream = getInterfaces("docsCableDownstream");
+    const docsOfdmaUpstream = getInterfaces("docsOfdmaUpstream");
+    const docsCableUpstream = getInterfaces("docsCableUpstream");
+
+    groups.push({
+      key: "docsCableMaclayer",
+      title: "DOCSIS MAC Layer (docsCableMaclayer)",
+      rows: docsCableMaclayer
+    });
+
+    groups.push({
+      key: "docsOfdmDownstream",
+      title: "OFDM Downstream (docsOfdmDownstream)",
+      rows: docsOfdmDownstream
+    });
+
+    groups.push({
+      key: "docsCableDownstream",
+      title: "SC-QAM Downstream (docsCableDownstream)",
+      rows: docsCableDownstream
+    });
+
+    groups.push({
+      key: "docsOfdmaUpstream",
+      title: "OFDMA Upstream (docsOfdmaUpstream)",
+      rows: docsOfdmaUpstream
+    });
+
+    groups.push({
+      key: "docsCableUpstream",
+      title: "SC-QAM Upstream (docsCableUpstream)",
+      rows: docsCableUpstream
+    });
+
+    for (const g of groups) {
+      g.agg = sumAgg(g.rows);
+    }
+
+    return groups.filter((g) => g.rows.length > 0);
+  }
+
+  function maxSpeedBps(rows) {
+    let max = 0;
+    for (const r of rows) {
+      const n = Number(r.speed_bps);
+      if (Number.isFinite(n) && n > max) {
+        max = n;
+      }
+    }
+    return max;
+  }
+
+  function humanBps(bps) {
+    const n = Number(bps);
+    if (!Number.isFinite(n) || n <= 0) {
+      return "";
+    }
+    const kb = 1000;
+    const mb = 1000 * kb;
+    const gb = 1000 * mb;
+
+    if (n >= gb) {
+      return `${(n / gb).toFixed(2)} Gbps`;
+    }
+    if (n >= mb) {
+      return `${(n / mb).toFixed(2)} Mbps`;
+    }
+    if (n >= kb) {
+      return `${(n / kb).toFixed(2)} Kbps`;
+    }
+    return `${n.toFixed(0)} bps`;
+  }
+
+  function svgTopology(groups) {
+    const mac = payload.mac_address ? String(payload.mac_address) : "unknown";
+
+    const macLayer = groups.find((g) => g.key === "docsCableMaclayer");
+    const ofdmDs = groups.find((g) => g.key === "docsOfdmDownstream");
+    const scqamDs = groups.find((g) => g.key === "docsCableDownstream");
+    const ofdmaUs = groups.find((g) => g.key === "docsOfdmaUpstream");
+    const scqamUs = groups.find((g) => g.key === "docsCableUpstream");
+
+    const summaryNodes = [];
+    if (ofdmDs) {
+      summaryNodes.push({
+        id: "OFDM_DS",
+        title: "OFDM Downstream",
+        detail: [
+          `count: ${ofdmDs.agg.count}`,
+          `max speed: ${humanBps(maxSpeedBps(ofdmDs.rows))}`,
+          `in: ${fmtInt(ofdmDs.agg.inOctets)}`,
+          `out: ${fmtInt(ofdmDs.agg.outOctets)}`
+        ]
+      });
+    }
+    if (scqamDs) {
+      summaryNodes.push({
+        id: "SCQAM_DS",
+        title: "SC-QAM Downstream",
+        detail: [
+          `count: ${scqamDs.agg.count}`,
+          `max speed: ${humanBps(maxSpeedBps(scqamDs.rows))}`,
+          `in: ${fmtInt(scqamDs.agg.inOctets)}`,
+          `out: ${fmtInt(scqamDs.agg.outOctets)}`
+        ]
+      });
+    }
+    if (ofdmaUs) {
+      summaryNodes.push({
+        id: "OFDMA_US",
+        title: "OFDMA Upstream",
+        detail: [
+          `count: ${ofdmaUs.agg.count}`,
+          `max speed: ${humanBps(maxSpeedBps(ofdmaUs.rows))}`,
+          `in: ${fmtInt(ofdmaUs.agg.inOctets)}`,
+          `out: ${fmtInt(ofdmaUs.agg.outOctets)}`
+        ]
+      });
+    }
+    if (scqamUs) {
+      summaryNodes.push({
+        id: "SCQAM_US",
+        title: "SC-QAM Upstream",
+        detail: [
+          `count: ${scqamUs.agg.count}`,
+          `max speed: ${humanBps(maxSpeedBps(scqamUs.rows))}`,
+          `in: ${fmtInt(scqamUs.agg.inOctets)}`,
+          `out: ${fmtInt(scqamUs.agg.outOctets)}`
+        ]
+      });
+    }
+
+    const width = 1200;
+    const pad = 24;
+
+    const boxW = 320;
+    const boxH = 92;
+
+    const cmX = (width - boxW) / 2;
+    const cmY = 20;
+
+    const macX = (width - boxW) / 2;
+    const macY = cmY + 120;
+
+    const cols = Math.max(summaryNodes.length, 1);
+    const gap = 16;
+    const totalRowW = cols * boxW + (cols - 1) * gap;
+    const startX = (width - totalRowW) / 2;
+    const rowY = macY + 140;
+
+    const height = rowY + 140;
+
+    function rect(x, y, w, h) {
+      return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14" ry="14"></rect>`;
+    }
+
+    function textBlock(x, y, lines) {
+      const lineH = 16;
+      const safe = lines.map((l) => esc(l));
+      return safe
+        .map((l, i) => `<text x="${x}" y="${y + i * lineH}" font-size="13">${l}</text>`)
+        .join("");
+    }
+
+    function centerLine(x1, y1, x2, y2) {
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="2"></line>`;
+    }
+
+    let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
+
+    // CM box
+    svg += rect(cmX, cmY, boxW, boxH);
+    svg += textBlock(cmX + 16, cmY + 30, ["CM", mac]);
+
+    // RF MAC box
+    svg += rect(macX, macY, boxW, boxH);
+    if (macLayer && macLayer.rows.length > 0) {
+      const r0 = macLayer.rows[0];
+      svg += textBlock(macX + 16, macY + 30, [
+        "RF MAC",
+        `ifIndex: ${r0.ifIndex}`,
+        r0.ifName ? `ifName: ${r0.ifName}` : "ifName: (none)"
+      ]);
+    } else {
+      svg += textBlock(macX + 16, macY + 30, ["RF MAC", "not present"]);
+    }
+
+    // CM -> RF MAC line
+    svg += centerLine(cmX + boxW / 2, cmY + boxH, macX + boxW / 2, macY);
+
+    // Summary nodes
+    for (let i = 0; i < summaryNodes.length; i++) {
+      const n = summaryNodes[i];
+      const x = startX + i * (boxW + gap);
+      const y = rowY;
+
+      svg += rect(x, y, boxW, boxH);
+      svg += textBlock(x + 16, y + 28, [n.title, ...n.detail.slice(0, 3)]);
+      svg += centerLine(macX + boxW / 2, macY + boxH, x + boxW / 2, y);
+    }
+
+    svg += `</svg>`;
+    return svg;
+  }
+
+  const renderedGroups = buildGroups();
+  const diagramSvg = svgTopology(renderedGroups);
+
+  pm.visualizer.set(
+    `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root{
+        --bg: #0b1220;
+        --panel: #0f1a2b;
+        --panel2: #0c1727;
+        --text: #e5e7eb;
+        --muted: #9aa7b6;
+        --border: #1f2a3a;
+        --header: #122037;
+        --rowA: rgba(255,255,255,0.03);
+        --rowB: rgba(255,255,255,0.06);
+        --hover: rgba(255,255,255,0.10);
+        --accent: #93c5fd;
+        --good: #34d399;
+        --warn: #fbbf24;
+        --bad:  #fb7185;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        margin: 16px;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      h1 { font-size: 18px; margin: 0 0 10px 0; color: var(--text); }
+      h2 { font-size: 14px; margin: 18px 0 10px 0; color: var(--text); }
+
+      .meta { display: grid; grid-template-columns: 160px 1fr; gap: 6px 10px; max-width: 1100px; }
+      .card {
+        background: linear-gradient(180deg, var(--panel), var(--panel2));
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        margin-top: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      }
+
+      .muted { color: var(--muted); }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+      .pill {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.04);
+        color: var(--text);
+      }
+
+      .pill.good { border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.12); color: var(--good); }
+      .pill.warn { border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.12); color: var(--warn); }
+      .pill.bad  { border-color: rgba(251,113,133,0.35); background: rgba(251,113,133,0.12); color: var(--bad); }
+
+      .svgWrap {
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        background: rgba(255,255,255,0.02);
+      }
+
+      .tableWrap {
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.02);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 12px;
+        min-width: 980px;
+      }
+
+      thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--header);
+        color: var(--text);
+        text-align: left;
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+
+      tbody td {
+        padding: 7px 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        vertical-align: top;
+      }
+
+      tbody tr:nth-child(odd)  td { background: var(--rowA); }
+      tbody tr:nth-child(even) td { background: var(--rowB); }
+
+      tbody tr:hover td { background: var(--hover); }
+
+      .num { text-align: right; font-variant-numeric: tabular-nums; }
+      .nowrap { white-space: nowrap; }
+      .tag { color: var(--accent); }
+
+      .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+      .legend .pill { font-size: 11px; }
+
+      /* SVG inherits dark theme */
+      svg rect { fill: rgba(255,255,255,0.04) !important; stroke: rgba(255,255,255,0.18) !important; }
+      svg text { fill: var(--text) !important; }
+      svg line { stroke: rgba(255,255,255,0.35) !important; }
+    </style>
+  </head>
+  <body>
+    <h1>PyPNM Interface Statistics</h1>
+
+    <div class="card">
+      <div class="meta">
+        <div class="muted">mac_address</div><div class="mono">{{mac_address}}</div>
+        <div class="muted">status</div><div><span class="pill">{{status}}</span></div>
+        <div class="muted">message</div><div>{{message}}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Topology</h2>
+      <div class="muted">SVG is supported directly in Postman Visualizer (no Mermaid dependency).</div>
+      <div class="svgWrap">{{{diagramSvg}}}</div>
+    </div>
+
+    <div class="card">
+      <h2>Rollups</h2>
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Group</th>
+              <th class="num">Count</th>
+              <th class="num">Total InOctets</th>
+              <th class="num">Total OutOctets</th>
+              <th class="num">Max ifSpeed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#groups}}
+            <tr>
+              <td>{{title}}</td>
+              <td class="num mono">{{agg.count}}</td>
+              <td class="num mono">{{agg.inOctets}}</td>
+              <td class="num mono">{{agg.outOctets}}</td>
+              <td class="num mono">{{agg.maxSpeedHuman}}</td>
+            </tr>
+            {{/groups}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {{#groups}}
+    <div class="card">
+      <h2>{{title}}</h2>
+      <div class="legend">
+        <span class="pill good">oper up</span>
+        <span class="pill bad">oper down</span>
+        <span class="pill warn">admin down</span>
+        <span class="pill">unknown</span>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="nowrap">ifIndex</th>
+              <th class="nowrap">ifName</th>
+              <th>ifDescr</th>
+              <th class="nowrap">ifType</th>
+              <th class="nowrap">Admin</th>
+              <th class="nowrap">Oper</th>
+              <th class="num nowrap">ifSpeed (bps)</th>
+              <th class="num nowrap">ifHighSpeed (Mbps)</th>
+              <th class="num nowrap">InOctets</th>
+              <th class="num nowrap">OutOctets</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#rows}}
+            <tr>
+              <td class="mono nowrap">{{ifIndex}}</td>
+              <td class="mono nowrap tag">{{ifName}}</td>
+              <td>{{ifDescr}}</td>
+              <td class="mono nowrap">{{ifType}}</td>
+              <td class="mono nowrap">{{{adminPill}}}</td>
+              <td class="mono nowrap">{{{operPill}}}</td>
+              <td class="mono num nowrap">{{speed_bps}}</td>
+              <td class="mono num nowrap">{{highSpeed_mbps}}</td>
+              <td class="mono num nowrap">{{inOctets}}</td>
+              <td class="mono num nowrap">{{outOctets}}</td>
+            </tr>
+            {{/rows}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {{/groups}}
+  </body>
+</html>
+`,
+    {
+      mac_address: payload.mac_address ?? "",
+      status: String(payload.status ?? ""),
+      message: payload.message ?? "",
+      diagramSvg,
+      groups: renderedGroups.map((g) => {
+        const maxBps = maxSpeedBps(g.rows);
+        return {
+          title: g.title,
+          agg: {
+            count: g.agg.count,
+            inOctets: fmtInt(g.agg.inOctets),
+            outOctets: fmtInt(g.agg.outOctets),
+            maxSpeedHuman: humanBps(maxBps)
+          },
+          rows: g.rows.map((r) => {
+            const admin = String(r.admin ?? "").toLowerCase();
+            const oper = String(r.oper ?? "").toLowerCase();
+
+            const adminClass =
+              admin.includes("down") ? "warn" :
+              admin.includes("up") ? "good" : "";
+
+            const operClass =
+              oper.includes("down") ? "bad" :
+              oper.includes("up") ? "good" : "";
+
+            return {
+              ifIndex: r.ifIndex,
+              ifName: esc(r.ifName),
+              ifDescr: esc(r.ifDescr),
+              ifType: r.ifType,
+              adminPill: `<span class="pill ${adminClass}">${esc(r.admin ?? "")}</span>`,
+              operPill: `<span class="pill ${operClass}">${esc(r.oper ?? "")}</span>`,
+              speed_bps: fmtInt(r.speed_bps),
+              highSpeed_mbps: fmtInt(r.highSpeed_mbps),
+              inOctets: fmtInt(r.inOctets),
+              outOctets: fmtInt(r.outOctets)
+            };
+          })
+        };
+      })
+    }
+  );
+})();
+````
+</details>
+
+<details>
+<summary>Sample JSON payload</summary>
+
+````json
+{
+    "mac_address": "aa:bb:cc:dd:ee:ff",
+    "status": 0,
+    "message": "Interface statistics retrieved successfully",
+    "results": {
+        "docsCableMaclayer": [
+            {
+                "ifEntry": {
+                    "ifIndex": 2,
+                    "ifDescr": "RF MAC Interface",
+                    "ifType": 127,
+                    "ifMtu": 1522,
+                    "ifSpeed": 0,
+                    "ifPhysAddress": "0xaabbccddeeff",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 103260367,
+                    "ifInUcastPkts": 883230,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 836578788,
+                    "ifOutUcastPkts": 4168953,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "cni0",
+                    "ifInMulticastPkts": 77229,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 1627684,
+                    "ifOutBroadcastPkts": 1144240,
+                    "ifHCInOctets": 103260367,
+                    "ifHCInUcastPkts": 883230,
+                    "ifHCInMulticastPkts": 77229,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 836578788,
+                    "ifHCOutUcastPkts": 4168953,
+                    "ifHCOutMulticastPkts": 1627684,
+                    "ifHCOutBroadcastPkts": 1144240,
+                    "ifLinkUpDownTrapEnable": 1,
+                    "ifHighSpeed": 0,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            }
+        ],
+        "docsCableDownstream": [
+            {
+                "ifEntry": {
+                    "ifIndex": 52,
+                    "ifDescr": "RF Downstream Interface 5",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 379209,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch6",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 379209,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 53,
+                    "ifDescr": "RF Downstream Interface 6",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 376004,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch7",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 376004,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 54,
+                    "ifDescr": "RF Downstream Interface 7",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 380949,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch8",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 380949,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 55,
+                    "ifDescr": "RF Downstream Interface 8",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 375724,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch9",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 375724,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 56,
+                    "ifDescr": "RF Downstream Interface 9",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 400854,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch10",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 400854,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 57,
+                    "ifDescr": "RF Downstream Interface 10",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 395616,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch11",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 395616,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 58,
+                    "ifDescr": "RF Downstream Interface 11",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 374273,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch12",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 374273,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 59,
+                    "ifDescr": "RF Downstream Interface 12",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 374920,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch13",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 374920,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 60,
+                    "ifDescr": "RF Downstream Interface 13",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 384196,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch14",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 384196,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 61,
+                    "ifDescr": "RF Downstream Interface 14",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 397060,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch15",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 397060,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 62,
+                    "ifDescr": "RF Downstream Interface 15",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 406780,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch16",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 407975,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 63,
+                    "ifDescr": "RF Downstream Interface 16",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 383335,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch17",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 383335,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 64,
+                    "ifDescr": "RF Downstream Interface 17",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 380483,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch18",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 380483,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 65,
+                    "ifDescr": "RF Downstream Interface 18",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 388793,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch19",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 388793,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 66,
+                    "ifDescr": "RF Downstream Interface 19",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 401326,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch20",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 401326,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 67,
+                    "ifDescr": "RF Downstream Interface 20",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 386874,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch21",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 386874,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 68,
+                    "ifDescr": "RF Downstream Interface 21",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 393602,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch22",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 393602,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 69,
+                    "ifDescr": "RF Downstream Interface 22",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 397842,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch23",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 397842,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 70,
+                    "ifDescr": "RF Downstream Interface 23",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 386026,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch24",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 386026,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 71,
+                    "ifDescr": "RF Downstream Interface 24",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 384162,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch25",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 384162,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 72,
+                    "ifDescr": "RF Downstream Interface 25",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 376878,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch26",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 376878,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 73,
+                    "ifDescr": "RF Downstream Interface 26",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 373095,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch27",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 373095,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 74,
+                    "ifDescr": "RF Downstream Interface 27",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 403849,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch28",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 403849,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 75,
+                    "ifDescr": "RF Downstream Interface 28",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 373456,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch29",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 373456,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 76,
+                    "ifDescr": "RF Downstream Interface 29",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 381817,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch30",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 381817,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 77,
+                    "ifDescr": "RF Downstream Interface 30",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 376856,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch31",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 376856,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 78,
+                    "ifDescr": "RF Downstream Interface 31",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 383530,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch32",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 383530,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 79,
+                    "ifDescr": "RF Downstream Interface 32",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 395454,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch33",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 395454,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 112,
+                    "ifDescr": "RF Downstream Interface 33",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 382089,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch34",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 382089,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 113,
+                    "ifDescr": "RF Downstream Interface 34",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 363986,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch35",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 363986,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 114,
+                    "ifDescr": "RF Downstream Interface 35",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 378053,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch36",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 378053,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 115,
+                    "ifDescr": "RF Downstream Interface 36",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 13497,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch37",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 13497,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            }
+        ],
+        "docsCableUpstream": [
+            {
+                "ifEntry": {
+                    "ifIndex": 80,
+                    "ifDescr": "RF Upstream Interface 1",
+                    "ifType": 129,
+                    "ifMtu": 1764,
+                    "ifSpeed": 7680000,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 0,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 6336,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": null
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 81,
+                    "ifDescr": "RF Upstream Interface 2",
+                    "ifType": 129,
+                    "ifMtu": 1764,
+                    "ifSpeed": 7680000,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 0,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": null
+            }
+        ],
+        "docsOfdmDownstream": [
+            {
+                "ifEntry": {
+                    "ifIndex": 3,
+                    "ifDescr": "RF Downstream Interface",
+                    "ifType": 277,
+                    "ifMtu": 1764,
+                    "ifSpeed": 2093258880,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 657126077,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch1",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 657126077,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 2093,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 48,
+                    "ifDescr": "RF Downstream Interface 1",
+                    "ifType": 277,
+                    "ifMtu": 1764,
+                    "ifSpeed": 2093258880,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 191038414,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch2",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 191038414,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 2093,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 49,
+                    "ifDescr": "RF Downstream Interface 2",
+                    "ifType": 277,
+                    "ifMtu": 1764,
+                    "ifSpeed": 2093258880,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 191056443,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch3",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 191057211,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 2093,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 50,
+                    "ifDescr": "RF Downstream Interface 3",
+                    "ifType": 277,
+                    "ifMtu": 1764,
+                    "ifSpeed": 2093258880,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 144976763,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch4",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 144976763,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 2093,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 51,
+                    "ifDescr": "RF Downstream Interface 4",
+                    "ifType": 277,
+                    "ifMtu": 1764,
+                    "ifSpeed": 1744382336,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 144982736,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch5",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 144982736,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 1744,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            }
+        ],
+        "docsOfdmaUpstream": [
+            {
+                "ifEntry": {
+                    "ifIndex": 4,
+                    "ifDescr": "RF Upstream Interface",
+                    "ifType": 278,
+                    "ifMtu": 1764,
+                    "ifSpeed": 641923128,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 0,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 926578412,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": null
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 82,
+                    "ifDescr": "RF Upstream Interface 3",
+                    "ifType": 278,
+                    "ifMtu": 1764,
+                    "ifSpeed": 1034937288,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 0,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 472821801,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": null
+            }
+        ]
+    }
+}
+````
+</details>

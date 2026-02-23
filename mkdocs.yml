@@ -1,0 +1,39 @@
+site_name: Postman PyPNMApps API Visual Docs
+site_description: Generated documentation and previews for Postman visual examples
+repo_url: https://github.com/PyPNMApps/Postman-PyPNMApps-API
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.sections
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue grey
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue grey
+      accent: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+docs_dir: docs
+site_dir: site
+
+markdown_extensions:
+  - tables
+  - fenced_code
+
+nav:
+  - Home: index.md
+  - Docs Index: docs-index.md
+  - User Guide: user-guide.md
+  - Tools: tools.md
+  - Release: release.md
+  - Visual Examples: visual/index.md
+  - Visual MkDocs Plan: visual-mkdocs-plan.md

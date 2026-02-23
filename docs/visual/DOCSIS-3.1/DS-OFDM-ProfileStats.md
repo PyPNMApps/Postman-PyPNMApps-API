@@ -1,0 +1,641 @@
+# PyPNM / DOCSIS-3.1 / DS-OFDM-ProfileStats
+
+## Source Files
+
+- HTML/script: `visual/PyPNM/DOCSIS-3.1/DS-OFDM-ProfileStats.html`
+- JSON sample: `visual/PyPNM/DOCSIS-3.1/DS-OFDM-ProfileStats.json`
+
+## Preview
+
+<iframe src="/visual-previews/DOCSIS-3.1/DS-OFDM-ProfileStats.html" style="width:100%;height:900px;border:1px solid #ccc;border-radius:6px;"></iframe>
+
+Preview is best-effort. Some templates may rely on Postman-specific APIs that are not yet shimmed.
+
+<details>
+<summary>Visualizer HTML/script source</summary>
+
+````html
+// Postman Visualizer - DOCSIS 3.1 DS OFDM Profile Stats (Dark Mode)
+// Useful visuals (no overlap; separate graphs per channel):
+// 1) Per-channel: Total vs Corrected vs Uncorrectable Codewords by Profile (BAR, grouped)
+// 2) Per-channel: InOctets by Profile (BAR)
+// 3) Per-channel: Unicast vs Multicast Octets by Profile (BAR, grouped)
+// 4) Summary KPIs: dominant profile (by total CW), corrected rate, top channels by corrected CW
+
+const template = `
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background-color: #0f1220;
+    color: #eaeaea;
+  }
+  .header {
+    background-color: #151a2e;
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 16px 16px 10px 16px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  }
+  .title {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+    color: #ff4d6d;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .pill {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #eaeaea;
+  }
+  .pill b { color: #9fb4ff; font-weight: 700; }
+  .sub {
+    margin: 0 0 6px 0;
+    font-size: 12px;
+    color: rgba(234,234,234,0.85);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .card {
+    background-color: #151a2e;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  }
+  .card h3 {
+    margin: 0 0 6px 0;
+    font-size: 14px;
+    color: #9fb4ff;
+  }
+  .divider {
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+    margin: 14px 0;
+  }
+  .kpi {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .kpiItem {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px;
+  }
+  .kpiItem .k {
+    font-size: 11px;
+    color: rgba(234,234,234,0.8);
+    margin-bottom: 4px;
+  }
+  .kpiItem .v {
+    font-size: 16px;
+    font-weight: 700;
+    color: #eaeaea;
+  }
+  .kpiItem .h {
+    margin-top: 4px;
+    font-size: 11px;
+    color: rgba(159,180,255,0.95);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 12px;
+  }
+  th, td {
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 8px 6px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  th { color: #9fb4ff; font-weight: 700; }
+  .warn { color: #ffcc66; }
+  .bad  { color: #ff6b6b; }
+</style>
+
+<div class="header">
+  <div class="title">DS OFDM Profile Stats</div>
+  <div class="meta">
+    <div class="pill"><b>MAC</b> {{mac}}</div>
+    <div class="pill"><b>Status</b> {{statusText}}</div>
+    <div class="pill"><b>Channels</b> {{channelCount}}</div>
+    <div class="pill"><b>Profiles Seen</b> {{profileCount}}</div>
+  </div>
+  <div class="sub">{{message}}</div>
+
+  <div class="kpi">
+    <div class="kpiItem">
+      <div class="k">Worst Corrected Rate</div>
+      <div class="v">{{kpi.worstCorrRate}}</div>
+      <div class="h">Ch {{kpi.worstCorrCh}} · Profile {{kpi.worstCorrProfile}}</div>
+    </div>
+    <div class="kpiItem">
+      <div class="k">Total Corrected Codewords</div>
+      <div class="v">{{kpi.totalCorrected}}</div>
+      <div class="h">Across all channels/profiles</div>
+    </div>
+    <div class="kpiItem">
+      <div class="k">Dominant Profile</div>
+      <div class="v">{{kpi.dominantProfile}}</div>
+      <div class="h">By total codewords (all channels)</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="sub"><b>Top Channels By Corrected Codewords</b></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Channel</th>
+        <th>Corrected CW</th>
+        <th>Total CW</th>
+        <th>Corrected Rate</th>
+        <th>Worst Profile</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each topChannels}}
+      <tr>
+        <td>{{ch}}</td>
+        <td>{{corr}}</td>
+        <td>{{total}}</td>
+        <td class="{{rateClass}}">{{rate}}</td>
+        <td>{{worstProfile}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
+
+<div class="grid">
+  {{#each channels}}
+  <div class="card">
+    <h3>{{label}} · Codewords By Profile</h3>
+    <div class="sub">Grouped bars: Total vs Corrected vs Uncorrectable.</div>
+    <canvas id="chart_cw_{{canvas_id}}" height="110"></canvas>
+
+    <div class="divider"></div>
+
+    <h3>{{label}} · InOctets By Profile</h3>
+    <div class="sub">Total inbound octets (bars).</div>
+    <canvas id="chart_oct_{{canvas_id}}" height="100"></canvas>
+
+    <div class="divider"></div>
+
+    <h3>{{label}} · Unicast vs Multicast Octets By Profile</h3>
+    <div class="sub">Traffic split by profile.</div>
+    <canvas id="chart_um_{{canvas_id}}" height="110"></canvas>
+  </div>
+  {{/each}}
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+<script>
+pm.getData(function (err, value) {
+  if (err) {
+    console.error(err);
+    return;
+  }
+
+  var gridColor = 'rgba(255,255,255,0.12)';
+  var tickColor = 'rgba(234,234,234,0.85)';
+  var labelColor = '#eaeaea';
+
+  var rgbaFill = function(rgb, a) {
+    return rgb.replace('rgb', 'rgba').replace(')', ', ' + a + ')');
+  };
+
+  var cTotal = 'rgb(54, 162, 235)';
+  var cCorr  = 'rgb(255, 206, 86)';
+  var cUnc   = 'rgb(255, 99, 132)';
+  var cOct   = 'rgb(75, 192, 192)';
+  var cUni   = 'rgb(153, 102, 255)';
+  var cMul   = 'rgb(255, 159, 64)';
+
+  (value.channels || []).forEach(function(ch) {
+    // --- Codewords chart ---
+    (function renderCodewords() {
+      var canvas = document.getElementById('chart_cw_' + ch.canvas_id);
+      if (!canvas) return;
+
+      new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ch.profileLabels,
+          datasets: [
+            { label: 'Total CW', data: ch.totalCW, backgroundColor: rgbaFill(cTotal, 0.55), borderColor: cTotal, borderWidth: 1 },
+            { label: 'Corrected CW', data: ch.corrCW, backgroundColor: rgbaFill(cCorr, 0.55), borderColor: cCorr, borderWidth: 1 },
+            { label: 'Uncorrectable CW', data: ch.uncCW, backgroundColor: rgbaFill(cUnc, 0.55), borderColor: cUnc, borderWidth: 1 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          legend: { display: true, labels: { fontColor: labelColor } },
+          tooltips: { mode: 'index', intersect: false },
+          scales: {
+            xAxes: [{
+              ticks: { fontColor: tickColor, maxTicksLimit: 16 },
+              gridLines: { color: gridColor },
+              scaleLabel: { display: true, labelString: 'Profile ID', fontColor: labelColor }
+            }],
+            yAxes: [{
+              ticks: { fontColor: tickColor, beginAtZero: true },
+              gridLines: { color: gridColor },
+              scaleLabel: { display: true, labelString: 'Codewords', fontColor: labelColor }
+            }]
+          }
+        }
+      });
+    })();
+
+    // --- InOctets chart ---
+    (function renderOctets() {
+      var canvas = document.getElementById('chart_oct_' + ch.canvas_id);
+      if (!canvas) return;
+
+      new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ch.profileLabels,
+          datasets: [
+            { label: 'InOctets', data: ch.inOctets, backgroundColor: rgbaFill(cOct, 0.55), borderColor: cOct, borderWidth: 1 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          legend: { display: true, labels: { fontColor: labelColor } },
+          tooltips: { mode: 'index', intersect: false },
+          scales: {
+            xAxes: [{
+              ticks: { fontColor: tickColor, maxTicksLimit: 16 },
+              gridLines: { color: gridColor },
+              scaleLabel: { display: true, labelString: 'Profile ID', fontColor: labelColor }
+            }],
+            yAxes: [{
+              ticks: { fontColor: tickColor, beginAtZero: true },
+              gridLines: { color: gridColor },
+              scaleLabel: { display: true, labelString: 'Octets', fontColor: labelColor }
+            }]
+          }
+        }
+      });
+    })();
+
+    // --- Unicast/Multicast chart ---
+    (function renderUniMul() {
+      var canvas = document.getElementById('chart_um_' + ch.canvas_id);
+      if (!canvas) return;
+
+      new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ch.profileLabels,
+          datasets: [
+            { label: 'Unicast Octets', data: ch.uniOctets, backgroundColor: rgbaFill(cUni, 0.55), borderColor: cUni, borderWidth: 1 },
+            { label: 'Multicast Octets', data: ch.mulOctets, backgroundColor: rgbaFill(cMul, 0.55), borderColor: cMul, borderWidth: 1 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          legend: { display: true, labels: { fontColor: labelColor } },
+          tooltips: { mode: 'index', intersect: false },
+          scales: {
+            xAxes: [{
+              ticks: { fontColor: tickColor, maxTicksLimit: 16 },
+              gridLines: { color: gridColor },
+              scaleLabel: { display: true, labelString: 'Profile ID', fontColor: labelColor }
+            }],
+            yAxes: [{
+              ticks: { fontColor: tickColor, beginAtZero: true },
+              gridLines: { color: gridColor },
+              scaleLabel: { display: true, labelString: 'Octets', fontColor: labelColor }
+            }]
+          }
+        }
+      });
+    })();
+  });
+});
+</script>
+`;
+
+function constructVisualizerPayload() {
+  const r = pm.response.json();
+
+  const mac = r.mac_address || 'N/A';
+  const status = (r.status !== undefined && r.status !== null) ? r.status : 'N/A';
+  const statusText = status === 0 ? 'Success' : String(status);
+  const message = (r.message !== undefined && r.message !== null) ? r.message : '';
+
+  const results = Array.isArray(r.results) ? r.results : [];
+
+  // profile key universe (for summary)
+  const profileKeySet = new Set();
+
+  // aggregations across all channels
+  const dominantProfileTotals = {}; // profile -> totalCW
+  let totalCorrectedAll = 0;
+
+  // track worst corrected rate (corrected/total) among all profiles with total>0
+  let worst = null; // { rate, channel_id, profile }
+
+  // per-channel summarize for table
+  const channelSummaries = [];
+
+  const channels = results.map((item, idx) => {
+    const channelId = (item && item.channel_id !== undefined && item.channel_id !== null) ? item.channel_id : ('idx-' + (idx + 1));
+    const profilesObj = (item && item.profiles && typeof item.profiles === 'object') ? item.profiles : {};
+
+    const profileKeys = Object.keys(profilesObj).sort((a, b) => {
+      const ai = Number(a);
+      const bi = Number(b);
+      if (Number.isFinite(ai) && Number.isFinite(bi)) return ai - bi;
+      return String(a).localeCompare(String(b));
+    });
+
+    profileKeys.forEach(k => profileKeySet.add(k));
+
+    const profileLabels = profileKeys.map(k => String(k));
+
+    const totalCW = [];
+    const corrCW = [];
+    const uncCW = [];
+    const inOctets = [];
+    const uniOctets = [];
+    const mulOctets = [];
+
+    let channelTotal = 0;
+    let channelCorr = 0;
+
+    let worstProfileForChannel = null; // profile key
+    let worstRateForChannel = null;
+
+    profileKeys.forEach(pk => {
+      const p = profilesObj[pk] || {};
+      const t = Number(p.docsIf31CmDsOfdmProfileStatsTotalCodewords || 0);
+      const c = Number(p.docsIf31CmDsOfdmProfileStatsCorrectedCodewords || 0);
+      const u = Number(p.docsIf31CmDsOfdmProfileStatsUncorrectableCodewords || 0);
+      const o = Number(p.docsIf31CmDsOfdmProfileStatsInOctets || 0);
+      const ou = Number(p.docsIf31CmDsOfdmProfileStatsInUnicastOctets || 0);
+      const om = Number(p.docsIf31CmDsOfdmProfileStatsInMulticastOctets || 0);
+
+      totalCW.push(t);
+      corrCW.push(c);
+      uncCW.push(u);
+      inOctets.push(o);
+      uniOctets.push(ou);
+      mulOctets.push(om);
+
+      channelTotal += t;
+      channelCorr += c;
+
+      // dominant profile totals across all channels
+      dominantProfileTotals[pk] = (dominantProfileTotals[pk] || 0) + t;
+
+      totalCorrectedAll += c;
+
+      // corrected rate checks
+      if (t > 0) {
+        const rate = c / t;
+        if (worst === null || rate > worst.rate) {
+          // Note: "worst" here means highest corrected/total ratio (more corrections = worse)
+          worst = { rate, channel_id: channelId, profile: pk };
+        }
+
+        if (worstRateForChannel === null || rate > worstRateForChannel) {
+          worstRateForChannel = rate;
+          worstProfileForChannel = pk;
+        }
+      }
+    });
+
+    const channelRate = channelTotal > 0 ? (channelCorr / channelTotal) : 0;
+
+    channelSummaries.push({
+      ch: String(channelId),
+      corr: channelCorr,
+      total: channelTotal,
+      rate: channelRate,
+      worstProfile: worstProfileForChannel !== null ? String(worstProfileForChannel) : 'N/A'
+    });
+
+    return {
+      label: 'OFDM Channel ' + String(channelId),
+      canvas_id: 'c' + String(idx + 1),
+      profileLabels,
+      totalCW,
+      corrCW,
+      uncCW,
+      inOctets,
+      uniOctets,
+      mulOctets
+    };
+  });
+
+  // dominant profile by total codewords
+  let dominantProfile = 'N/A';
+  let dominantTotal = -1;
+  Object.keys(dominantProfileTotals).forEach(pk => {
+    if (dominantProfileTotals[pk] > dominantTotal) {
+      dominantTotal = dominantProfileTotals[pk];
+      dominantProfile = String(pk);
+    }
+  });
+
+  // top channels by corrected CW
+  channelSummaries.sort((a, b) => b.corr - a.corr);
+  const topChannels = channelSummaries.slice(0, 5).map(rw => {
+    const ratePct = (rw.total > 0) ? (rw.rate * 100.0) : 0;
+    const rateClass = ratePct >= 1.0 ? 'bad' : (ratePct >= 0.1 ? 'warn' : '');
+    return {
+      ch: rw.ch,
+      corr: rw.corr,
+      total: rw.total,
+      rate: ratePct.toFixed(4) + '%',
+      rateClass,
+      worstProfile: rw.worstProfile
+    };
+  });
+
+  const kpi = {
+    worstCorrRate: worst ? (worst.rate * 100.0).toFixed(4) + '%' : 'N/A',
+    worstCorrCh: worst ? String(worst.channel_id) : 'N/A',
+    worstCorrProfile: worst ? String(worst.profile) : 'N/A',
+    totalCorrected: String(totalCorrectedAll),
+    dominantProfile
+  };
+
+  return {
+    mac,
+    statusText,
+    message,
+    channelCount: channels.length,
+    profileCount: profileKeySet.size,
+    kpi,
+    topChannels,
+    channels
+  };
+}
+
+pm.visualizer.set(template, constructVisualizerPayload());
+````
+</details>
+
+<details>
+<summary>Sample JSON payload</summary>
+
+````json
+{
+    "mac_address": "aa:bb:cc:dd:ee:ff",
+    "status": 0,
+    "message": null,
+    "results": [
+        {
+            "index": 48,
+            "channel_id": 194,
+            "profiles": {
+                "0": {
+                    "docsIf31CmDsOfdmProfileStatsConfigChangeCt": 0,
+                    "docsIf31CmDsOfdmProfileStatsTotalCodewords": 10993816,
+                    "docsIf31CmDsOfdmProfileStatsCorrectedCodewords": 3915,
+                    "docsIf31CmDsOfdmProfileStatsUncorrectableCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsInOctets": 4443771,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastOctets": 1397,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastOctets": 4025896,
+                    "docsIf31CmDsOfdmProfileStatsInFrames": 69413,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastFrames": 1,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastFrames": 69412,
+                    "docsIf31CmDsOfdmProfileStatsInFrameCrcFailures": 0,
+                    "docsIf31CmDsOfdmProfileStatsCtrDiscontinuityTime": 0
+                },
+                "3": {
+                    "docsIf31CmDsOfdmProfileStatsConfigChangeCt": 0,
+                    "docsIf31CmDsOfdmProfileStatsTotalCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsCorrectedCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsUncorrectableCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsInOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInFrameCrcFailures": 0,
+                    "docsIf31CmDsOfdmProfileStatsCtrDiscontinuityTime": 0
+                },
+                "4": {
+                    "docsIf31CmDsOfdmProfileStatsConfigChangeCt": 0,
+                    "docsIf31CmDsOfdmProfileStatsTotalCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsCorrectedCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsUncorrectableCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsInOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInFrameCrcFailures": 0,
+                    "docsIf31CmDsOfdmProfileStatsCtrDiscontinuityTime": 0
+                },
+                "255": {
+                    "docsIf31CmDsOfdmProfileStatsConfigChangeCt": 0,
+                    "docsIf31CmDsOfdmProfileStatsTotalCodewords": 211308433,
+                    "docsIf31CmDsOfdmProfileStatsCorrectedCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsUncorrectableCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsInOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInFrameCrcFailures": 0,
+                    "docsIf31CmDsOfdmProfileStatsCtrDiscontinuityTime": 0
+                }
+            }
+        },
+        {
+            "index": 49,
+            "channel_id": 193,
+            "profiles": {
+                "0": {
+                    "docsIf31CmDsOfdmProfileStatsConfigChangeCt": 0,
+                    "docsIf31CmDsOfdmProfileStatsTotalCodewords": 10972110,
+                    "docsIf31CmDsOfdmProfileStatsCorrectedCodewords": 3050,
+                    "docsIf31CmDsOfdmProfileStatsUncorrectableCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsInOctets": 4444539,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastOctets": 1397,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastOctets": 4026592,
+                    "docsIf31CmDsOfdmProfileStatsInFrames": 69425,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastFrames": 1,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastFrames": 69424,
+                    "docsIf31CmDsOfdmProfileStatsInFrameCrcFailures": 0,
+                    "docsIf31CmDsOfdmProfileStatsCtrDiscontinuityTime": 0
+                },
+                "3": {
+                    "docsIf31CmDsOfdmProfileStatsConfigChangeCt": 0,
+                    "docsIf31CmDsOfdmProfileStatsTotalCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsCorrectedCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsUncorrectableCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsInOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInFrameCrcFailures": 0,
+                    "docsIf31CmDsOfdmProfileStatsCtrDiscontinuityTime": 0
+                },
+                "4": {
+                    "docsIf31CmDsOfdmProfileStatsConfigChangeCt": 0,
+                    "docsIf31CmDsOfdmProfileStatsTotalCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsCorrectedCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsUncorrectableCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsInOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInFrameCrcFailures": 0,
+                    "docsIf31CmDsOfdmProfileStatsCtrDiscontinuityTime": 0
+                },
+                "255": {
+                    "docsIf31CmDsOfdmProfileStatsConfigChangeCt": 0,
+                    "docsIf31CmDsOfdmProfileStatsTotalCodewords": 211334592,
+                    "docsIf31CmDsOfdmProfileStatsCorrectedCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsUncorrectableCodewords": 0,
+                    "docsIf31CmDsOfdmProfileStatsInOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastOctets": 0,
+                    "docsIf31CmDsOfdmProfileStatsInFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInUnicastFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInMulticastFrames": 0,
+                    "docsIf31CmDsOfdmProfileStatsInFrameCrcFailures": 0,
+                    "docsIf31CmDsOfdmProfileStatsCtrDiscontinuityTime": 0
+                }
+            }
+        }
+    ]
+}
+````
+</details>

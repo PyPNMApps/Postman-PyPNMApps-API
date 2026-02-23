@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyPNM / SingleCapture / SpectrumAnalysis / GetCapture-Friendly</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 12px;
+      background: #f8fafc;
+      color: #111827;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .frame {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .error {
+      white-space: pre-wrap;
+      color: #fecaca;
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      padding: 8px;
+      border-radius: 6px;
+    }
+    .note {
+      margin-bottom: 8px;
+      color: #475569;
+      font-size: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #0f172a;
+        color: #e5e7eb;
+      }
+      .frame {
+        background: #111827;
+        border-color: #374151;
+      }
+      .note {
+        color: #cbd5e1;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/handlebars@4.7.8/dist/handlebars.min.js"></script>
+</head>
+<body>
+  <div class="note">Preview uses a lightweight Postman visualizer shim (`pm.response.json`, `pm.getData`, `pm.visualizer.set`).</div>
+  <div id="app" class="frame"></div>
+  <script>
+  (function() {
+    const sampleData = {"__warning__": "No matching JSON sample file found for this visual."};
+    const visualSource = "// Visualization Script\nconst template = `\n<div style=\"background-color: #1e1e1e; padding: 20px; font-family: Arial, sans-serif;\">\n    <h2 style=\"color: #ffffff; text-align: center;\">Spectrum Analysis</h2>\n    <canvas id=\"spectrumChart\" width=\"800\" height=\"400\"></canvas>\n</div>\n\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js\"><\/script>\n<script>\n    var ctx = document.getElementById('spectrumChart').getContext('2d');\n    \n    var myChart = new Chart(ctx, {\n        type: 'line',\n        data: {\n            labels: [],\n            datasets: [{\n                label: 'Magnitude',\n                data: [],\n                borderColor: '#4CAF50',\n                backgroundColor: 'rgba(76, 175, 80, 0.1)',\n                borderWidth: 1,\n                pointRadius: 0,\n                fill: true,\n                tension: 0.1\n            },\n            {\n                label: 'Window Average',\n                data: [],\n                borderColor: '#FF9800',\n                backgroundColor: 'rgba(255, 152, 0, 0.1)',\n                borderWidth: 1,\n                pointRadius: 0,\n                fill: false,\n                tension: 0.1\n            }]\n        },\n        options: {\n            responsive: true,\n            maintainAspectRatio: true,\n            legend: {\n                display: true,\n                labels: {\n                    fontColor: '#ffffff'\n                }\n            },\n            scales: {\n                xAxes: [{\n                    display: true,\n                    scaleLabel: {\n                        display: true,\n                        labelString: 'Frequency (Hz)',\n                        fontColor: '#ffffff',\n                        fontSize: 14\n                    },\n                    ticks: {\n                        fontColor: '#ffffff',\n                        callback: function(value) {\n                            return (value / 1000000).toFixed(1) + ' MHz';\n                        }\n                    }\n                }],\n                yAxes: [{\n                    display: true,\n                    scaleLabel: {\n                        display: true,\n                        labelString: 'Magnitude (dBmV)',\n                        fontColor: '#ffffff',\n                        fontSize: 14\n                    },\n                    ticks: {\n                        fontColor: '#ffffff'\n                    }\n                }]\n            }\n        }\n    });\n\n    pm.getData(function (err, value) {\n        if (err) {\n            console.error(err);\n            return;\n        }\n        \n        var analysisData = value.response.data.analysis[0];\n        var signalAnalysis = analysisData.signal_analysis;\n        \n        myChart.data.labels = signalAnalysis.frequencies;\n        myChart.data.datasets[0].data = signalAnalysis.magnitudes;\n        myChart.data.datasets[1].data = signalAnalysis.window_average.magnitudes;\n        myChart.update();\n    });\n\n<\/script>\n`;\n\nfunction constructVisualizerPayload() {\n    return {response: pm.response.json()};\n}\n\npm.visualizer.set(template, constructVisualizerPayload());";
+    const app = document.getElementById("app");
+    let visualizerData = sampleData;
+    let lastTemplate = null;
+
+    function executeRenderedScripts(root) {
+      const scripts = Array.from(root.querySelectorAll("script"));
+      for (const oldScript of scripts) {
+        const newScript = document.createElement("script");
+        for (const attr of oldScript.attributes) {
+          newScript.setAttribute(attr.name, attr.value);
+        }
+        newScript.textContent = oldScript.textContent;
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+      }
+    }
+
+    function renderTemplate(template, data) {
+      lastTemplate = template;
+      visualizerData = data == null ? sampleData : data;
+      try {
+        if (window.Handlebars && typeof template === "string") {
+          const compiled = window.Handlebars.compile(template);
+          app.innerHTML = compiled(visualizerData);
+          executeRenderedScripts(app);
+        } else if (typeof template === "string") {
+          app.innerHTML = template;
+          executeRenderedScripts(app);
+        } else {
+          app.textContent = String(template);
+        }
+      } catch (err) {
+        app.innerHTML = '<div class="error">Template render error\n' + String(err && err.stack || err) + '</div>';
+      }
+    }
+
+    function makeKVStore() {
+      const store = Object.create(null);
+      return {
+        get: function(key) { return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : undefined; },
+        set: function(key, value) { store[key] = value; return value; },
+        unset: function(key) { delete store[key]; }
+      };
+    }
+
+    window.pm = {
+      response: {
+        json: function() { return sampleData; },
+        text: function() { return JSON.stringify(sampleData); }
+      },
+      request: {
+        body: {
+          raw: "{}"
+        }
+      },
+      environment: makeKVStore(),
+      globals: makeKVStore(),
+      variables: makeKVStore(),
+      getData: function(cb) {
+        if (typeof cb === "function") cb(null, visualizerData);
+      },
+      visualizer: {
+        set: function(template, data) {
+          renderTemplate(template, data);
+        }
+      }
+    };
+
+    window.console = window.console || { log(){}, warn(){}, error(){} };
+
+    try {
+      const fn = new Function(visualSource);
+      fn();
+      if (!lastTemplate && !app.innerHTML.trim()) {
+        app.innerHTML = '<div class="error">No visualizer output produced. The script may require unsupported Postman APIs.</div>';
+      }
+    } catch (err) {
+      app.innerHTML = '<div class="error">Script execution error\n' + String(err && err.stack || err) + '</div>';
+    }
+  })();
+  </script>
+</body>
+</html>

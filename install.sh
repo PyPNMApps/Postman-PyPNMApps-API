@@ -26,3 +26,7 @@ echo "  ${VENV_DIR}/bin/python tools/support/bump_version.py --version X.Y.Z --c
 echo "  ${VENV_DIR}/bin/python tools/support/bump_version.py --version X.Y.Z"
 echo "Run tests with:"
 echo "  ${VENV_DIR}/bin/python -m pytest"
+echo "Build visual docs pages with:"
+echo "  ${VENV_DIR}/bin/python tools/docs/build_visual_docs.py"
+echo "Serve MkDocs locally with:"
+echo "  ${VENV_DIR}/bin/mkdocs serve"

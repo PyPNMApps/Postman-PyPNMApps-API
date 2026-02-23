@@ -57,7 +57,7 @@ Version source of truth:
 
 Detailed instructions were moved to `docs/`:
 
-- `docs/README.md` (docs index)
+- `docs/docs-index.md` (docs index)
 - `docs/user-guide.md` (full Postman import/use walkthrough)
 - `docs/tools.md` (sanitize/version/release/git helpers)
 - `docs/release.md` (release process and versioning)

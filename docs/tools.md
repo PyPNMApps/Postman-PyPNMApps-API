@@ -10,6 +10,31 @@ Create the local virtual environment and install dev dependencies:
 ./install.sh
 ```
 
+## Visual Docs Generator (MkDocs)
+
+Path:
+
+- `tools/docs/build_visual_docs.py`
+
+Purpose:
+
+- Scans `visual/` for `.html` + `.json` examples
+- Generates MkDocs pages under `docs/visual/`
+- Generates local preview wrappers under `docs/visual-previews/`
+
+Usage:
+
+```bash
+.venv/bin/python tools/docs/build_visual_docs.py
+.venv/bin/python tools/docs/build_visual_docs.py --check
+.venv/bin/mkdocs serve
+```
+
+Notes:
+
+- In this version, `visual/` is the source of truth for both visualizer HTML/script and sample data.
+- Preview rendering uses a lightweight Postman API shim and is best-effort.
+
 ## Sanitization Tool
 
 Path:

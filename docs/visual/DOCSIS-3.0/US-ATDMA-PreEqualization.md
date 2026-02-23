@@ -1,0 +1,6996 @@
+# PyPNM / DOCSIS-3.0 / US-ATDMA-PreEqualization
+
+## Source Files
+
+- HTML/script: `visual/PyPNM/DOCSIS-3.0/US-ATDMA-PreEqualization.html`
+- JSON sample: `visual/PyPNM/DOCSIS-3.0/US-ATDMA-PreEqualization.json`
+
+## Preview
+
+<iframe src="/visual-previews/DOCSIS-3.0/US-ATDMA-PreEqualization.html" style="width:100%;height:900px;border:1px solid #ccc;border-radius:6px;"></iframe>
+
+Preview is best-effort. Some templates may rely on Postman-specific APIs that are not yet shimmed.
+
+<details>
+<summary>Visualizer HTML/script source</summary>
+
+````html
+// Postman Visualizer: Upstream Pre-EQ + Topology + Stats + Tap Bars + Freq Response + Group Delay Graphs
+// Paste into Tests tab.
+//
+// Updates:
+// - Marks the strongest POST-main tap (highest magnitude_power_dB after MAIN) in red.
+// - Adds a POST-main tap table (T1..T16) with delay + cable echo distance in meters/feet.
+// - Delay source priority per tap:
+//   1) taps[i].delay_us (if present)
+//   2) group_delay.delay_us[i] when it aligns to taps[] length
+// - Cable echo distance uses Δdelay relative to MAIN tap delay:
+//   distance_m = |Δt| * VF * c / 2
+//   default VF=0.87 (configurable below)
+//
+// Requested table change:
+// - Removed columns: TapIndex, Tap dB, Mag, Delay (μs)
+
+(function () {
+  const resp = pm.response.json();
+
+  const safe = (v, d = "") => (v === undefined || v === null ? d : v);
+
+  const esc = (s) =>
+    String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+  const isNum = (v) => typeof v === "number" && isFinite(v);
+  const fmt = (v, digits = 2) => (isNum(v) ? v.toFixed(digits) : "—");
+
+  const tapDisp = (i) => (Number.isInteger(i) ? String(i + 1) : "—");
+
+  const results = safe(resp.results, {});
+  const usIdxKeys = Object.keys(results).sort((a, b) => Number(a) - Number(b));
+
+  const C_MPS = 299792458;
+  const DEFAULT_VF = 0.87;
+
+  function getMainTapIndex(usRecord) {
+    const mRaw = Number(usRecord?.main_tap_location);
+    const nRaw = Number(usRecord?.num_taps);
+
+    if (!Number.isInteger(mRaw) || !Number.isInteger(nRaw) || nRaw <= 0) {
+      return null;
+    }
+
+    if (mRaw >= 1 && mRaw <= nRaw) {
+      const idx = mRaw - 1;
+      if (idx >= 0 && idx < nRaw) {
+        return idx;
+      }
+      return null;
+    }
+
+    if (mRaw >= 0 && mRaw < nRaw) {
+      return mRaw;
+    }
+
+    return null;
+  }
+
+  function getDbRange(taps) {
+    let minDb = Infinity;
+    let maxDb = -Infinity;
+
+    for (const t of taps) {
+      const db = t?.magnitude_power_dB;
+      if (isNum(db)) {
+        if (db < minDb) minDb = db;
+        if (db > maxDb) maxDb = db;
+      }
+    }
+
+    if (!isFinite(minDb) || !isFinite(maxDb)) {
+      return { minDb: 0, maxDb: 1 };
+    }
+
+    if (maxDb - minDb < 1e-9) {
+      return { minDb: minDb - 1, maxDb: maxDb + 1 };
+    }
+
+    return { minDb, maxDb };
+  }
+
+  function barHeightPct(db, minDb, maxDb) {
+    if (!isNum(db)) return 0;
+    const pct = ((db - minDb) / (maxDb - minDb)) * 100;
+    return Math.min(100, Math.max(0, pct));
+  }
+
+  function summarizeArray(arr) {
+    const xs = Array.isArray(arr) ? arr.filter(isNum) : [];
+    if (xs.length === 0) {
+      return { n: 0, min: null, max: null, mean: null, p2p: null, std: null };
+    }
+    let min = Infinity;
+    let max = -Infinity;
+    let sum = 0;
+
+    for (const x of xs) {
+      if (x < min) min = x;
+      if (x > max) max = x;
+      sum += x;
+    }
+
+    const mean = sum / xs.length;
+
+    let varSum = 0;
+    for (const x of xs) {
+      const d = x - mean;
+      varSum += d * d;
+    }
+
+    const std = Math.sqrt(varSum / xs.length);
+
+    return {
+      n: xs.length,
+      min,
+      max,
+      mean,
+      p2p: max - min,
+      std,
+    };
+  }
+
+  function severityFromRatios(mainTapRatioDb, nonMainEnergyDb) {
+    if (!isNum(mainTapRatioDb) || !isNum(nonMainEnergyDb)) return "sev-unk";
+    if (mainTapRatioDb >= 35 && nonMainEnergyDb <= -35) return "sev-good";
+    if (mainTapRatioDb >= 28 && nonMainEnergyDb <= -28) return "sev-warn";
+    return "sev-bad";
+  }
+
+  function normalizeSeries(freqBins, yVals) {
+    const pts = [];
+    const n = Math.min(freqBins.length, yVals.length);
+    for (let i = 0; i < n; i++) {
+      const x = Number(freqBins[i]);
+      const y = Number(yVals[i]);
+      if (isFinite(x) && isFinite(y)) {
+        pts.push({ x, y });
+      }
+    }
+    return pts;
+  }
+
+  function seriesRange(pts) {
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
+
+    for (const p of pts) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    }
+
+    if (!isFinite(minX) || !isFinite(maxX)) {
+      minX = 0;
+      maxX = 1;
+    }
+    if (!isFinite(minY) || !isFinite(maxY)) {
+      minY = 0;
+      maxY = 1;
+    }
+
+    if (maxX - minX < 1e-12) {
+      minX -= 1;
+      maxX += 1;
+    }
+    if (maxY - minY < 1e-12) {
+      minY -= 1;
+      maxY += 1;
+    }
+
+    return { minX, maxX, minY, maxY };
+  }
+
+  function catmullRomToBezierPath(points, sx, sy) {
+    if (points.length < 2) return "";
+    const P = points.map((p) => ({ x: sx(p.x), y: sy(p.y) }));
+    let d = `M ${P[0].x.toFixed(2)} ${P[0].y.toFixed(2)}`;
+
+    for (let i = 0; i < P.length - 1; i++) {
+      const p0 = P[Math.max(0, i - 1)];
+      const p1 = P[i];
+      const p2 = P[i + 1];
+      const p3 = P[Math.min(P.length - 1, i + 2)];
+
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = p2.y - (p3.y - p1.y) / 6;
+
+      d += ` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(
+        2
+      )}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+    }
+
+    return d;
+  }
+
+  function buildSvgSmoothChart(opts) {
+    const {
+      title,
+      subtitle,
+      usKey,
+      xVals,
+      yVals,
+      yUnits,
+      yDigits,
+      lineClass,
+      emptyMsg,
+    } = opts;
+
+    const pts = normalizeSeries(xVals, yVals);
+    if (pts.length < 2) {
+      return `
+        <div class="fr-empty">
+          <div class="meta">${esc(emptyMsg || `No data for US Index ${usKey}.`)}</div>
+        </div>
+      `;
+    }
+
+    const { minX, maxX, minY, maxY } = seriesRange(pts);
+
+    const W = 820;
+    const H = 220;
+    const padL = 46;
+    const padR = 16;
+    const padT = 14;
+    const padB = 28;
+
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    const sx = (x) => padL + ((x - minX) / (maxX - minX)) * plotW;
+    const sy = (y) => padT + (1 - (y - minY) / (maxY - minY)) * plotH;
+
+    const pathD = catmullRomToBezierPath(pts, sx, sy);
+
+    const yTicks = 4;
+    const grid = [];
+    for (let t = 0; t <= yTicks; t++) {
+      const yy = padT + (t / yTicks) * plotH;
+      const val = maxY - (t / yTicks) * (maxY - minY);
+      grid.push({ yy, val });
+    }
+
+    const xMid = (minX + maxX) / 2;
+    const yMid = (minY + maxY) / 2;
+
+    const yFmt = (v) => (isNum(v) ? v.toFixed(yDigits ?? 2) : "—");
+
+    return `
+      <div class="fr-wrap">
+        <div class="fr-head">
+          <div class="fr-title">${esc(title)}</div>
+          <div class="fr-meta mono">
+            ${esc(subtitle || "")}
+          </div>
+        </div>
+
+        <svg class="fr-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
+             aria-label="${esc(title)} chart">
+          ${grid
+            .map(
+              (g) => `
+            <line x1="${padL}" y1="${g.yy.toFixed(2)}" x2="${W - padR}" y2="${g.yy.toFixed(
+                2
+              )}" class="fr-grid"/>
+            <text x="${padL - 8}" y="${(g.yy + 4).toFixed(2)}" text-anchor="end" class="fr-axis">${esc(
+                yFmt(g.val)
+              )}${yUnits ? " " + esc(yUnits) : ""}</text>
+          `
+            )
+            .join("")}
+
+          <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H - padB}" class="fr-axisline"/>
+          <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" class="fr-axisline"/>
+
+          <text x="${padL}" y="${H - 8}" text-anchor="start" class="fr-axis">${esc(
+            fmt(minX, 4)
+          )}</text>
+          <text x="${sx(xMid).toFixed(2)}" y="${H - 8}" text-anchor="middle" class="fr-axis">${esc(
+            fmt(xMid, 4)
+          )}</text>
+          <text x="${W - padR}" y="${H - 8}" text-anchor="end" class="fr-axis">${esc(
+            fmt(maxX, 4)
+          )}</text>
+
+          <text x="${W - padR}" y="${sy(yMid).toFixed(2)}" text-anchor="end" class="fr-axis">${esc(
+            yFmt(yMid)
+          )}${yUnits ? " " + esc(yUnits) : ""}</text>
+
+          <path d="${pathD}" class="${esc(lineClass || "fr-line")}"/>
+        </svg>
+
+        <div class="fr-foot meta">
+          Smooth curve is a Catmull-Rom spline rendered as cubic Beziers (no markers).
+        </div>
+      </div>
+    `;
+  }
+
+  function buildFreqResponseChart(usKey, freqBins, magDbNorm) {
+    return buildSvgSmoothChart({
+      title: "Frequency Response · Magnitude Power (Normalized)",
+      subtitle: `US ${usKey} · bins=${Math.min(freqBins.length, magDbNorm.length)}`,
+      usKey,
+      xVals: freqBins,
+      yVals: magDbNorm,
+      yUnits: "dB",
+      yDigits: 3,
+      lineClass: "fr-line",
+      emptyMsg: `No metrics.frequency_response.magnitude_power_db_normalized for US Index ${usKey}.`,
+    });
+  }
+
+  function buildGroupDelayChart(usKey, xBins, delayUs) {
+    return buildSvgSmoothChart({
+      title: "Group Delay · Delay (μs)",
+      subtitle: `US ${usKey} · bins=${Math.min(xBins.length, delayUs.length)}`,
+      usKey,
+      xVals: xBins,
+      yVals: delayUs,
+      yUnits: "μs",
+      yDigits: 5,
+      lineClass: "gd-line",
+      emptyMsg: `No group_delay.delay_us for US Index ${usKey}.`,
+    });
+  }
+
+  function layoutTopology(nodes) {
+    const x0 = 20,
+      x1 = 290,
+      x2 = 620;
+    const y0 = 30;
+    const usGap = 110;
+    const featureGap = 34;
+
+    const placed = [];
+    const cm = nodes.find((n) => n.kind === "cm");
+    placed.push({ ...cm, x: x0, y: y0 });
+
+    let y = y0;
+    for (const us of nodes.filter((n) => n.kind === "us")) {
+      placed.push({ ...us, x: x1, y });
+      const features = nodes.filter((n) => n.parent === us.id);
+
+      let fy = y - 34;
+      for (const f of features) {
+        placed.push({ ...f, x: x2, y: fy });
+        fy += featureGap;
+      }
+      y += usGap;
+    }
+
+    return placed;
+  }
+
+  function box(w, h, r) {
+    return `rx="${r}" ry="${r}" width="${w}" height="${h}"`;
+  }
+
+  function topoSvg(usRows) {
+    const cmId = "cm";
+    const nodes = [];
+
+    nodes.push({
+      id: cmId,
+      kind: "cm",
+      label: "CM",
+      sub: safe(resp.mac_address, ""),
+      w: 240,
+      h: 60,
+    });
+
+    for (const k of usIdxKeys) {
+      const r = usRows[k];
+      const taps = Array.isArray(r?.taps) ? r.taps : [];
+      const mainIdx = getMainTapIndex(r);
+      const gd = r?.group_delay;
+      const gdUs = summarizeArray(gd?.delay_us);
+
+      const usId = `us-${k}`;
+      nodes.push({
+        id: usId,
+        kind: "us",
+        label: `US ${k}`,
+        sub: `taps=${safe(r?.num_taps, taps.length)} · mainTap=${mainIdx === null ? "—" : tapDisp(mainIdx)}`,
+        w: 280,
+        h: 64,
+      });
+
+      nodes.push({
+        id: `f-taps-${k}`,
+        kind: "feat",
+        parent: usId,
+        label: "Tap Cluster",
+        sub: `mainTapRatio(dB)=${fmt(r?.metrics?.main_tap_ratio, 2)}`,
+        w: 320,
+        h: 56,
+      });
+
+      nodes.push({
+        id: `f-fr-${k}`,
+        kind: "feat",
+        parent: usId,
+        label: "Frequency Response",
+        sub: `fft=${safe(r?.metrics?.frequency_response?.fft_size, "—")}`,
+        w: 320,
+        h: 56,
+      });
+
+      nodes.push({
+        id: `f-gd-${k}`,
+        kind: "feat",
+        parent: usId,
+        label: "Group Delay",
+        sub: `mean=${fmt(gdUs.mean, 5)}us · p2p=${fmt(gdUs.p2p, 5)}us`,
+        w: 320,
+        h: 56,
+      });
+    }
+
+    const placed = layoutTopology(nodes);
+
+    const W = 980;
+    const H = Math.max(220, 40 + usIdxKeys.length * 110);
+    const defs = `
+      <defs>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="rgba(0,0,0,0.35)"/>
+        </filter>
+      </defs>
+    `;
+
+    function nodeById(id) {
+      return placed.find((p) => p.id === id);
+    }
+
+    function centerRight(n) {
+      return { x: n.x + n.w, y: n.y + n.h / 2 };
+    }
+
+    function centerLeft(n) {
+      return { x: n.x, y: n.y + n.h / 2 };
+    }
+
+    const edges = [];
+    for (const k of usIdxKeys) {
+      edges.push({ from: cmId, to: `us-${k}` });
+      edges.push({ from: `us-${k}`, to: `f-taps-${k}` });
+      edges.push({ from: `us-${k}`, to: `f-fr-${k}` });
+      edges.push({ from: `us-${k}`, to: `f-gd-${k}` });
+    }
+
+    const edgeSvg = edges
+      .map((e) => {
+        const a = nodeById(e.from);
+        const b = nodeById(e.to);
+        if (!a || !b) return "";
+        const p1 = centerRight(a);
+        const p2 = centerLeft(b);
+        const mx = (p1.x + p2.x) / 2;
+        const d = `M ${p1.x} ${p1.y} C ${mx} ${p1.y}, ${mx} ${p2.y}, ${p2.x} ${p2.y}`;
+        return `<path d="${d}" class="topo-edge"/>`;
+      })
+      .join("");
+
+    const nodeSvg = placed
+      .map((n) => {
+        const title = esc(n.label);
+        const sub = esc(n.sub || "");
+        const cls =
+          n.kind === "cm"
+            ? "topo-box topo-cm"
+            : n.kind === "us"
+            ? "topo-box topo-us"
+            : "topo-box topo-feat";
+
+        return `
+        <g transform="translate(${n.x},${n.y})" filter="url(#shadow)">
+          <rect ${box(n.w, n.h, 14)} class="${cls}"></rect>
+          <text x="14" y="24" class="topo-title">${title}</text>
+          <text x="14" y="44" class="topo-sub mono">${sub}</text>
+        </g>
+      `;
+      })
+      .join("");
+
+    return `
+      <div class="topo-wrap">
+        <div class="section-head">
+          <div class="section-title">Topology</div>
+          <div class="meta">This is a data topology from the JSON payload (CM → US Index → derived views).</div>
+        </div>
+
+        <svg class="topo-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Topology diagram">
+          ${defs}
+          ${edgeSvg}
+          ${nodeSvg}
+        </svg>
+      </div>
+    `;
+  }
+
+  function buildSummaryRows() {
+    const rows = {};
+    for (const k of usIdxKeys) {
+      const r = results[k] || {};
+      const taps = Array.isArray(r?.taps) ? r.taps : [];
+      const mainIdx = getMainTapIndex(r);
+
+      const gd = r?.group_delay || {};
+      const gdUs = summarizeArray(gd?.delay_us);
+
+      const fr = r?.metrics?.frequency_response || {};
+      const frDbNorm = summarizeArray(fr?.magnitude_power_db_normalized);
+
+      const m = r?.metrics || {};
+      const sev = severityFromRatios(m?.main_tap_ratio, m?.non_main_tap_energy_ratio);
+
+      rows[k] = {
+        usKey: k,
+        sev,
+        taps: safe(r?.num_taps, taps.length),
+        mainTap: mainIdx === null ? "—" : tapDisp(mainIdx),
+
+        mainTapRatioDb: m?.main_tap_ratio,
+        nonMainEnergyDb: m?.non_main_tap_energy_ratio,
+        preTotalDb: m?.pre_main_tap_total_energy_ratio,
+        postTotalDb: m?.post_main_tap_total_energy_ratio,
+        prePostSymDb: m?.pre_post_energy_symmetry_ratio,
+
+        gdMeanUs: gdUs.mean,
+        gdP2PUs: gdUs.p2p,
+        gdStdUs: gdUs.std,
+
+        frSpanDb: frDbNorm.p2p,
+
+        fft: safe(fr?.fft_size, safe(gd?.fft_size, "—")),
+      };
+    }
+    return rows;
+  }
+
+  function buildStatsTable(rowsByKey) {
+    const rows = usIdxKeys.map((k) => rowsByKey[k]).filter(Boolean);
+
+    return `
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">Channel Stats</div>
+          <div class="meta">Row severity is a heuristic based on mainTapRatio(dB) and nonMainEnergy(dB).</div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th class="mono">US</th>
+                <th class="mono">Taps</th>
+                <th class="mono">Main Tap</th>
+                <th class="mono">FFT</th>
+                <th class="mono">MainTapRatio (dB)</th>
+                <th class="mono">NonMainEnergy (dB)</th>
+                <th class="mono">PreTotal (dB)</th>
+                <th class="mono">PostTotal (dB)</th>
+                <th class="mono">Pre/Post Sym (dB)</th>
+                <th class="mono">GD Mean (μs)</th>
+                <th class="mono">GD P2P (μs)</th>
+                <th class="mono">FR Span (dB)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows
+                .map(
+                  (r) => `
+                <tr class="${esc(r.sev)}">
+                  <td class="mono">${esc(String(r.usKey))}</td>
+                  <td class="mono">${esc(String(r.taps))}</td>
+                  <td class="mono">${esc(String(r.mainTap))}</td>
+                  <td class="mono">${esc(String(r.fft))}</td>
+
+                  <td class="mono">${esc(fmt(r.mainTapRatioDb, 2))}</td>
+                  <td class="mono">${esc(fmt(r.nonMainEnergyDb, 2))}</td>
+                  <td class="mono">${esc(fmt(r.preTotalDb, 2))}</td>
+                  <td class="mono">${esc(fmt(r.postTotalDb, 2))}</td>
+                  <td class="mono">${esc(fmt(r.prePostSymDb, 2))}</td>
+
+                  <td class="mono">${esc(fmt(r.gdMeanUs, 5))}</td>
+                  <td class="mono">${esc(fmt(r.gdP2PUs, 5))}</td>
+                  <td class="mono">${esc(fmt(r.frSpanDb, 4))}</td>
+                </tr>
+              `
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function getTapDelayUs(tapObj, gdDelayUs, gdAligns, i) {
+    const v1 = Number(tapObj?.delay_us);
+    if (isFinite(v1)) {
+      return v1;
+    }
+    if (gdAligns && Array.isArray(gdDelayUs) && isFinite(Number(gdDelayUs[i]))) {
+      return Number(gdDelayUs[i]);
+    }
+    return null;
+  }
+
+  function cableEchoFromDeltaDelayUs(deltaUs, vf) {
+    if (!isNum(deltaUs)) return { meters: null, feet: null };
+    const dt = Math.abs(deltaUs) * 1e-6;
+    const meters = (dt * C_MPS * vf) / 2;
+    const feet = meters * 3.280839895;
+    return { meters, feet };
+  }
+
+  function findStrongestPostTapIndex(taps, mainIdx) {
+    if (!Array.isArray(taps) || !Number.isInteger(mainIdx)) return null;
+    let bestIdx = null;
+    let bestDb = -Infinity;
+
+    for (let i = mainIdx + 1; i < taps.length; i++) {
+      const db = taps[i]?.magnitude_power_dB;
+      if (isNum(db) && db > bestDb) {
+        bestDb = db;
+        bestIdx = i;
+      }
+    }
+
+    return bestIdx;
+  }
+
+  function buildPostTapTable(usKey, usRecord, mainIdx, gdDelayUs, gdAligns, vf) {
+    if (!Number.isInteger(mainIdx)) {
+      return `
+        <div class="posttap-wrap">
+          <div class="section-head">
+            <div class="section-title">Post-Main Tap Table</div>
+            <div class="meta mono">No MAIN tap index available.</div>
+          </div>
+        </div>
+      `;
+    }
+
+    const taps = Array.isArray(usRecord?.taps) ? usRecord.taps : [];
+    const mainTapObj = taps[mainIdx] || null;
+
+    const mainDelayUs = getTapDelayUs(mainTapObj, gdDelayUs, gdAligns, mainIdx);
+
+    const rows = [];
+    for (let t = 1; t <= 16; t++) {
+      const idx = mainIdx + t;
+      if (idx >= taps.length) break;
+
+      const tapObj = taps[idx] || {};
+      const tapDelayUs = getTapDelayUs(tapObj, gdDelayUs, gdAligns, idx);
+
+      const deltaUs =
+        isNum(tapDelayUs) && isNum(mainDelayUs) ? tapDelayUs - mainDelayUs : null;
+
+      const echo = cableEchoFromDeltaDelayUs(deltaUs, vf);
+
+      rows.push({
+        T: t,
+        tapDisp: tapDisp(idx),
+        deltaUs,
+        echoM: echo.meters,
+        echoF: echo.feet,
+      });
+    }
+
+    return `
+      <div class="posttap-wrap">
+        <div class="section-head">
+          <div class="section-title">Post-Main Tap Table (T1..T16)</div>
+          <div class="meta mono">
+            MAIN=${esc(tapDisp(mainIdx))} · VF=${esc(fmt(vf, 2))} · EchoDist uses |Δdelay| vs MAIN (distance = |Δt|·VF·c/2)
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="tbl posttbl">
+            <thead>
+              <tr>
+                <th class="mono">T</th>
+                <th class="mono">Tap</th>
+                <th class="mono">ΔDelay vs MAIN (μs)</th>
+                <th class="mono">Echo (m)</th>
+                <th class="mono">Echo (ft)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                rows.length === 0
+                  ? `
+                    <tr>
+                      <td colspan="5" class="meta mono">No post-main taps available.</td>
+                    </tr>
+                  `
+                  : rows
+                      .map(
+                        (r) => `
+                  <tr>
+                    <td class="mono">${esc(String(r.T))}</td>
+                    <td class="mono">Tap ${esc(String(r.tapDisp))}</td>
+                    <td class="mono">${esc(fmt(r.deltaUs, 5))}</td>
+                    <td class="mono">${esc(fmt(r.echoM, 2))}</td>
+                    <td class="mono">${esc(fmt(r.echoF, 2))}</td>
+                  </tr>
+                `
+                      )
+                      .join("")
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function buildChannelPanel(usKey, usRecord) {
+    const taps = Array.isArray(usRecord?.taps) ? usRecord.taps : [];
+    const mainTapIdx = getMainTapIndex(usRecord);
+    const { minDb, maxDb } = getDbRange(taps);
+
+    const fr = usRecord?.metrics?.frequency_response || {};
+    const freqBins = Array.isArray(fr?.frequency_bins) ? fr.frequency_bins : [];
+    const frMagDbNorm = Array.isArray(fr?.magnitude_power_db_normalized)
+      ? fr.magnitude_power_db_normalized
+      : [];
+
+    const gd = usRecord?.group_delay || {};
+    const gdDelayUs = Array.isArray(gd?.delay_us) ? gd.delay_us : [];
+    const gdUs = summarizeArray(gdDelayUs);
+
+    let gdXBins = freqBins;
+    if (!Array.isArray(gdXBins) || gdXBins.length < 2) {
+      const n = gdDelayUs.length;
+      gdXBins = Array.from({ length: n }, (_, i) => (n > 0 ? i / n : 0));
+    }
+
+    const m = usRecord?.metrics || {};
+    const sev = severityFromRatios(m?.main_tap_ratio, m?.non_main_tap_energy_ratio);
+
+    const validCount = taps.reduce((acc, t) => acc + (isNum(t?.magnitude_power_dB) ? 1 : 0), 0);
+
+    const frChart = buildFreqResponseChart(usKey, freqBins, frMagDbNorm);
+    const gdChart = buildGroupDelayChart(usKey, gdXBins, gdDelayUs);
+
+    const mainTapDisp = mainTapIdx === null ? "—" : tapDisp(mainTapIdx);
+
+    const gdAlignsToTaps = Array.isArray(gdDelayUs) && gdDelayUs.length === taps.length;
+
+    const strongestPostIdx = findStrongestPostTapIndex(taps, mainTapIdx);
+
+    const vfRaw = Number(usRecord?.velocity_factor);
+    const vf = isFinite(vfRaw) && vfRaw > 0 && vfRaw < 1.5 ? vfRaw : DEFAULT_VF;
+
+    const postTapTable = buildPostTapTable(usKey, usRecord, mainTapIdx, gdDelayUs, gdAlignsToTaps, vf);
+
+    return `
+      <div class="panel ${esc(sev)}">
+        <div class="panel-head">
+          <div class="panel-title">
+            <div class="idx">US Index ${esc(String(usKey))}</div>
+            <div class="meta">
+              mainTap=${esc(mainTapDisp)} ·
+              taps=${esc(String(safe(usRecord.num_taps, taps.length)))} ·
+              tap-dB range=${esc(fmt(minDb, 2))}..${esc(fmt(maxDb, 2))} ·
+              valid=${esc(String(validCount))}
+            </div>
+          </div>
+          <div class="meta mono">
+            GD mean=${esc(fmt(gdUs.mean, 5))}μs · p2p=${esc(fmt(gdUs.p2p, 5))}μs · std=${esc(fmt(gdUs.std, 5))}μs
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <div class="kv">
+            <div class="kv-row">
+              <div class="kv-k">mainTapRatio (dB)</div>
+              <div class="kv-v mono">${esc(fmt(m?.main_tap_ratio, 2))}</div>
+            </div>
+            <div class="kv-row">
+              <div class="kv-k">nonMainEnergy (dB)</div>
+              <div class="kv-v mono">${esc(fmt(m?.non_main_tap_energy_ratio, 2))}</div>
+            </div>
+            <div class="kv-row">
+              <div class="kv-k">pre/post symmetry (dB)</div>
+              <div class="kv-v mono">${esc(fmt(m?.pre_post_energy_symmetry_ratio, 2))}</div>
+            </div>
+            <div class="kv-row">
+              <div class="kv-k">header_hex</div>
+              <div class="kv-v mono">${esc(safe(usRecord.header_hex, ""))}</div>
+            </div>
+          </div>
+
+          <div class="plot-wrap">
+            <div class="plot-title">Tap Magnitude Power (dB)</div>
+            <div class="plot" role="img" aria-label="Tap magnitude power (dB) vertical bargraph">
+              ${taps
+                .map((t, i) => {
+                  const db = t?.magnitude_power_dB;
+                  const h = barHeightPct(db, minDb, maxDb);
+                  const isMain = mainTapIdx !== null && i === mainTapIdx;
+                  const isMissing = !isNum(db);
+                  const isPostPeak = strongestPostIdx !== null && i === strongestPostIdx;
+
+                  const deltaTaps =
+                    mainTapIdx === null || !Number.isInteger(mainTapIdx) ? null : i - mainTapIdx;
+
+                  const deltaLabel =
+                    deltaTaps === null
+                      ? "—"
+                      : deltaTaps === 0
+                      ? "0 (MAIN)"
+                      : deltaTaps > 0
+                      ? `+${deltaTaps} (post)`
+                      : `${deltaTaps} (pre)`;
+
+                  const tapDelayUs = getTapDelayUs(t, gdDelayUs, gdAlignsToTaps, i);
+                  const mainDelayUs =
+                    Number.isInteger(mainTapIdx) ? getTapDelayUs(taps[mainTapIdx], gdDelayUs, gdAlignsToTaps, mainTapIdx) : null;
+
+                  const deltaUs =
+                    isNum(tapDelayUs) && isNum(mainDelayUs) ? tapDelayUs - mainDelayUs : null;
+
+                  const echo = cableEchoFromDeltaDelayUs(deltaUs, vf);
+
+                  const tooltip = [
+                    `US ${usKey} · Tap ${tapDisp(i)}${isMain ? " (MAIN)" : ""}${isPostPeak ? " (POST-PEAK)" : ""}`,
+                    `TapIndex(0-based): ${i}`,
+                    `ΔTap from MAIN: ${deltaLabel}`,
+                    `dB: ${fmt(db, 2)}`,
+                    `Mag: ${fmt(Number(t?.magnitude), 2)}`,
+                    `Real/Imag: (${safe(t?.real, "")}, ${safe(t?.imag, "")})`,
+                    `Hex: ${safe(t?.real_hex, "")}/${safe(t?.imag_hex, "")}`,
+                    `Delay (tap)      : ${fmt(tapDelayUs, 5)} μs`,
+                    `ΔDelay vs MAIN   : ${fmt(deltaUs, 5)} μs`,
+                    `Echo distance    : ${fmt(echo.meters, 2)} m · ${fmt(echo.feet, 2)} ft (VF=${fmt(vf, 2)})`,
+                  ].join("\n");
+
+                  return `
+                  <div class="bar-slot" title="${esc(tooltip)}">
+                    <div class="bar ${isMain ? "main" : ""} ${isPostPeak ? "postpeak" : ""} ${isMissing ? "missing" : ""}" style="height:${h.toFixed(
+                      2
+                    )}%"></div>
+                  </div>
+                `;
+                })
+                .join("")}
+            </div>
+
+            <div class="axis">
+              <div class="axis-left mono">${esc(fmt(minDb, 2))} dB</div>
+              <div class="axis-mid mono">${esc(fmt((minDb + maxDb) / 2, 2))} dB</div>
+              <div class="axis-right mono">${esc(fmt(maxDb, 2))} dB</div>
+            </div>
+
+            <div class="xlabels mono">
+              <div>Tap 1</div>
+              <div>Tap ${esc(String(Math.max(1, taps.length)))}</div>
+            </div>
+
+            <div class="meta mono">
+              POST-PEAK (red) = strongest tap after MAIN (highest Tap dB among indices &gt; MAIN).
+            </div>
+          </div>
+
+          ${postTapTable}
+
+          ${frChart}
+
+          ${gdChart}
+        </div>
+      </div>
+    `;
+  }
+
+  const rowsByKey = buildSummaryRows();
+
+  const template = `
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #0f1a2b;
+      --panel2: #0c1727;
+      --text: #e6edf3;
+      --muted: #94a3b8;
+
+      --accent: #60a5fa;
+      --good: #34d399;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+
+      --border: rgba(148,163,184,0.18);
+      --shadow: rgba(0,0,0,0.35);
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    body {
+      margin: 0;
+      padding: 18px 18px 28px 18px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+    }
+
+    .mono { font-family: var(--mono); }
+    .meta { color: var(--muted); font-size: 12px; }
+    .title { font-size: 18px; font-weight: 750; letter-spacing: 0.2px; }
+    .sub { color: var(--muted); font-size: 12px; }
+
+    .top { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: baseline; margin-bottom: 12px; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .chip {
+      background: rgba(96,165,250,0.14);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--text);
+      display: inline-flex;
+      gap: 8px;
+      align-items: baseline;
+    }
+    .chip .k { color: var(--muted); }
+    .chip.good { background: rgba(52,211,153,0.14); }
+    .chip.bad  { background: rgba(251,113,133,0.14); }
+
+    .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+
+    .section { margin-top: 14px; display: grid; gap: 10px; }
+    .section-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; justify-content: space-between; }
+    .section-title { font-size: 13px; font-weight: 750; color: var(--accent); letter-spacing: 0.2px; }
+
+    .panel {
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 24px var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title { display: grid; gap: 4px; }
+    .idx { font-size: 14px; font-weight: 800; color: var(--accent); }
+
+    .panel-body { padding: 12px 14px 14px 14px; display: grid; gap: 14px; }
+
+    .sev-good { border-left: 4px solid rgba(52,211,153,0.85); }
+    .sev-warn { border-left: 4px solid rgba(251,191,36,0.90); }
+    .sev-bad  { border-left: 4px solid rgba(251,113,133,0.90); }
+    .sev-unk  { border-left: 4px solid rgba(148,163,184,0.35); }
+
+    .kv { display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 10px; }
+    .kv-row {
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,0.03);
+      display: grid;
+      gap: 6px;
+    }
+    .kv-k { color: var(--muted); font-size: 11px; }
+    .kv-v { font-size: 13px; font-weight: 650; }
+
+    .plot-wrap { display: grid; gap: 8px; }
+    .plot-title { font-size: 12px; font-weight: 750; }
+
+    .plot {
+      height: 140px;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,0.18);
+      background: rgba(148,163,184,0.08);
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 1fr;
+      gap: 2px;
+      align-items: end;
+      padding: 6px;
+      overflow: hidden;
+    }
+
+    .bar-slot { height: 100%; display: flex; align-items: end; }
+
+    .bar {
+      width: 100%;
+      height: 0%;
+      border-radius: 6px 6px 2px 2px;
+      background: linear-gradient(180deg, rgba(96,165,250,0.85), rgba(52,211,153,0.85));
+      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+      transition: height 120ms ease;
+    }
+
+    .bar.main {
+      background: linear-gradient(180deg, rgba(251,191,36,0.95), rgba(96,165,250,0.75));
+      box-shadow: 0 0 0 2px rgba(251,191,36,0.18) inset, 0 6px 12px rgba(0,0,0,0.25);
+    }
+
+    .bar.postpeak {
+      background: linear-gradient(180deg, rgba(251,113,133,0.95), rgba(251,191,36,0.70));
+      box-shadow: 0 0 0 2px rgba(251,113,133,0.20) inset, 0 6px 12px rgba(0,0,0,0.25);
+    }
+
+    .bar.missing {
+      background: rgba(148,163,184,0.25);
+      box-shadow: none;
+      border-radius: 6px;
+      height: 6px !important;
+    }
+
+    .axis { display: grid; grid-template-columns: 1fr 1fr 1fr; color: var(--muted); font-size: 11px; }
+    .axis-left { text-align: left; }
+    .axis-mid { text-align: center; }
+    .axis-right { text-align: right; }
+    .xlabels { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+
+    .fr-wrap {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.03);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+    .fr-head { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: baseline; }
+    .fr-title { font-size: 12px; font-weight: 750; }
+    .fr-meta { font-size: 11px; color: var(--muted); }
+
+    .fr-svg {
+      width: 100%;
+      height: 220px;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,0.18);
+      background: rgba(148,163,184,0.08);
+      overflow: hidden;
+    }
+    .fr-grid { stroke: rgba(148,163,184,0.20); stroke-width: 1; }
+    .fr-axisline { stroke: rgba(148,163,184,0.35); stroke-width: 1.2; }
+    .fr-axis { fill: rgba(148,163,184,0.95); font-size: 11px; font-family: var(--mono); }
+
+    .fr-line { fill: none; stroke: rgba(96,165,250,0.95); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+    .gd-line { fill: none; stroke: rgba(52,211,153,0.95); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+
+    .fr-empty { border: 1px dashed rgba(148,163,184,0.28); border-radius: 10px; padding: 10px; background: rgba(255,255,255,0.02); }
+    .fr-foot { font-size: 11px; }
+
+    .table-wrap { overflow: auto; border: 1px solid rgba(148,163,184,0.18); border-radius: 12px; }
+    .tbl { width: 100%; border-collapse: collapse; min-width: 980px; }
+    .tbl th, .tbl td {
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(148,163,184,0.14);
+      white-space: nowrap;
+    }
+    .tbl thead th {
+      position: sticky;
+      top: 0;
+      background: rgba(15,26,43,0.92);
+      backdrop-filter: blur(8px);
+      z-index: 1;
+      font-size: 12px;
+      color: rgba(230,237,243,0.95);
+      text-align: left;
+    }
+    .tbl tbody tr:hover { background: rgba(96,165,250,0.08); }
+
+    .posttap-wrap { display: grid; gap: 10px; }
+    .posttbl { min-width: 980px; }
+
+    .topo-wrap {
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      padding: 12px;
+      overflow: auto;
+    }
+    .topo-svg { width: 980px; height: auto; }
+    .topo-edge { fill: none; stroke: rgba(148,163,184,0.45); stroke-width: 2; }
+    .topo-box { stroke: rgba(148,163,184,0.20); stroke-width: 1.2; }
+    .topo-cm   { fill: rgba(96,165,250,0.14); }
+    .topo-us   { fill: rgba(52,211,153,0.10); }
+    .topo-feat { fill: rgba(251,191,36,0.10); }
+    .topo-title { fill: rgba(230,237,243,0.98); font-size: 14px; font-weight: 800; }
+    .topo-sub { fill: rgba(148,163,184,0.95); font-size: 12px; }
+  </style>
+
+  <div class="top">
+    <div class="title">Upstream Pre-EQ · Visualizer</div>
+    <div class="sub">Topology + tables + per-channel plots (dynamic)</div>
+  </div>
+
+  <div class="chips">
+    <div class="chip"><span class="k">MAC</span> <span class="mono">${esc(safe(resp.mac_address, ""))}</span></div>
+    <div class="chip ${Number(resp.status) === 0 ? "good" : "bad"}"><span class="k">Status</span> <span class="mono">${esc(
+      String(safe(resp.status, ""))
+    )}</span></div>
+    <div class="chip"><span class="k">Channels</span> <span class="mono">${esc(String(usIdxKeys.length))}</span></div>
+    <div class="chip"><span class="k">Message</span> <span>${esc(safe(resp.message, ""))}</span></div>
+  </div>
+
+  ${topoSvg(results)}
+
+  ${buildStatsTable(rowsByKey)}
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Per-Channel Detail</div>
+      <div class="meta">Tap bars = taps[].magnitude_power_dB · Freq response = magnitude_power_db_normalized · Group delay = delay_us.</div>
+    </div>
+
+    <div class="grid">
+      ${usIdxKeys.map((k) => buildChannelPanel(k, results[k] || {})).join("")}
+    </div>
+  </div>
+  `;
+
+  pm.visualizer.set(template, {});
+})();
+````
+</details>
+
+<details>
+<summary>Sample JSON payload</summary>
+
+````json
+{
+    "mac_address": "aa:bb:cc:dd:ee:ff",
+    "status": 0,
+    "message": "Successfully retrieved upstream pre-equalization coefficients",
+    "results": {
+        "4": {
+            "main_tap_location": 8,
+            "taps_per_symbol": 1,
+            "num_taps": 24,
+            "reserved": 0,
+            "header_hex": "08 01 18 00",
+            "payload_hex": "08 01 18 00 FF FE FF FE 00 04 FF FC 00 00 00 04 FF FC FF FA 00 02 00 0A FF FE FF EE FF FA 00 24 07 FD 00 00 FF D4 FF C4 00 08 00 18 FF FA FF F4 00 00 00 06 FF FE FF FA 00 02 00 02 FF FC FF FE 00 02 00 00 FF FC FF FE 00 00 00 00 00 00 FF FE 00 02 00 00 00 00 00 00 FF FE 00 00 00 00 00 02 00 00 00 00",
+            "payload_preview_hex": "08 01 18 00 FF FE FF FE 00 04 FF FC 00 00 00 04 FF FC FF FA 00 02 00 0A FF FE FF EE FF FA 00 24 07 FD 00 00",
+            "taps": [
+                {
+                    "real": -2,
+                    "imag": -2,
+                    "magnitude": 2.83,
+                    "magnitude_power_dB": 9.03,
+                    "real_hex": "FFFE",
+                    "imag_hex": "FFFE"
+                },
+                {
+                    "real": 4,
+                    "imag": -4,
+                    "magnitude": 5.66,
+                    "magnitude_power_dB": 15.05,
+                    "real_hex": "0004",
+                    "imag_hex": "FFFC"
+                },
+                {
+                    "real": 0,
+                    "imag": 4,
+                    "magnitude": 4.0,
+                    "magnitude_power_dB": 12.04,
+                    "real_hex": "0000",
+                    "imag_hex": "0004"
+                },
+                {
+                    "real": -4,
+                    "imag": -6,
+                    "magnitude": 7.21,
+                    "magnitude_power_dB": 17.16,
+                    "real_hex": "FFFC",
+                    "imag_hex": "FFFA"
+                },
+                {
+                    "real": 2,
+                    "imag": 10,
+                    "magnitude": 10.2,
+                    "magnitude_power_dB": 20.17,
+                    "real_hex": "0002",
+                    "imag_hex": "000A"
+                },
+                {
+                    "real": -2,
+                    "imag": -18,
+                    "magnitude": 18.11,
+                    "magnitude_power_dB": 25.16,
+                    "real_hex": "FFFE",
+                    "imag_hex": "FFEE"
+                },
+                {
+                    "real": -6,
+                    "imag": 36,
+                    "magnitude": 36.5,
+                    "magnitude_power_dB": 31.25,
+                    "real_hex": "FFFA",
+                    "imag_hex": "0024"
+                },
+                {
+                    "real": 2045,
+                    "imag": 0,
+                    "magnitude": 2045.0,
+                    "magnitude_power_dB": 66.21,
+                    "real_hex": "07FD",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": -44,
+                    "imag": -60,
+                    "magnitude": 74.4,
+                    "magnitude_power_dB": 37.43,
+                    "real_hex": "FFD4",
+                    "imag_hex": "FFC4"
+                },
+                {
+                    "real": 8,
+                    "imag": 24,
+                    "magnitude": 25.3,
+                    "magnitude_power_dB": 28.06,
+                    "real_hex": "0008",
+                    "imag_hex": "0018"
+                },
+                {
+                    "real": -6,
+                    "imag": -12,
+                    "magnitude": 13.42,
+                    "magnitude_power_dB": 22.55,
+                    "real_hex": "FFFA",
+                    "imag_hex": "FFF4"
+                },
+                {
+                    "real": 0,
+                    "imag": 6,
+                    "magnitude": 6.0,
+                    "magnitude_power_dB": 15.56,
+                    "real_hex": "0000",
+                    "imag_hex": "0006"
+                },
+                {
+                    "real": -2,
+                    "imag": -6,
+                    "magnitude": 6.32,
+                    "magnitude_power_dB": 16.02,
+                    "real_hex": "FFFE",
+                    "imag_hex": "FFFA"
+                },
+                {
+                    "real": 2,
+                    "imag": 2,
+                    "magnitude": 2.83,
+                    "magnitude_power_dB": 9.03,
+                    "real_hex": "0002",
+                    "imag_hex": "0002"
+                },
+                {
+                    "real": -4,
+                    "imag": -2,
+                    "magnitude": 4.47,
+                    "magnitude_power_dB": 13.01,
+                    "real_hex": "FFFC",
+                    "imag_hex": "FFFE"
+                },
+                {
+                    "real": 2,
+                    "imag": 0,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0002",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": -4,
+                    "imag": -2,
+                    "magnitude": 4.47,
+                    "magnitude_power_dB": 13.01,
+                    "real_hex": "FFFC",
+                    "imag_hex": "FFFE"
+                },
+                {
+                    "real": 0,
+                    "imag": 0,
+                    "magnitude": 0.0,
+                    "magnitude_power_dB": null,
+                    "real_hex": "0000",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": 0,
+                    "imag": -2,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0000",
+                    "imag_hex": "FFFE"
+                },
+                {
+                    "real": 2,
+                    "imag": 0,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0002",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": 0,
+                    "imag": 0,
+                    "magnitude": 0.0,
+                    "magnitude_power_dB": null,
+                    "real_hex": "0000",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": -2,
+                    "imag": 0,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "FFFE",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": 0,
+                    "imag": 2,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0000",
+                    "imag_hex": "0002"
+                },
+                {
+                    "real": 0,
+                    "imag": 0,
+                    "magnitude": 0.0,
+                    "magnitude_power_dB": null,
+                    "real_hex": "0000",
+                    "imag_hex": "0000"
+                }
+            ],
+            "metrics": {
+                "main_tap_energy": 4182025.0,
+                "main_tap_nominal_energy": 8380418.0,
+                "pre_main_tap_energy": 1872.0,
+                "post_main_tap_energy": 6500.0,
+                "total_tap_energy": 4190397.0,
+                "main_tap_compression": 0.008685454733035641,
+                "main_tap_ratio": 26.98557405020072,
+                "non_main_tap_energy_ratio": -26.99425950493376,
+                "pre_main_tap_total_energy_ratio": -33.49949325757939,
+                "post_main_tap_total_energy_ratio": -28.09341813517169,
+                "pre_post_energy_symmetry_ratio": 5.406075122407692,
+                "pre_post_tap_symmetry_ratio": -6.1869185661441914,
+                "frequency_response": {
+                    "fft_size": 24,
+                    "frequency_bins": [
+                        0.0,
+                        0.041666666666666664,
+                        0.08333333333333333,
+                        0.125,
+                        0.16666666666666666,
+                        0.20833333333333334,
+                        0.25,
+                        0.2916666666666667,
+                        0.3333333333333333,
+                        0.375,
+                        0.4166666666666667,
+                        0.4583333333333333,
+                        0.5,
+                        0.5416666666666666,
+                        0.5833333333333334,
+                        0.625,
+                        0.6666666666666666,
+                        0.7083333333333334,
+                        0.75,
+                        0.7916666666666666,
+                        0.8333333333333334,
+                        0.875,
+                        0.9166666666666666,
+                        0.9583333333333334
+                    ],
+                    "magnitude": [
+                        1989.2262314779584,
+                        1983.655150317069,
+                        1984.3933321928225,
+                        1966.208304736554,
+                        1984.2537571690998,
+                        1961.8718371560988,
+                        1949.2308739602904,
+                        1946.840447473104,
+                        1974.8349756811338,
+                        1971.551322499102,
+                        1964.3495369074888,
+                        2004.2490776946004,
+                        2121.3403781571687,
+                        2184.993553897147,
+                        2197.1582896882724,
+                        2204.0115476977444,
+                        2171.9219182158677,
+                        2137.844313466777,
+                        2121.3403781571683,
+                        2086.5969612775675,
+                        2078.2904097262995,
+                        2055.708973262519,
+                        2031.0365457209534,
+                        2015.9055106403887
+                    ],
+                    "magnitude_power_db": [
+                        65.97368355082787,
+                        65.94932348406749,
+                        65.95255518166788,
+                        65.8725905222662,
+                        65.9519442262337,
+                        65.85341265788256,
+                        65.79726563149276,
+                        65.78660721097219,
+                        65.91061620537164,
+                        65.89616173813204,
+                        65.86437537618258,
+                        66.03903384835982,
+                        66.53220717038083,
+                        66.78900320131392,
+                        66.83722691776231,
+                        66.86427731256292,
+                        66.73688416145286,
+                        66.59952149861344,
+                        66.53220717038083,
+                        66.38877141162217,
+                        66.35412467124988,
+                        66.25923263202546,
+                        66.1543547601902,
+                        66.08940344069609
+                    ],
+                    "magnitude_power_db_normalized": [
+                        0.0,
+                        -0.02436006676038005,
+                        -0.02112836915999594,
+                        -0.10109302856167801,
+                        -0.021739324594165055,
+                        -0.12027089294531379,
+                        -0.1764179193351083,
+                        -0.18707633985567895,
+                        -0.06306734545623272,
+                        -0.07752181269583502,
+                        -0.10930817464529241,
+                        0.06535029753194976,
+                        0.5585236195529575,
+                        0.815319650486046,
+                        0.8635433669344366,
+                        0.8905937617350475,
+                        0.7632006106249918,
+                        0.6258379477855698,
+                        0.5585236195529575,
+                        0.4150878607943014,
+                        0.38044112042200595,
+                        0.28554908119758693,
+                        0.1806712093623304,
+                        0.1157198898682168
+                    ],
+                    "phase_radians": [
+                        -0.015081812646948073,
+                        -1.8345934599645264,
+                        2.6190114374653,
+                        0.7869089717240096,
+                        -1.042806559929465,
+                        -2.868116793081883,
+                        1.5861876203010175,
+                        -0.2488494155332628,
+                        -2.070540154390846,
+                        2.3876892452111336,
+                        0.5510824578306625,
+                        -1.2796933146610914,
+                        -3.123678492834304,
+                        1.3071492598423442,
+                        -0.5278496182133827,
+                        -2.370246858516946,
+                        2.080994073243109,
+                        0.2473416936680294,
+                        -1.588710487550386,
+                        2.861582976219611,
+                        1.024719101225594,
+                        -0.8019787316014566,
+                        -2.631120682509505,
+                        1.817743903485665
+                    ]
+                }
+            },
+            "group_delay": {
+                "channel_width_hz": 6400000,
+                "rolloff": 0.25,
+                "taps_per_symbol": 1,
+                "symbol_rate": 5120000.0,
+                "symbol_time_us": 0.1953125,
+                "sample_period_us": 0.1953125,
+                "fft_size": 24,
+                "delay_samples": [
+                    6.950022544412879,
+                    6.969252464155675,
+                    6.993299156032148,
+                    6.9935572198589036,
+                    6.98058501116512,
+                    6.978990970277918,
+                    6.997567795005494,
+                    6.983835610603641,
+                    6.964582073875725,
+                    6.993069628121511,
+                    7.004184751352085,
+                    7.018276439752832,
+                    7.059494607206567,
+                    7.042332038200904,
+                    7.023309239325947,
+                    7.017475569007111,
+                    7.000774115268044,
+                    7.008619446445884,
+                    7.007166929364239,
+                    7.008717150284205,
+                    6.996887461462904,
+                    6.9821396728013525,
+                    6.996698317153914,
+                    7.006589039817358
+                ],
+                "delay_us": [
+                    1.3574262782056403,
+                    1.3611821219054052,
+                    1.3658787414125289,
+                    1.365929144503692,
+                    1.3633955099931876,
+                    1.3630841738824058,
+                    1.3667124599620106,
+                    1.3640303926960238,
+                    1.3602699363038526,
+                    1.3658339117424825,
+                    1.368004834248454,
+                    1.370757117139225,
+                    1.3788075404700326,
+                    1.375455476211114,
+                    1.371740085805849,
+                    1.3706006970717013,
+                    1.3673386943882897,
+                    1.3688709856339618,
+                    1.368587290891453,
+                    1.368890068414884,
+                    1.3665795823169735,
+                    1.363699154844014,
+                    1.3665426400691238,
+                    1.3684744218393279
+                ]
+            },
+            "tap_delay_summary": {
+                "symbol_rate": 5120000.0,
+                "taps_per_symbol": 1,
+                "symbol_time_us": 0.1953125,
+                "sample_period_us": 0.1953125,
+                "main_tap_index": 7,
+                "main_echo_tap_index": 8,
+                "main_echo_tap_offset": 1,
+                "main_echo_magnitude": 74.4043009509531,
+                "taps": [
+                    {
+                        "tap_index": 0,
+                        "tap_offset": -7,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": -2,
+                        "magnitude": 2.8284271247461903,
+                        "magnitude_power_db": 9.030899869919436,
+                        "delay_samples": -7.0,
+                        "delay_us": -1.3671875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -1.3671875,
+                                "one_way_length_m": -348.3916259960937,
+                                "one_way_length_ft": -1143.0171456564753,
+                                "echo_length_m": -174.19581299804685,
+                                "echo_length_ft": -571.5085728282377
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -1.3671875,
+                                "one_way_length_m": -336.09545096093746,
+                                "one_way_length_ft": -1102.6753640450702,
+                                "echo_length_m": -168.04772548046873,
+                                "echo_length_ft": -551.3376820225351
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -1.3671875,
+                                "one_way_length_m": -356.58907601953126,
+                                "one_way_length_ft": -1169.9116667307455,
+                                "echo_length_m": -178.29453800976563,
+                                "echo_length_ft": -584.9558333653728
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 1,
+                        "tap_offset": -6,
+                        "is_main_tap": false,
+                        "real": 4,
+                        "imag": -4,
+                        "magnitude": 5.656854249492381,
+                        "magnitude_power_db": 15.051499783199061,
+                        "delay_samples": -6.0,
+                        "delay_us": -1.171875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -1.171875,
+                                "one_way_length_m": -298.62139371093747,
+                                "one_way_length_ft": -979.7289819912645,
+                                "echo_length_m": -149.31069685546873,
+                                "echo_length_ft": -489.86449099563225
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -1.171875,
+                                "one_way_length_m": -288.08181510937493,
+                                "one_way_length_ft": -945.1503120386316,
+                                "echo_length_m": -144.04090755468746,
+                                "echo_length_ft": -472.5751560193158
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -1.171875,
+                                "one_way_length_m": -305.6477794453125,
+                                "one_way_length_ft": -1002.7814286263532,
+                                "echo_length_m": -152.82388972265625,
+                                "echo_length_ft": -501.3907143131766
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 2,
+                        "tap_offset": -5,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 4,
+                        "magnitude": 4.0,
+                        "magnitude_power_db": 12.041199826559248,
+                        "delay_samples": -5.0,
+                        "delay_us": -0.9765625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.9765625,
+                                "one_way_length_m": -248.85116142578124,
+                                "one_way_length_ft": -816.4408183260539,
+                                "echo_length_m": -124.42558071289062,
+                                "echo_length_ft": -408.22040916302694
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.9765625,
+                                "one_way_length_m": -240.0681792578125,
+                                "one_way_length_ft": -787.6252600321931,
+                                "echo_length_m": -120.03408962890624,
+                                "echo_length_ft": -393.81263001609653
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.9765625,
+                                "one_way_length_m": -254.70648287109375,
+                                "one_way_length_ft": -835.6511905219611,
+                                "echo_length_m": -127.35324143554688,
+                                "echo_length_ft": -417.82559526098055
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 3,
+                        "tap_offset": -4,
+                        "is_main_tap": false,
+                        "real": -4,
+                        "imag": -6,
+                        "magnitude": 7.211102550927978,
+                        "magnitude_power_db": 17.16003343634799,
+                        "delay_samples": -4.0,
+                        "delay_us": -0.78125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.78125,
+                                "one_way_length_m": -199.080929140625,
+                                "one_way_length_ft": -653.152654660843,
+                                "echo_length_m": -99.5404645703125,
+                                "echo_length_ft": -326.5763273304215
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.78125,
+                                "one_way_length_m": -192.05454340625,
+                                "one_way_length_ft": -630.1002080257545,
+                                "echo_length_m": -96.027271703125,
+                                "echo_length_ft": -315.0501040128772
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.78125,
+                                "one_way_length_m": -203.76518629687502,
+                                "one_way_length_ft": -668.5209524175689,
+                                "echo_length_m": -101.88259314843751,
+                                "echo_length_ft": -334.26047620878444
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 4,
+                        "tap_offset": -3,
+                        "is_main_tap": false,
+                        "real": 2,
+                        "imag": 10,
+                        "magnitude": 10.198039027185569,
+                        "magnitude_power_db": 20.170333392987803,
+                        "delay_samples": -3.0,
+                        "delay_us": -0.5859375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.5859375,
+                                "one_way_length_m": -149.31069685546873,
+                                "one_way_length_ft": -489.86449099563225,
+                                "echo_length_m": -74.65534842773437,
+                                "echo_length_ft": -244.93224549781613
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.5859375,
+                                "one_way_length_m": -144.04090755468746,
+                                "one_way_length_ft": -472.5751560193158,
+                                "echo_length_m": -72.02045377734373,
+                                "echo_length_ft": -236.2875780096579
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.5859375,
+                                "one_way_length_m": -152.82388972265625,
+                                "one_way_length_ft": -501.3907143131766,
+                                "echo_length_m": -76.41194486132812,
+                                "echo_length_ft": -250.6953571565883
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 5,
+                        "tap_offset": -2,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": -18,
+                        "magnitude": 18.110770276274835,
+                        "magnitude_power_db": 25.158738437116792,
+                        "delay_samples": -2.0,
+                        "delay_us": -0.390625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.390625,
+                                "one_way_length_m": -99.5404645703125,
+                                "one_way_length_ft": -326.5763273304215,
+                                "echo_length_m": -49.77023228515625,
+                                "echo_length_ft": -163.28816366521076
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.390625,
+                                "one_way_length_m": -96.027271703125,
+                                "one_way_length_ft": -315.0501040128772,
+                                "echo_length_m": -48.0136358515625,
+                                "echo_length_ft": -157.5250520064386
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.390625,
+                                "one_way_length_m": -101.88259314843751,
+                                "one_way_length_ft": -334.26047620878444,
+                                "echo_length_m": -50.941296574218754,
+                                "echo_length_ft": -167.13023810439222
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 6,
+                        "tap_offset": -1,
+                        "is_main_tap": false,
+                        "real": -6,
+                        "imag": 36,
+                        "magnitude": 36.49657518178932,
+                        "magnitude_power_db": 31.245042248342823,
+                        "delay_samples": -1.0,
+                        "delay_us": -0.1953125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.1953125,
+                                "one_way_length_m": -49.77023228515625,
+                                "one_way_length_ft": -163.28816366521076,
+                                "echo_length_m": -24.885116142578124,
+                                "echo_length_ft": -81.64408183260538
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.1953125,
+                                "one_way_length_m": -48.0136358515625,
+                                "one_way_length_ft": -157.5250520064386,
+                                "echo_length_m": -24.00681792578125,
+                                "echo_length_ft": -78.7625260032193
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.1953125,
+                                "one_way_length_m": -50.941296574218754,
+                                "one_way_length_ft": -167.13023810439222,
+                                "echo_length_m": -25.470648287109377,
+                                "echo_length_ft": -83.56511905219611
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 7,
+                        "tap_offset": 0,
+                        "is_main_tap": true,
+                        "real": 2045,
+                        "imag": 0,
+                        "magnitude": 2045.0,
+                        "magnitude_power_db": 66.21386624686721,
+                        "delay_samples": 0.0,
+                        "delay_us": 0.0,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.0,
+                                "one_way_length_m": 0.0,
+                                "one_way_length_ft": 0.0,
+                                "echo_length_m": 0.0,
+                                "echo_length_ft": 0.0
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.0,
+                                "one_way_length_m": 0.0,
+                                "one_way_length_ft": 0.0,
+                                "echo_length_m": 0.0,
+                                "echo_length_ft": 0.0
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.0,
+                                "one_way_length_m": 0.0,
+                                "one_way_length_ft": 0.0,
+                                "echo_length_m": 0.0,
+                                "echo_length_ft": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 8,
+                        "tap_offset": 1,
+                        "is_main_tap": false,
+                        "real": -44,
+                        "imag": -60,
+                        "magnitude": 74.4043009509531,
+                        "magnitude_power_db": 37.43196081448701,
+                        "delay_samples": 1.0,
+                        "delay_us": 0.1953125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.1953125,
+                                "one_way_length_m": 49.77023228515625,
+                                "one_way_length_ft": 163.28816366521076,
+                                "echo_length_m": 24.885116142578124,
+                                "echo_length_ft": 81.64408183260538
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.1953125,
+                                "one_way_length_m": 48.0136358515625,
+                                "one_way_length_ft": 157.5250520064386,
+                                "echo_length_m": 24.00681792578125,
+                                "echo_length_ft": 78.7625260032193
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.1953125,
+                                "one_way_length_m": 50.941296574218754,
+                                "one_way_length_ft": 167.13023810439222,
+                                "echo_length_m": 25.470648287109377,
+                                "echo_length_ft": 83.56511905219611
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 9,
+                        "tap_offset": 2,
+                        "is_main_tap": false,
+                        "real": 8,
+                        "imag": 24,
+                        "magnitude": 25.298221281347036,
+                        "magnitude_power_db": 28.06179973983887,
+                        "delay_samples": 2.0,
+                        "delay_us": 0.390625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.390625,
+                                "one_way_length_m": 99.5404645703125,
+                                "one_way_length_ft": 326.5763273304215,
+                                "echo_length_m": 49.77023228515625,
+                                "echo_length_ft": 163.28816366521076
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.390625,
+                                "one_way_length_m": 96.027271703125,
+                                "one_way_length_ft": 315.0501040128772,
+                                "echo_length_m": 48.0136358515625,
+                                "echo_length_ft": 157.5250520064386
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.390625,
+                                "one_way_length_m": 101.88259314843751,
+                                "one_way_length_ft": 334.26047620878444,
+                                "echo_length_m": 50.941296574218754,
+                                "echo_length_ft": 167.13023810439222
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 10,
+                        "tap_offset": 3,
+                        "is_main_tap": false,
+                        "real": -6,
+                        "imag": -12,
+                        "magnitude": 13.416407864998739,
+                        "magnitude_power_db": 22.55272505103306,
+                        "delay_samples": 3.0,
+                        "delay_us": 0.5859375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.5859375,
+                                "one_way_length_m": 149.31069685546873,
+                                "one_way_length_ft": 489.86449099563225,
+                                "echo_length_m": 74.65534842773437,
+                                "echo_length_ft": 244.93224549781613
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.5859375,
+                                "one_way_length_m": 144.04090755468746,
+                                "one_way_length_ft": 472.5751560193158,
+                                "echo_length_m": 72.02045377734373,
+                                "echo_length_ft": 236.2875780096579
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.5859375,
+                                "one_way_length_m": 152.82388972265625,
+                                "one_way_length_ft": 501.3907143131766,
+                                "echo_length_m": 76.41194486132812,
+                                "echo_length_ft": 250.6953571565883
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 11,
+                        "tap_offset": 4,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 6,
+                        "magnitude": 6.0,
+                        "magnitude_power_db": 15.563025007672874,
+                        "delay_samples": 4.0,
+                        "delay_us": 0.78125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.78125,
+                                "one_way_length_m": 199.080929140625,
+                                "one_way_length_ft": 653.152654660843,
+                                "echo_length_m": 99.5404645703125,
+                                "echo_length_ft": 326.5763273304215
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.78125,
+                                "one_way_length_m": 192.05454340625,
+                                "one_way_length_ft": 630.1002080257545,
+                                "echo_length_m": 96.027271703125,
+                                "echo_length_ft": 315.0501040128772
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.78125,
+                                "one_way_length_m": 203.76518629687502,
+                                "one_way_length_ft": 668.5209524175689,
+                                "echo_length_m": 101.88259314843751,
+                                "echo_length_ft": 334.26047620878444
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 12,
+                        "tap_offset": 5,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": -6,
+                        "magnitude": 6.324555320336759,
+                        "magnitude_power_db": 16.020599913279625,
+                        "delay_samples": 5.0,
+                        "delay_us": 0.9765625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.9765625,
+                                "one_way_length_m": 248.85116142578124,
+                                "one_way_length_ft": 816.4408183260539,
+                                "echo_length_m": 124.42558071289062,
+                                "echo_length_ft": 408.22040916302694
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.9765625,
+                                "one_way_length_m": 240.0681792578125,
+                                "one_way_length_ft": 787.6252600321931,
+                                "echo_length_m": 120.03408962890624,
+                                "echo_length_ft": 393.81263001609653
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.9765625,
+                                "one_way_length_m": 254.70648287109375,
+                                "one_way_length_ft": 835.6511905219611,
+                                "echo_length_m": 127.35324143554688,
+                                "echo_length_ft": 417.82559526098055
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 13,
+                        "tap_offset": 6,
+                        "is_main_tap": false,
+                        "real": 2,
+                        "imag": 2,
+                        "magnitude": 2.8284271247461903,
+                        "magnitude_power_db": 9.030899869919436,
+                        "delay_samples": 6.0,
+                        "delay_us": 1.171875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.171875,
+                                "one_way_length_m": 298.62139371093747,
+                                "one_way_length_ft": 979.7289819912645,
+                                "echo_length_m": 149.31069685546873,
+                                "echo_length_ft": 489.86449099563225
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.171875,
+                                "one_way_length_m": 288.08181510937493,
+                                "one_way_length_ft": 945.1503120386316,
+                                "echo_length_m": 144.04090755468746,
+                                "echo_length_ft": 472.5751560193158
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.171875,
+                                "one_way_length_m": 305.6477794453125,
+                                "one_way_length_ft": 1002.7814286263532,
+                                "echo_length_m": 152.82388972265625,
+                                "echo_length_ft": 501.3907143131766
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 14,
+                        "tap_offset": 7,
+                        "is_main_tap": false,
+                        "real": -4,
+                        "imag": -2,
+                        "magnitude": 4.47213595499958,
+                        "magnitude_power_db": 13.010299956639813,
+                        "delay_samples": 7.0,
+                        "delay_us": 1.3671875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.3671875,
+                                "one_way_length_m": 348.3916259960937,
+                                "one_way_length_ft": 1143.0171456564753,
+                                "echo_length_m": 174.19581299804685,
+                                "echo_length_ft": 571.5085728282377
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.3671875,
+                                "one_way_length_m": 336.09545096093746,
+                                "one_way_length_ft": 1102.6753640450702,
+                                "echo_length_m": 168.04772548046873,
+                                "echo_length_ft": 551.3376820225351
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.3671875,
+                                "one_way_length_m": 356.58907601953126,
+                                "one_way_length_ft": 1169.9116667307455,
+                                "echo_length_m": 178.29453800976563,
+                                "echo_length_ft": 584.9558333653728
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 15,
+                        "tap_offset": 8,
+                        "is_main_tap": false,
+                        "real": 2,
+                        "imag": 0,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 8.0,
+                        "delay_us": 1.5625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.5625,
+                                "one_way_length_m": 398.16185828125,
+                                "one_way_length_ft": 1306.305309321686,
+                                "echo_length_m": 199.080929140625,
+                                "echo_length_ft": 653.152654660843
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.5625,
+                                "one_way_length_m": 384.1090868125,
+                                "one_way_length_ft": 1260.200416051509,
+                                "echo_length_m": 192.05454340625,
+                                "echo_length_ft": 630.1002080257545
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.5625,
+                                "one_way_length_m": 407.53037259375003,
+                                "one_way_length_ft": 1337.0419048351378,
+                                "echo_length_m": 203.76518629687502,
+                                "echo_length_ft": 668.5209524175689
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 16,
+                        "tap_offset": 9,
+                        "is_main_tap": false,
+                        "real": -4,
+                        "imag": -2,
+                        "magnitude": 4.47213595499958,
+                        "magnitude_power_db": 13.010299956639813,
+                        "delay_samples": 9.0,
+                        "delay_us": 1.7578125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.7578125,
+                                "one_way_length_m": 447.9320905664062,
+                                "one_way_length_ft": 1469.5934729868968,
+                                "echo_length_m": 223.9660452832031,
+                                "echo_length_ft": 734.7967364934484
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.7578125,
+                                "one_way_length_m": 432.12272266406245,
+                                "one_way_length_ft": 1417.7254680579474,
+                                "echo_length_m": 216.06136133203123,
+                                "echo_length_ft": 708.8627340289737
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.7578125,
+                                "one_way_length_m": 458.47166916796874,
+                                "one_way_length_ft": 1504.1721429395297,
+                                "echo_length_m": 229.23583458398437,
+                                "echo_length_ft": 752.0860714697649
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 17,
+                        "tap_offset": 10,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 0,
+                        "magnitude": 0.0,
+                        "magnitude_power_db": null,
+                        "delay_samples": 10.0,
+                        "delay_us": 1.953125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.953125,
+                                "one_way_length_m": 497.7023228515625,
+                                "one_way_length_ft": 1632.8816366521078,
+                                "echo_length_m": 248.85116142578124,
+                                "echo_length_ft": 816.4408183260539
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.953125,
+                                "one_way_length_m": 480.136358515625,
+                                "one_way_length_ft": 1575.2505200643861,
+                                "echo_length_m": 240.0681792578125,
+                                "echo_length_ft": 787.6252600321931
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.953125,
+                                "one_way_length_m": 509.4129657421875,
+                                "one_way_length_ft": 1671.3023810439222,
+                                "echo_length_m": 254.70648287109375,
+                                "echo_length_ft": 835.6511905219611
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 18,
+                        "tap_offset": 11,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": -2,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 11.0,
+                        "delay_us": 2.1484375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.1484375,
+                                "one_way_length_m": 547.4725551367187,
+                                "one_way_length_ft": 1796.1698003173185,
+                                "echo_length_m": 273.73627756835936,
+                                "echo_length_ft": 898.0849001586593
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.1484375,
+                                "one_way_length_m": 528.1499943671874,
+                                "one_way_length_ft": 1732.7755720708249,
+                                "echo_length_m": 264.0749971835937,
+                                "echo_length_ft": 866.3877860354124
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.1484375,
+                                "one_way_length_m": 560.3542623164063,
+                                "one_way_length_ft": 1838.4326191483146,
+                                "echo_length_m": 280.17713115820317,
+                                "echo_length_ft": 919.2163095741573
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 19,
+                        "tap_offset": 12,
+                        "is_main_tap": false,
+                        "real": 2,
+                        "imag": 0,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 12.0,
+                        "delay_us": 2.34375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.34375,
+                                "one_way_length_m": 597.2427874218749,
+                                "one_way_length_ft": 1959.457963982529,
+                                "echo_length_m": 298.62139371093747,
+                                "echo_length_ft": 979.7289819912645
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.34375,
+                                "one_way_length_m": 576.1636302187499,
+                                "one_way_length_ft": 1890.3006240772631,
+                                "echo_length_m": 288.08181510937493,
+                                "echo_length_ft": 945.1503120386316
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.34375,
+                                "one_way_length_m": 611.295558890625,
+                                "one_way_length_ft": 2005.5628572527064,
+                                "echo_length_m": 305.6477794453125,
+                                "echo_length_ft": 1002.7814286263532
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 20,
+                        "tap_offset": 13,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 0,
+                        "magnitude": 0.0,
+                        "magnitude_power_db": null,
+                        "delay_samples": 13.0,
+                        "delay_us": 2.5390625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.5390625,
+                                "one_way_length_m": 647.0130197070312,
+                                "one_way_length_ft": 2122.7461276477397,
+                                "echo_length_m": 323.5065098535156,
+                                "echo_length_ft": 1061.3730638238699
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.5390625,
+                                "one_way_length_m": 624.1772660703124,
+                                "one_way_length_ft": 2047.8256760837019,
+                                "echo_length_m": 312.0886330351562,
+                                "echo_length_ft": 1023.9128380418509
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.5390625,
+                                "one_way_length_m": 662.2368554648438,
+                                "one_way_length_ft": 2172.6930953570986,
+                                "echo_length_m": 331.1184277324219,
+                                "echo_length_ft": 1086.3465476785493
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 21,
+                        "tap_offset": 14,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": 0,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 14.0,
+                        "delay_us": 2.734375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.734375,
+                                "one_way_length_m": 696.7832519921874,
+                                "one_way_length_ft": 2286.0342913129507,
+                                "echo_length_m": 348.3916259960937,
+                                "echo_length_ft": 1143.0171456564753
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.734375,
+                                "one_way_length_m": 672.1909019218749,
+                                "one_way_length_ft": 2205.3507280901404,
+                                "echo_length_m": 336.09545096093746,
+                                "echo_length_ft": 1102.6753640450702
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.734375,
+                                "one_way_length_m": 713.1781520390625,
+                                "one_way_length_ft": 2339.823333461491,
+                                "echo_length_m": 356.58907601953126,
+                                "echo_length_ft": 1169.9116667307455
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 22,
+                        "tap_offset": 15,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 2,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 15.0,
+                        "delay_us": 2.9296875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.9296875,
+                                "one_way_length_m": 746.5534842773437,
+                                "one_way_length_ft": 2449.3224549781617,
+                                "echo_length_m": 373.27674213867186,
+                                "echo_length_ft": 1224.6612274890808
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.9296875,
+                                "one_way_length_m": 720.2045377734374,
+                                "one_way_length_ft": 2362.875780096579,
+                                "echo_length_m": 360.1022688867187,
+                                "echo_length_ft": 1181.4378900482895
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.9296875,
+                                "one_way_length_m": 764.1194486132813,
+                                "one_way_length_ft": 2506.953571565883,
+                                "echo_length_m": 382.05972430664065,
+                                "echo_length_ft": 1253.4767857829415
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 23,
+                        "tap_offset": 16,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 0,
+                        "magnitude": 0.0,
+                        "magnitude_power_db": null,
+                        "delay_samples": 16.0,
+                        "delay_us": 3.125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 3.125,
+                                "one_way_length_m": 796.3237165625,
+                                "one_way_length_ft": 2612.610618643372,
+                                "echo_length_m": 398.16185828125,
+                                "echo_length_ft": 1306.305309321686
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 3.125,
+                                "one_way_length_m": 768.218173625,
+                                "one_way_length_ft": 2520.400832103018,
+                                "echo_length_m": 384.1090868125,
+                                "echo_length_ft": 1260.200416051509
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 3.125,
+                                "one_way_length_m": 815.0607451875001,
+                                "one_way_length_ft": 2674.0838096702755,
+                                "echo_length_m": 407.53037259375003,
+                                "echo_length_ft": 1337.0419048351378
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "80": {
+            "main_tap_location": 8,
+            "taps_per_symbol": 1,
+            "num_taps": 24,
+            "reserved": 0,
+            "header_hex": "08 01 18 00",
+            "payload_hex": "08 01 18 00 00 01 00 04 00 00 FF F7 00 03 00 0E FF FC FF E9 00 06 00 20 FF FB FF C4 FF F9 00 98 07 F6 FF EC 00 06 FF B2 FF FD 00 29 00 04 FF E6 FF FE 00 11 00 03 FF F5 00 00 00 07 00 01 FF FC 00 03 00 01 00 00 FF FF 00 00 FF FF 00 00 FF FF FF FE 00 01 FF FF FF FE FF FE FF FF 00 00 FF FF 00 00 00 01",
+            "payload_preview_hex": "08 01 18 00 00 01 00 04 00 00 FF F7 00 03 00 0E FF FC FF E9 00 06 00 20 FF FB FF C4 FF F9 00 98 07 F6 FF EC",
+            "taps": [
+                {
+                    "real": 1,
+                    "imag": 4,
+                    "magnitude": 4.12,
+                    "magnitude_power_dB": 12.3,
+                    "real_hex": "0001",
+                    "imag_hex": "0004"
+                },
+                {
+                    "real": 0,
+                    "imag": -9,
+                    "magnitude": 9.0,
+                    "magnitude_power_dB": 19.08,
+                    "real_hex": "0000",
+                    "imag_hex": "FFF7"
+                },
+                {
+                    "real": 3,
+                    "imag": 14,
+                    "magnitude": 14.32,
+                    "magnitude_power_dB": 23.12,
+                    "real_hex": "0003",
+                    "imag_hex": "000E"
+                },
+                {
+                    "real": -4,
+                    "imag": -23,
+                    "magnitude": 23.35,
+                    "magnitude_power_dB": 27.36,
+                    "real_hex": "FFFC",
+                    "imag_hex": "FFE9"
+                },
+                {
+                    "real": 6,
+                    "imag": 32,
+                    "magnitude": 32.56,
+                    "magnitude_power_dB": 30.25,
+                    "real_hex": "0006",
+                    "imag_hex": "0020"
+                },
+                {
+                    "real": -5,
+                    "imag": -60,
+                    "magnitude": 60.21,
+                    "magnitude_power_dB": 35.59,
+                    "real_hex": "FFFB",
+                    "imag_hex": "FFC4"
+                },
+                {
+                    "real": -7,
+                    "imag": 152,
+                    "magnitude": 152.16,
+                    "magnitude_power_dB": 43.65,
+                    "real_hex": "FFF9",
+                    "imag_hex": "0098"
+                },
+                {
+                    "real": 2038,
+                    "imag": -20,
+                    "magnitude": 2038.1,
+                    "magnitude_power_dB": 66.18,
+                    "real_hex": "07F6",
+                    "imag_hex": "FFEC"
+                },
+                {
+                    "real": 6,
+                    "imag": -78,
+                    "magnitude": 78.23,
+                    "magnitude_power_dB": 37.87,
+                    "real_hex": "0006",
+                    "imag_hex": "FFB2"
+                },
+                {
+                    "real": -3,
+                    "imag": 41,
+                    "magnitude": 41.11,
+                    "magnitude_power_dB": 32.28,
+                    "real_hex": "FFFD",
+                    "imag_hex": "0029"
+                },
+                {
+                    "real": 4,
+                    "imag": -26,
+                    "magnitude": 26.31,
+                    "magnitude_power_dB": 28.4,
+                    "real_hex": "0004",
+                    "imag_hex": "FFE6"
+                },
+                {
+                    "real": -2,
+                    "imag": 17,
+                    "magnitude": 17.12,
+                    "magnitude_power_dB": 24.67,
+                    "real_hex": "FFFE",
+                    "imag_hex": "0011"
+                },
+                {
+                    "real": 3,
+                    "imag": -11,
+                    "magnitude": 11.4,
+                    "magnitude_power_dB": 21.14,
+                    "real_hex": "0003",
+                    "imag_hex": "FFF5"
+                },
+                {
+                    "real": 0,
+                    "imag": 7,
+                    "magnitude": 7.0,
+                    "magnitude_power_dB": 16.9,
+                    "real_hex": "0000",
+                    "imag_hex": "0007"
+                },
+                {
+                    "real": 1,
+                    "imag": -4,
+                    "magnitude": 4.12,
+                    "magnitude_power_dB": 12.3,
+                    "real_hex": "0001",
+                    "imag_hex": "FFFC"
+                },
+                {
+                    "real": 3,
+                    "imag": 1,
+                    "magnitude": 3.16,
+                    "magnitude_power_dB": 10.0,
+                    "real_hex": "0003",
+                    "imag_hex": "0001"
+                },
+                {
+                    "real": 0,
+                    "imag": -1,
+                    "magnitude": 1.0,
+                    "magnitude_power_dB": 0.0,
+                    "real_hex": "0000",
+                    "imag_hex": "FFFF"
+                },
+                {
+                    "real": 0,
+                    "imag": -1,
+                    "magnitude": 1.0,
+                    "magnitude_power_dB": 0.0,
+                    "real_hex": "0000",
+                    "imag_hex": "FFFF"
+                },
+                {
+                    "real": 0,
+                    "imag": -1,
+                    "magnitude": 1.0,
+                    "magnitude_power_dB": 0.0,
+                    "real_hex": "0000",
+                    "imag_hex": "FFFF"
+                },
+                {
+                    "real": -2,
+                    "imag": 1,
+                    "magnitude": 2.24,
+                    "magnitude_power_dB": 6.99,
+                    "real_hex": "FFFE",
+                    "imag_hex": "0001"
+                },
+                {
+                    "real": -1,
+                    "imag": -2,
+                    "magnitude": 2.24,
+                    "magnitude_power_dB": 6.99,
+                    "real_hex": "FFFF",
+                    "imag_hex": "FFFE"
+                },
+                {
+                    "real": -2,
+                    "imag": -1,
+                    "magnitude": 2.24,
+                    "magnitude_power_dB": 6.99,
+                    "real_hex": "FFFE",
+                    "imag_hex": "FFFF"
+                },
+                {
+                    "real": 0,
+                    "imag": -1,
+                    "magnitude": 1.0,
+                    "magnitude_power_dB": 0.0,
+                    "real_hex": "0000",
+                    "imag_hex": "FFFF"
+                },
+                {
+                    "real": 0,
+                    "imag": 1,
+                    "magnitude": 1.0,
+                    "magnitude_power_dB": 0.0,
+                    "real_hex": "0000",
+                    "imag_hex": "0001"
+                }
+            ],
+            "metrics": {
+                "main_tap_energy": 4153844.0,
+                "main_tap_nominal_energy": 8380418.0,
+                "pre_main_tap_energy": 28686.0,
+                "post_main_tap_energy": 9021.0,
+                "total_tap_energy": 4191551.0,
+                "main_tap_compression": 0.03924572406453473,
+                "main_tap_ratio": 20.420282013732166,
+                "non_main_tap_energy_ratio": -20.459527737796698,
+                "pre_main_tap_total_energy_ratio": -21.647047606533626,
+                "post_main_tap_total_energy_ratio": -26.671200719126155,
+                "pre_post_energy_symmetry_ratio": -5.024153112592531,
+                "pre_post_tap_symmetry_ratio": 5.778558496245191,
+                "frequency_response": {
+                    "fft_size": 24,
+                    "frequency_bins": [
+                        0.0,
+                        0.041666666666666664,
+                        0.08333333333333333,
+                        0.125,
+                        0.16666666666666666,
+                        0.20833333333333334,
+                        0.25,
+                        0.2916666666666667,
+                        0.3333333333333333,
+                        0.375,
+                        0.4166666666666667,
+                        0.4583333333333333,
+                        0.5,
+                        0.5416666666666666,
+                        0.5833333333333334,
+                        0.625,
+                        0.6666666666666666,
+                        0.7083333333333334,
+                        0.75,
+                        0.7916666666666666,
+                        0.8333333333333334,
+                        0.875,
+                        0.9166666666666666,
+                        0.9583333333333334
+                    ],
+                    "magnitude": [
+                        2039.251088022267,
+                        2007.6577476106593,
+                        1964.1823675828591,
+                        1944.610769554108,
+                        1903.0441825507892,
+                        1880.6306048333488,
+                        1853.0528864552136,
+                        1823.866892337272,
+                        1812.0615870915483,
+                        1795.4409133025247,
+                        1739.3422972136889,
+                        1792.6828597902431,
+                        2010.8269443191773,
+                        2258.9377527781044,
+                        2346.6176984557696,
+                        2324.159838508139,
+                        2287.8804174578836,
+                        2264.5112332900567,
+                        2233.0438867160674,
+                        2194.4422897904838,
+                        2168.2967599615135,
+                        2134.204752791867,
+                        2084.0502338701294,
+                        2070.0214395095895
+                    ],
+                    "magnitude_power_db": [
+                        66.18941405385583,
+                        66.0537935818816,
+                        65.86363616146281,
+                        65.77665373224559,
+                        65.58897742643677,
+                        65.48606998823219,
+                        65.35775628673309,
+                        65.21986279790923,
+                        65.1634590818212,
+                        65.08342234742724,
+                        64.8077011646364,
+                        65.07006932247235,
+                        66.06749391953072,
+                        67.07808527358699,
+                        67.40884683692339,
+                        67.32531984609592,
+                        67.18866642169081,
+                        67.09948958754035,
+                        66.97794516963584,
+                        66.82648328206504,
+                        66.72237441704827,
+                        66.58472165455204,
+                        66.37816365943718,
+                        66.3194968706117
+                    ],
+                    "magnitude_power_db_normalized": [
+                        0.0,
+                        -0.1356204719742209,
+                        -0.32577789239302035,
+                        -0.4127603216102358,
+                        -0.6004366274190573,
+                        -0.7033440656236394,
+                        -0.831657767122735,
+                        -0.9695512559465982,
+                        -1.0259549720346257,
+                        -1.1059917064285827,
+                        -1.381712889219429,
+                        -1.1193447313834781,
+                        -0.12192013432510862,
+                        0.8886712197311653,
+                        1.2194327830675604,
+                        1.135905792240095,
+                        0.9992523678349841,
+                        0.9100755336845197,
+                        0.7885311157800174,
+                        0.6370692282092136,
+                        0.5329603631924442,
+                        0.3953076006962135,
+                        0.18874960558135,
+                        0.1300828167558734
+                    ],
+                    "phase_radians": [
+                        0.015692679343584037,
+                        -1.8163831833581976,
+                        2.6333982263748887,
+                        0.7962919553674103,
+                        -1.0402393435387245,
+                        -2.8828319461804157,
+                        1.5632411548452232,
+                        -0.28631835942427647,
+                        -2.122558066444722,
+                        2.3204550860529167,
+                        0.4722604205559215,
+                        -1.3739795021696024,
+                        3.079887331498575,
+                        1.2537868053061603,
+                        -0.5574939138438119,
+                        -2.3799402548379405,
+                        2.0804193888059266,
+                        0.2573038084308931,
+                        -1.5645268164644113,
+                        2.8886792257382496,
+                        1.0636897361957067,
+                        -0.7637704694106949,
+                        -2.6004676344523108,
+                        1.8565719412742738
+                    ]
+                }
+            },
+            "group_delay": {
+                "channel_width_hz": 6400000,
+                "rolloff": 0.25,
+                "taps_per_symbol": 1,
+                "symbol_rate": 5120000.0,
+                "symbol_time_us": 0.1953125,
+                "sample_period_us": 0.1953125,
+                "fft_size": 24,
+                "delay_samples": [
+                    6.998014312040092,
+                    7.0005506715707275,
+                    7.010158043742193,
+                    7.016130940558198,
+                    7.0266090621465125,
+                    7.0277185132661195,
+                    7.041024334349924,
+                    7.039357983750641,
+                    7.021429447579365,
+                    7.0442617364113715,
+                    7.055850319743417,
+                    7.019799448608325,
+                    6.981336034498739,
+                    6.946886461271937,
+                    6.939907481624566,
+                    6.961956701225134,
+                    6.963234854292118,
+                    6.96133447047383,
+                    6.97444314246043,
+                    6.980476129538424,
+                    6.975665080529282,
+                    6.998025093662818,
+                    6.9955146329538564,
+                    6.975362879205833
+                ],
+                "delay_us": [
+                    1.3667996703203305,
+                    1.3672950530411576,
+                    1.369171492918397,
+                    1.370338074327773,
+                    1.3723845824504908,
+                    1.3726012721222889,
+                    1.3752000653027194,
+                    1.374874606201297,
+                    1.3713729389803446,
+                    1.3758323703928461,
+                    1.3780957655748862,
+                    1.3710545798063134,
+                    1.3635421942380348,
+                    1.3568137619671752,
+                    1.355450680004798,
+                    1.3597571682080338,
+                    1.3600068074789293,
+                    1.35963563876442,
+                    1.3621959262618026,
+                    1.3633742440504735,
+                    1.3624345860408753,
+                    1.3668017761060192,
+                    1.3663114517488002,
+                    1.3623755623448892
+                ]
+            },
+            "tap_delay_summary": {
+                "symbol_rate": 5120000.0,
+                "taps_per_symbol": 1,
+                "symbol_time_us": 0.1953125,
+                "sample_period_us": 0.1953125,
+                "main_tap_index": 7,
+                "main_echo_tap_index": 8,
+                "main_echo_tap_offset": 1,
+                "main_echo_magnitude": 78.23042886243178,
+                "taps": [
+                    {
+                        "tap_index": 0,
+                        "tap_offset": -7,
+                        "is_main_tap": false,
+                        "real": 1,
+                        "imag": 4,
+                        "magnitude": 4.123105625617661,
+                        "magnitude_power_db": 12.30448921378274,
+                        "delay_samples": -7.0,
+                        "delay_us": -1.3671875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -1.3671875,
+                                "one_way_length_m": -348.3916259960937,
+                                "one_way_length_ft": -1143.0171456564753,
+                                "echo_length_m": -174.19581299804685,
+                                "echo_length_ft": -571.5085728282377
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -1.3671875,
+                                "one_way_length_m": -336.09545096093746,
+                                "one_way_length_ft": -1102.6753640450702,
+                                "echo_length_m": -168.04772548046873,
+                                "echo_length_ft": -551.3376820225351
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -1.3671875,
+                                "one_way_length_m": -356.58907601953126,
+                                "one_way_length_ft": -1169.9116667307455,
+                                "echo_length_m": -178.29453800976563,
+                                "echo_length_ft": -584.9558333653728
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 1,
+                        "tap_offset": -6,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": -9,
+                        "magnitude": 9.0,
+                        "magnitude_power_db": 19.084850188786497,
+                        "delay_samples": -6.0,
+                        "delay_us": -1.171875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -1.171875,
+                                "one_way_length_m": -298.62139371093747,
+                                "one_way_length_ft": -979.7289819912645,
+                                "echo_length_m": -149.31069685546873,
+                                "echo_length_ft": -489.86449099563225
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -1.171875,
+                                "one_way_length_m": -288.08181510937493,
+                                "one_way_length_ft": -945.1503120386316,
+                                "echo_length_m": -144.04090755468746,
+                                "echo_length_ft": -472.5751560193158
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -1.171875,
+                                "one_way_length_m": -305.6477794453125,
+                                "one_way_length_ft": -1002.7814286263532,
+                                "echo_length_m": -152.82388972265625,
+                                "echo_length_ft": -501.3907143131766
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 2,
+                        "tap_offset": -5,
+                        "is_main_tap": false,
+                        "real": 3,
+                        "imag": 14,
+                        "magnitude": 14.317821063276353,
+                        "magnitude_power_db": 23.117538610557542,
+                        "delay_samples": -5.0,
+                        "delay_us": -0.9765625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.9765625,
+                                "one_way_length_m": -248.85116142578124,
+                                "one_way_length_ft": -816.4408183260539,
+                                "echo_length_m": -124.42558071289062,
+                                "echo_length_ft": -408.22040916302694
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.9765625,
+                                "one_way_length_m": -240.0681792578125,
+                                "one_way_length_ft": -787.6252600321931,
+                                "echo_length_m": -120.03408962890624,
+                                "echo_length_ft": -393.81263001609653
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.9765625,
+                                "one_way_length_m": -254.70648287109375,
+                                "one_way_length_ft": -835.6511905219611,
+                                "echo_length_m": -127.35324143554688,
+                                "echo_length_ft": -417.82559526098055
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 3,
+                        "tap_offset": -4,
+                        "is_main_tap": false,
+                        "real": -4,
+                        "imag": -23,
+                        "magnitude": 23.345235059857504,
+                        "magnitude_power_db": 27.363965022766426,
+                        "delay_samples": -4.0,
+                        "delay_us": -0.78125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.78125,
+                                "one_way_length_m": -199.080929140625,
+                                "one_way_length_ft": -653.152654660843,
+                                "echo_length_m": -99.5404645703125,
+                                "echo_length_ft": -326.5763273304215
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.78125,
+                                "one_way_length_m": -192.05454340625,
+                                "one_way_length_ft": -630.1002080257545,
+                                "echo_length_m": -96.027271703125,
+                                "echo_length_ft": -315.0501040128772
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.78125,
+                                "one_way_length_m": -203.76518629687502,
+                                "one_way_length_ft": -668.5209524175689,
+                                "echo_length_m": -101.88259314843751,
+                                "echo_length_ft": -334.26047620878444
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 4,
+                        "tap_offset": -3,
+                        "is_main_tap": false,
+                        "real": 6,
+                        "imag": 32,
+                        "magnitude": 32.55764119219941,
+                        "magnitude_power_db": 30.253058652647702,
+                        "delay_samples": -3.0,
+                        "delay_us": -0.5859375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.5859375,
+                                "one_way_length_m": -149.31069685546873,
+                                "one_way_length_ft": -489.86449099563225,
+                                "echo_length_m": -74.65534842773437,
+                                "echo_length_ft": -244.93224549781613
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.5859375,
+                                "one_way_length_m": -144.04090755468746,
+                                "one_way_length_ft": -472.5751560193158,
+                                "echo_length_m": -72.02045377734373,
+                                "echo_length_ft": -236.2875780096579
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.5859375,
+                                "one_way_length_m": -152.82388972265625,
+                                "one_way_length_ft": -501.3907143131766,
+                                "echo_length_m": -76.41194486132812,
+                                "echo_length_ft": -250.6953571565883
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 5,
+                        "tap_offset": -2,
+                        "is_main_tap": false,
+                        "real": -5,
+                        "imag": -60,
+                        "magnitude": 60.207972893961475,
+                        "magnitude_power_db": 35.59308010907012,
+                        "delay_samples": -2.0,
+                        "delay_us": -0.390625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.390625,
+                                "one_way_length_m": -99.5404645703125,
+                                "one_way_length_ft": -326.5763273304215,
+                                "echo_length_m": -49.77023228515625,
+                                "echo_length_ft": -163.28816366521076
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.390625,
+                                "one_way_length_m": -96.027271703125,
+                                "one_way_length_ft": -315.0501040128772,
+                                "echo_length_m": -48.0136358515625,
+                                "echo_length_ft": -157.5250520064386
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.390625,
+                                "one_way_length_m": -101.88259314843751,
+                                "one_way_length_ft": -334.26047620878444,
+                                "echo_length_m": -50.941296574218754,
+                                "echo_length_ft": -167.13023810439222
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 6,
+                        "tap_offset": -1,
+                        "is_main_tap": false,
+                        "real": -7,
+                        "imag": 152,
+                        "magnitude": 152.16109883935513,
+                        "magnitude_power_db": 43.646072717700804,
+                        "delay_samples": -1.0,
+                        "delay_us": -0.1953125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.1953125,
+                                "one_way_length_m": -49.77023228515625,
+                                "one_way_length_ft": -163.28816366521076,
+                                "echo_length_m": -24.885116142578124,
+                                "echo_length_ft": -81.64408183260538
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.1953125,
+                                "one_way_length_m": -48.0136358515625,
+                                "one_way_length_ft": -157.5250520064386,
+                                "echo_length_m": -24.00681792578125,
+                                "echo_length_ft": -78.7625260032193
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.1953125,
+                                "one_way_length_m": -50.941296574218754,
+                                "one_way_length_ft": -167.13023810439222,
+                                "echo_length_m": -25.470648287109377,
+                                "echo_length_ft": -83.56511905219611
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 7,
+                        "tap_offset": 0,
+                        "is_main_tap": true,
+                        "real": 2038,
+                        "imag": -20,
+                        "magnitude": 2038.0981330642546,
+                        "magnitude_power_db": 66.18450182326342,
+                        "delay_samples": 0.0,
+                        "delay_us": 0.0,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.0,
+                                "one_way_length_m": 0.0,
+                                "one_way_length_ft": 0.0,
+                                "echo_length_m": 0.0,
+                                "echo_length_ft": 0.0
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.0,
+                                "one_way_length_m": 0.0,
+                                "one_way_length_ft": 0.0,
+                                "echo_length_m": 0.0,
+                                "echo_length_ft": 0.0
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.0,
+                                "one_way_length_m": 0.0,
+                                "one_way_length_ft": 0.0,
+                                "echo_length_m": 0.0,
+                                "echo_length_ft": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 8,
+                        "tap_offset": 1,
+                        "is_main_tap": false,
+                        "real": 6,
+                        "imag": -78,
+                        "magnitude": 78.23042886243178,
+                        "magnitude_power_db": 37.86751422145561,
+                        "delay_samples": 1.0,
+                        "delay_us": 0.1953125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.1953125,
+                                "one_way_length_m": 49.77023228515625,
+                                "one_way_length_ft": 163.28816366521076,
+                                "echo_length_m": 24.885116142578124,
+                                "echo_length_ft": 81.64408183260538
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.1953125,
+                                "one_way_length_m": 48.0136358515625,
+                                "one_way_length_ft": 157.5250520064386,
+                                "echo_length_m": 24.00681792578125,
+                                "echo_length_ft": 78.7625260032193
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.1953125,
+                                "one_way_length_m": 50.941296574218754,
+                                "one_way_length_ft": 167.13023810439222,
+                                "echo_length_m": 25.470648287109377,
+                                "echo_length_ft": 83.56511905219611
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 9,
+                        "tap_offset": 2,
+                        "is_main_tap": false,
+                        "real": -3,
+                        "imag": 41,
+                        "magnitude": 41.10960958218893,
+                        "magnitude_power_db": 32.27886704613673,
+                        "delay_samples": 2.0,
+                        "delay_us": 0.390625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.390625,
+                                "one_way_length_m": 99.5404645703125,
+                                "one_way_length_ft": 326.5763273304215,
+                                "echo_length_m": 49.77023228515625,
+                                "echo_length_ft": 163.28816366521076
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.390625,
+                                "one_way_length_m": 96.027271703125,
+                                "one_way_length_ft": 315.0501040128772,
+                                "echo_length_m": 48.0136358515625,
+                                "echo_length_ft": 157.5250520064386
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.390625,
+                                "one_way_length_m": 101.88259314843751,
+                                "one_way_length_ft": 334.26047620878444,
+                                "echo_length_m": 50.941296574218754,
+                                "echo_length_ft": 167.13023810439222
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 10,
+                        "tap_offset": 3,
+                        "is_main_tap": false,
+                        "real": 4,
+                        "imag": -26,
+                        "magnitude": 26.30589287593181,
+                        "magnitude_power_db": 28.40106094456758,
+                        "delay_samples": 3.0,
+                        "delay_us": 0.5859375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.5859375,
+                                "one_way_length_m": 149.31069685546873,
+                                "one_way_length_ft": 489.86449099563225,
+                                "echo_length_m": 74.65534842773437,
+                                "echo_length_ft": 244.93224549781613
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.5859375,
+                                "one_way_length_m": 144.04090755468746,
+                                "one_way_length_ft": 472.5751560193158,
+                                "echo_length_m": 72.02045377734373,
+                                "echo_length_ft": 236.2875780096579
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.5859375,
+                                "one_way_length_m": 152.82388972265625,
+                                "one_way_length_ft": 501.3907143131766,
+                                "echo_length_m": 76.41194486132812,
+                                "echo_length_ft": 250.6953571565883
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 11,
+                        "tap_offset": 4,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": 17,
+                        "magnitude": 17.11724276862369,
+                        "magnitude_power_db": 24.668676203541096,
+                        "delay_samples": 4.0,
+                        "delay_us": 0.78125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.78125,
+                                "one_way_length_m": 199.080929140625,
+                                "one_way_length_ft": 653.152654660843,
+                                "echo_length_m": 99.5404645703125,
+                                "echo_length_ft": 326.5763273304215
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.78125,
+                                "one_way_length_m": 192.05454340625,
+                                "one_way_length_ft": 630.1002080257545,
+                                "echo_length_m": 96.027271703125,
+                                "echo_length_ft": 315.0501040128772
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.78125,
+                                "one_way_length_m": 203.76518629687502,
+                                "one_way_length_ft": 668.5209524175689,
+                                "echo_length_m": 101.88259314843751,
+                                "echo_length_ft": 334.26047620878444
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 12,
+                        "tap_offset": 5,
+                        "is_main_tap": false,
+                        "real": 3,
+                        "imag": -11,
+                        "magnitude": 11.40175425099138,
+                        "magnitude_power_db": 21.13943352306837,
+                        "delay_samples": 5.0,
+                        "delay_us": 0.9765625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.9765625,
+                                "one_way_length_m": 248.85116142578124,
+                                "one_way_length_ft": 816.4408183260539,
+                                "echo_length_m": 124.42558071289062,
+                                "echo_length_ft": 408.22040916302694
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.9765625,
+                                "one_way_length_m": 240.0681792578125,
+                                "one_way_length_ft": 787.6252600321931,
+                                "echo_length_m": 120.03408962890624,
+                                "echo_length_ft": 393.81263001609653
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.9765625,
+                                "one_way_length_m": 254.70648287109375,
+                                "one_way_length_ft": 835.6511905219611,
+                                "echo_length_m": 127.35324143554688,
+                                "echo_length_ft": 417.82559526098055
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 13,
+                        "tap_offset": 6,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 7,
+                        "magnitude": 7.0,
+                        "magnitude_power_db": 16.901960800285135,
+                        "delay_samples": 6.0,
+                        "delay_us": 1.171875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.171875,
+                                "one_way_length_m": 298.62139371093747,
+                                "one_way_length_ft": 979.7289819912645,
+                                "echo_length_m": 149.31069685546873,
+                                "echo_length_ft": 489.86449099563225
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.171875,
+                                "one_way_length_m": 288.08181510937493,
+                                "one_way_length_ft": 945.1503120386316,
+                                "echo_length_m": 144.04090755468746,
+                                "echo_length_ft": 472.5751560193158
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.171875,
+                                "one_way_length_m": 305.6477794453125,
+                                "one_way_length_ft": 1002.7814286263532,
+                                "echo_length_m": 152.82388972265625,
+                                "echo_length_ft": 501.3907143131766
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 14,
+                        "tap_offset": 7,
+                        "is_main_tap": false,
+                        "real": 1,
+                        "imag": -4,
+                        "magnitude": 4.123105625617661,
+                        "magnitude_power_db": 12.30448921378274,
+                        "delay_samples": 7.0,
+                        "delay_us": 1.3671875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.3671875,
+                                "one_way_length_m": 348.3916259960937,
+                                "one_way_length_ft": 1143.0171456564753,
+                                "echo_length_m": 174.19581299804685,
+                                "echo_length_ft": 571.5085728282377
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.3671875,
+                                "one_way_length_m": 336.09545096093746,
+                                "one_way_length_ft": 1102.6753640450702,
+                                "echo_length_m": 168.04772548046873,
+                                "echo_length_ft": 551.3376820225351
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.3671875,
+                                "one_way_length_m": 356.58907601953126,
+                                "one_way_length_ft": 1169.9116667307455,
+                                "echo_length_m": 178.29453800976563,
+                                "echo_length_ft": 584.9558333653728
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 15,
+                        "tap_offset": 8,
+                        "is_main_tap": false,
+                        "real": 3,
+                        "imag": 1,
+                        "magnitude": 3.1622776601683795,
+                        "magnitude_power_db": 10.0,
+                        "delay_samples": 8.0,
+                        "delay_us": 1.5625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.5625,
+                                "one_way_length_m": 398.16185828125,
+                                "one_way_length_ft": 1306.305309321686,
+                                "echo_length_m": 199.080929140625,
+                                "echo_length_ft": 653.152654660843
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.5625,
+                                "one_way_length_m": 384.1090868125,
+                                "one_way_length_ft": 1260.200416051509,
+                                "echo_length_m": 192.05454340625,
+                                "echo_length_ft": 630.1002080257545
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.5625,
+                                "one_way_length_m": 407.53037259375003,
+                                "one_way_length_ft": 1337.0419048351378,
+                                "echo_length_m": 203.76518629687502,
+                                "echo_length_ft": 668.5209524175689
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 16,
+                        "tap_offset": 9,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": -1,
+                        "magnitude": 1.0,
+                        "magnitude_power_db": 0.0,
+                        "delay_samples": 9.0,
+                        "delay_us": 1.7578125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.7578125,
+                                "one_way_length_m": 447.9320905664062,
+                                "one_way_length_ft": 1469.5934729868968,
+                                "echo_length_m": 223.9660452832031,
+                                "echo_length_ft": 734.7967364934484
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.7578125,
+                                "one_way_length_m": 432.12272266406245,
+                                "one_way_length_ft": 1417.7254680579474,
+                                "echo_length_m": 216.06136133203123,
+                                "echo_length_ft": 708.8627340289737
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.7578125,
+                                "one_way_length_m": 458.47166916796874,
+                                "one_way_length_ft": 1504.1721429395297,
+                                "echo_length_m": 229.23583458398437,
+                                "echo_length_ft": 752.0860714697649
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 17,
+                        "tap_offset": 10,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": -1,
+                        "magnitude": 1.0,
+                        "magnitude_power_db": 0.0,
+                        "delay_samples": 10.0,
+                        "delay_us": 1.953125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.953125,
+                                "one_way_length_m": 497.7023228515625,
+                                "one_way_length_ft": 1632.8816366521078,
+                                "echo_length_m": 248.85116142578124,
+                                "echo_length_ft": 816.4408183260539
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.953125,
+                                "one_way_length_m": 480.136358515625,
+                                "one_way_length_ft": 1575.2505200643861,
+                                "echo_length_m": 240.0681792578125,
+                                "echo_length_ft": 787.6252600321931
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.953125,
+                                "one_way_length_m": 509.4129657421875,
+                                "one_way_length_ft": 1671.3023810439222,
+                                "echo_length_m": 254.70648287109375,
+                                "echo_length_ft": 835.6511905219611
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 18,
+                        "tap_offset": 11,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": -1,
+                        "magnitude": 1.0,
+                        "magnitude_power_db": 0.0,
+                        "delay_samples": 11.0,
+                        "delay_us": 2.1484375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.1484375,
+                                "one_way_length_m": 547.4725551367187,
+                                "one_way_length_ft": 1796.1698003173185,
+                                "echo_length_m": 273.73627756835936,
+                                "echo_length_ft": 898.0849001586593
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.1484375,
+                                "one_way_length_m": 528.1499943671874,
+                                "one_way_length_ft": 1732.7755720708249,
+                                "echo_length_m": 264.0749971835937,
+                                "echo_length_ft": 866.3877860354124
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.1484375,
+                                "one_way_length_m": 560.3542623164063,
+                                "one_way_length_ft": 1838.4326191483146,
+                                "echo_length_m": 280.17713115820317,
+                                "echo_length_ft": 919.2163095741573
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 19,
+                        "tap_offset": 12,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": 1,
+                        "magnitude": 2.23606797749979,
+                        "magnitude_power_db": 6.989700043360188,
+                        "delay_samples": 12.0,
+                        "delay_us": 2.34375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.34375,
+                                "one_way_length_m": 597.2427874218749,
+                                "one_way_length_ft": 1959.457963982529,
+                                "echo_length_m": 298.62139371093747,
+                                "echo_length_ft": 979.7289819912645
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.34375,
+                                "one_way_length_m": 576.1636302187499,
+                                "one_way_length_ft": 1890.3006240772631,
+                                "echo_length_m": 288.08181510937493,
+                                "echo_length_ft": 945.1503120386316
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.34375,
+                                "one_way_length_m": 611.295558890625,
+                                "one_way_length_ft": 2005.5628572527064,
+                                "echo_length_m": 305.6477794453125,
+                                "echo_length_ft": 1002.7814286263532
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 20,
+                        "tap_offset": 13,
+                        "is_main_tap": false,
+                        "real": -1,
+                        "imag": -2,
+                        "magnitude": 2.23606797749979,
+                        "magnitude_power_db": 6.989700043360188,
+                        "delay_samples": 13.0,
+                        "delay_us": 2.5390625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.5390625,
+                                "one_way_length_m": 647.0130197070312,
+                                "one_way_length_ft": 2122.7461276477397,
+                                "echo_length_m": 323.5065098535156,
+                                "echo_length_ft": 1061.3730638238699
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.5390625,
+                                "one_way_length_m": 624.1772660703124,
+                                "one_way_length_ft": 2047.8256760837019,
+                                "echo_length_m": 312.0886330351562,
+                                "echo_length_ft": 1023.9128380418509
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.5390625,
+                                "one_way_length_m": 662.2368554648438,
+                                "one_way_length_ft": 2172.6930953570986,
+                                "echo_length_m": 331.1184277324219,
+                                "echo_length_ft": 1086.3465476785493
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 21,
+                        "tap_offset": 14,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": -1,
+                        "magnitude": 2.23606797749979,
+                        "magnitude_power_db": 6.989700043360188,
+                        "delay_samples": 14.0,
+                        "delay_us": 2.734375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.734375,
+                                "one_way_length_m": 696.7832519921874,
+                                "one_way_length_ft": 2286.0342913129507,
+                                "echo_length_m": 348.3916259960937,
+                                "echo_length_ft": 1143.0171456564753
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.734375,
+                                "one_way_length_m": 672.1909019218749,
+                                "one_way_length_ft": 2205.3507280901404,
+                                "echo_length_m": 336.09545096093746,
+                                "echo_length_ft": 1102.6753640450702
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.734375,
+                                "one_way_length_m": 713.1781520390625,
+                                "one_way_length_ft": 2339.823333461491,
+                                "echo_length_m": 356.58907601953126,
+                                "echo_length_ft": 1169.9116667307455
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 22,
+                        "tap_offset": 15,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": -1,
+                        "magnitude": 1.0,
+                        "magnitude_power_db": 0.0,
+                        "delay_samples": 15.0,
+                        "delay_us": 2.9296875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.9296875,
+                                "one_way_length_m": 746.5534842773437,
+                                "one_way_length_ft": 2449.3224549781617,
+                                "echo_length_m": 373.27674213867186,
+                                "echo_length_ft": 1224.6612274890808
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.9296875,
+                                "one_way_length_m": 720.2045377734374,
+                                "one_way_length_ft": 2362.875780096579,
+                                "echo_length_m": 360.1022688867187,
+                                "echo_length_ft": 1181.4378900482895
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.9296875,
+                                "one_way_length_m": 764.1194486132813,
+                                "one_way_length_ft": 2506.953571565883,
+                                "echo_length_m": 382.05972430664065,
+                                "echo_length_ft": 1253.4767857829415
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 23,
+                        "tap_offset": 16,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 1,
+                        "magnitude": 1.0,
+                        "magnitude_power_db": 0.0,
+                        "delay_samples": 16.0,
+                        "delay_us": 3.125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 3.125,
+                                "one_way_length_m": 796.3237165625,
+                                "one_way_length_ft": 2612.610618643372,
+                                "echo_length_m": 398.16185828125,
+                                "echo_length_ft": 1306.305309321686
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 3.125,
+                                "one_way_length_m": 768.218173625,
+                                "one_way_length_ft": 2520.400832103018,
+                                "echo_length_m": 384.1090868125,
+                                "echo_length_ft": 1260.200416051509
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 3.125,
+                                "one_way_length_m": 815.0607451875001,
+                                "one_way_length_ft": 2674.0838096702755,
+                                "echo_length_m": 407.53037259375003,
+                                "echo_length_ft": 1337.0419048351378
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "81": {
+            "main_tap_location": 8,
+            "taps_per_symbol": 1,
+            "num_taps": 24,
+            "reserved": 0,
+            "header_hex": "08 01 18 00",
+            "payload_hex": "08 01 18 00 FF FE 00 00 00 02 00 00 00 00 00 02 FF FE 00 00 00 04 00 00 FF F6 FF FE 00 18 00 08 07 FF 00 00 00 1C 00 0C FF F8 00 00 00 00 00 02 00 00 00 00 00 02 00 04 00 02 00 00 FF FE 00 02 00 04 00 00 FF FE 00 02 00 00 00 02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02 00 00 00 02 00 00 00 02",
+            "payload_preview_hex": "08 01 18 00 FF FE 00 00 00 02 00 00 00 00 00 02 FF FE 00 00 00 04 00 00 FF F6 FF FE 00 18 00 08 07 FF 00 00",
+            "taps": [
+                {
+                    "real": -2,
+                    "imag": 0,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "FFFE",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": 2,
+                    "imag": 0,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0002",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": 0,
+                    "imag": 2,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0000",
+                    "imag_hex": "0002"
+                },
+                {
+                    "real": -2,
+                    "imag": 0,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "FFFE",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": 4,
+                    "imag": 0,
+                    "magnitude": 4.0,
+                    "magnitude_power_dB": 12.04,
+                    "real_hex": "0004",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": -10,
+                    "imag": -2,
+                    "magnitude": 10.2,
+                    "magnitude_power_dB": 20.17,
+                    "real_hex": "FFF6",
+                    "imag_hex": "FFFE"
+                },
+                {
+                    "real": 24,
+                    "imag": 8,
+                    "magnitude": 25.3,
+                    "magnitude_power_dB": 28.06,
+                    "real_hex": "0018",
+                    "imag_hex": "0008"
+                },
+                {
+                    "real": 2047,
+                    "imag": 0,
+                    "magnitude": 2047.0,
+                    "magnitude_power_dB": 66.22,
+                    "real_hex": "07FF",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": 28,
+                    "imag": 12,
+                    "magnitude": 30.46,
+                    "magnitude_power_dB": 29.68,
+                    "real_hex": "001C",
+                    "imag_hex": "000C"
+                },
+                {
+                    "real": -8,
+                    "imag": 0,
+                    "magnitude": 8.0,
+                    "magnitude_power_dB": 18.06,
+                    "real_hex": "FFF8",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": 0,
+                    "imag": 2,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0000",
+                    "imag_hex": "0002"
+                },
+                {
+                    "real": 0,
+                    "imag": 0,
+                    "magnitude": 0.0,
+                    "magnitude_power_dB": null,
+                    "real_hex": "0000",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": 2,
+                    "imag": 4,
+                    "magnitude": 4.47,
+                    "magnitude_power_dB": 13.01,
+                    "real_hex": "0002",
+                    "imag_hex": "0004"
+                },
+                {
+                    "real": 2,
+                    "imag": 0,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0002",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": -2,
+                    "imag": 2,
+                    "magnitude": 2.83,
+                    "magnitude_power_dB": 9.03,
+                    "real_hex": "FFFE",
+                    "imag_hex": "0002"
+                },
+                {
+                    "real": 4,
+                    "imag": 0,
+                    "magnitude": 4.0,
+                    "magnitude_power_dB": 12.04,
+                    "real_hex": "0004",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": -2,
+                    "imag": 2,
+                    "magnitude": 2.83,
+                    "magnitude_power_dB": 9.03,
+                    "real_hex": "FFFE",
+                    "imag_hex": "0002"
+                },
+                {
+                    "real": 0,
+                    "imag": 2,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0000",
+                    "imag_hex": "0002"
+                },
+                {
+                    "real": 0,
+                    "imag": 0,
+                    "magnitude": 0.0,
+                    "magnitude_power_dB": null,
+                    "real_hex": "0000",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": 0,
+                    "imag": 0,
+                    "magnitude": 0.0,
+                    "magnitude_power_dB": null,
+                    "real_hex": "0000",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": 0,
+                    "imag": 0,
+                    "magnitude": 0.0,
+                    "magnitude_power_dB": null,
+                    "real_hex": "0000",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": 0,
+                    "imag": 2,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0000",
+                    "imag_hex": "0002"
+                },
+                {
+                    "real": 0,
+                    "imag": 2,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0000",
+                    "imag_hex": "0002"
+                },
+                {
+                    "real": 0,
+                    "imag": 2,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0000",
+                    "imag_hex": "0002"
+                }
+            ],
+            "metrics": {
+                "main_tap_energy": 4190209.0,
+                "main_tap_nominal_energy": 8380418.0,
+                "pre_main_tap_energy": 776.0,
+                "post_main_tap_energy": 1068.0,
+                "total_tap_energy": 4192053.0,
+                "main_tap_compression": 0.001910794574420623,
+                "main_tap_ratio": 33.56474768607401,
+                "non_main_tap_energy_ratio": -33.56665848064843,
+                "pre_main_tap_total_energy_ratio": -37.32565043524265,
+                "post_main_tap_total_energy_ratio": -35.93855512089916,
+                "pre_post_energy_symmetry_ratio": 1.3870953143434916,
+                "pre_post_tap_symmetry_ratio": -1.6136800223497485,
+                "frequency_response": {
+                    "fft_size": 24,
+                    "frequency_bins": [
+                        0.0,
+                        0.041666666666666664,
+                        0.08333333333333333,
+                        0.125,
+                        0.16666666666666666,
+                        0.20833333333333334,
+                        0.25,
+                        0.2916666666666667,
+                        0.3333333333333333,
+                        0.375,
+                        0.4166666666666667,
+                        0.4583333333333333,
+                        0.5,
+                        0.5416666666666666,
+                        0.5833333333333334,
+                        0.625,
+                        0.6666666666666666,
+                        0.7083333333333334,
+                        0.75,
+                        0.7916666666666666,
+                        0.8333333333333334,
+                        0.875,
+                        0.9166666666666666,
+                        0.9583333333333334
+                    ],
+                    "magnitude": [
+                        2087.3459224575117,
+                        2090.0310229220913,
+                        2087.2506054859205,
+                        2084.756525968541,
+                        2085.464256537705,
+                        2080.84188926875,
+                        2065.015496309895,
+                        2045.4186443398926,
+                        2039.4808606017093,
+                        2024.1385395807947,
+                        1986.8031885163305,
+                        1979.5119023967331,
+                        1983.2269159125487,
+                        1965.6130802994069,
+                        1985.7209423689035,
+                        2025.361258499722,
+                        2032.5697575333818,
+                        2043.8347716103597,
+                        2061.0155263849906,
+                        2068.471130065969,
+                        2078.566052523623,
+                        2077.9165461066345,
+                        2072.332584079484,
+                        2078.92914303014
+                    ],
+                    "magnitude_power_db": [
+                        66.3918885574017,
+                        66.40305465029653,
+                        66.39149191418578,
+                        66.3811068398872,
+                        66.38405501457476,
+                        66.36478164049561,
+                        66.29846630083266,
+                        66.21564420597741,
+                        66.19039268118125,
+                        66.12480467833933,
+                        65.96309696600404,
+                        65.93116234838413,
+                        65.94744815894855,
+                        65.86996067044734,
+                        65.95836432221354,
+                        66.13004996908658,
+                        66.16090918905591,
+                        66.20891566997435,
+                        66.28162526981936,
+                        66.3129892753288,
+                        66.35527660081124,
+                        66.35256202618271,
+                        66.32918911257863,
+                        66.35679374703892
+                    ],
+                    "magnitude_power_db_normalized": [
+                        0.0,
+                        0.011166092894825397,
+                        -0.00039664321592169927,
+                        -0.010781717514504408,
+                        -0.00783354282694404,
+                        -0.027106916906092238,
+                        -0.0934222565690419,
+                        -0.17624435142428752,
+                        -0.20149587622044862,
+                        -0.2670838790623691,
+                        -0.42879159139765477,
+                        -0.4607262090175652,
+                        -0.4444403984531533,
+                        -0.5219278869543587,
+                        -0.43352423518815897,
+                        -0.26183858831511486,
+                        -0.23097936834578547,
+                        -0.18297288742735418,
+                        -0.11026328758234172,
+                        -0.07889928207289643,
+                        -0.03661195659046257,
+                        -0.03932653121898966,
+                        -0.06269944482306755,
+                        -0.03509481036277862
+                    ],
+                    "phase_radians": [
+                        0.018205942242616048,
+                        -1.8288528010524774,
+                        2.6224937384863796,
+                        0.7928601827559094,
+                        -1.0468120986074785,
+                        -2.874880513069701,
+                        1.5669222541665884,
+                        -0.2711268457977373,
+                        -2.098449061417235,
+                        2.3532799153380495,
+                        0.5178647565775004,
+                        -1.3179205027803598,
+                        3.1264652145726597,
+                        1.2924072587041988,
+                        -0.5283287150708547,
+                        -2.363875343215962,
+                        2.0886230417247513,
+                        0.2650100193644517,
+                        -1.5669147354208282,
+                        2.889016769123722,
+                        1.052584056259053,
+                        -0.7787089637664105,
+                        -2.61249651607466,
+                        1.841092530801652
+                    ]
+                }
+            },
+            "group_delay": {
+                "channel_width_hz": 6400000,
+                "rolloff": 0.25,
+                "taps_per_symbol": 1,
+                "symbol_rate": 5120000.0,
+                "symbol_time_us": 0.1953125,
+                "sample_period_us": 0.1953125,
+                "fft_size": 24,
+                "delay_samples": [
+                    7.05524470023644,
+                    7.026176687926876,
+                    6.992897031104317,
+                    7.007857940273189,
+                    7.004868740639445,
+                    7.008135093922936,
+                    7.027196799120198,
+                    7.000343557708909,
+                    6.987752295377387,
+                    7.003208678238099,
+                    7.011476323494939,
+                    7.017940110699456,
+                    7.014641204036764,
+                    6.980142238620218,
+                    6.982985393237875,
+                    7.00199030487552,
+                    6.9791987966807625,
+                    6.981562882702534,
+                    6.98851626083178,
+                    6.9971258265707945,
+                    7.0048401635377076,
+                    6.999788279003795,
+                    6.99654770663949,
+                    6.988542928553083
+                ],
+                "delay_us": [
+                    1.3779774805149296,
+                    1.372300134360718,
+                    1.3658002013875619,
+                    1.3687222539596071,
+                    1.3681384259061415,
+                    1.3687763855318236,
+                    1.3724993748281635,
+                    1.3672546011150213,
+                    1.364795370190896,
+                    1.3678141949683789,
+                    1.3694289694326054,
+                    1.3706914278709874,
+                    1.3700471101634304,
+                    1.3633090309805111,
+                    1.3638643346167725,
+                    1.3675762314209998,
+                    1.3631247649767113,
+                    1.3635865005278385,
+                    1.364944582193707,
+                    1.3666261380021083,
+                    1.3681328444409586,
+                    1.3671461482429286,
+                    1.3665132239530253,
+                    1.3649497907330241
+                ]
+            },
+            "tap_delay_summary": {
+                "symbol_rate": 5120000.0,
+                "taps_per_symbol": 1,
+                "symbol_time_us": 0.1953125,
+                "sample_period_us": 0.1953125,
+                "main_tap_index": 7,
+                "main_echo_tap_index": 8,
+                "main_echo_tap_offset": 1,
+                "main_echo_magnitude": 30.463092423455635,
+                "taps": [
+                    {
+                        "tap_index": 0,
+                        "tap_offset": -7,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": 0,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": -7.0,
+                        "delay_us": -1.3671875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -1.3671875,
+                                "one_way_length_m": -348.3916259960937,
+                                "one_way_length_ft": -1143.0171456564753,
+                                "echo_length_m": -174.19581299804685,
+                                "echo_length_ft": -571.5085728282377
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -1.3671875,
+                                "one_way_length_m": -336.09545096093746,
+                                "one_way_length_ft": -1102.6753640450702,
+                                "echo_length_m": -168.04772548046873,
+                                "echo_length_ft": -551.3376820225351
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -1.3671875,
+                                "one_way_length_m": -356.58907601953126,
+                                "one_way_length_ft": -1169.9116667307455,
+                                "echo_length_m": -178.29453800976563,
+                                "echo_length_ft": -584.9558333653728
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 1,
+                        "tap_offset": -6,
+                        "is_main_tap": false,
+                        "real": 2,
+                        "imag": 0,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": -6.0,
+                        "delay_us": -1.171875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -1.171875,
+                                "one_way_length_m": -298.62139371093747,
+                                "one_way_length_ft": -979.7289819912645,
+                                "echo_length_m": -149.31069685546873,
+                                "echo_length_ft": -489.86449099563225
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -1.171875,
+                                "one_way_length_m": -288.08181510937493,
+                                "one_way_length_ft": -945.1503120386316,
+                                "echo_length_m": -144.04090755468746,
+                                "echo_length_ft": -472.5751560193158
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -1.171875,
+                                "one_way_length_m": -305.6477794453125,
+                                "one_way_length_ft": -1002.7814286263532,
+                                "echo_length_m": -152.82388972265625,
+                                "echo_length_ft": -501.3907143131766
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 2,
+                        "tap_offset": -5,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 2,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": -5.0,
+                        "delay_us": -0.9765625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.9765625,
+                                "one_way_length_m": -248.85116142578124,
+                                "one_way_length_ft": -816.4408183260539,
+                                "echo_length_m": -124.42558071289062,
+                                "echo_length_ft": -408.22040916302694
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.9765625,
+                                "one_way_length_m": -240.0681792578125,
+                                "one_way_length_ft": -787.6252600321931,
+                                "echo_length_m": -120.03408962890624,
+                                "echo_length_ft": -393.81263001609653
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.9765625,
+                                "one_way_length_m": -254.70648287109375,
+                                "one_way_length_ft": -835.6511905219611,
+                                "echo_length_m": -127.35324143554688,
+                                "echo_length_ft": -417.82559526098055
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 3,
+                        "tap_offset": -4,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": 0,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": -4.0,
+                        "delay_us": -0.78125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.78125,
+                                "one_way_length_m": -199.080929140625,
+                                "one_way_length_ft": -653.152654660843,
+                                "echo_length_m": -99.5404645703125,
+                                "echo_length_ft": -326.5763273304215
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.78125,
+                                "one_way_length_m": -192.05454340625,
+                                "one_way_length_ft": -630.1002080257545,
+                                "echo_length_m": -96.027271703125,
+                                "echo_length_ft": -315.0501040128772
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.78125,
+                                "one_way_length_m": -203.76518629687502,
+                                "one_way_length_ft": -668.5209524175689,
+                                "echo_length_m": -101.88259314843751,
+                                "echo_length_ft": -334.26047620878444
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 4,
+                        "tap_offset": -3,
+                        "is_main_tap": false,
+                        "real": 4,
+                        "imag": 0,
+                        "magnitude": 4.0,
+                        "magnitude_power_db": 12.041199826559248,
+                        "delay_samples": -3.0,
+                        "delay_us": -0.5859375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.5859375,
+                                "one_way_length_m": -149.31069685546873,
+                                "one_way_length_ft": -489.86449099563225,
+                                "echo_length_m": -74.65534842773437,
+                                "echo_length_ft": -244.93224549781613
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.5859375,
+                                "one_way_length_m": -144.04090755468746,
+                                "one_way_length_ft": -472.5751560193158,
+                                "echo_length_m": -72.02045377734373,
+                                "echo_length_ft": -236.2875780096579
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.5859375,
+                                "one_way_length_m": -152.82388972265625,
+                                "one_way_length_ft": -501.3907143131766,
+                                "echo_length_m": -76.41194486132812,
+                                "echo_length_ft": -250.6953571565883
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 5,
+                        "tap_offset": -2,
+                        "is_main_tap": false,
+                        "real": -10,
+                        "imag": -2,
+                        "magnitude": 10.198039027185569,
+                        "magnitude_power_db": 20.170333392987803,
+                        "delay_samples": -2.0,
+                        "delay_us": -0.390625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.390625,
+                                "one_way_length_m": -99.5404645703125,
+                                "one_way_length_ft": -326.5763273304215,
+                                "echo_length_m": -49.77023228515625,
+                                "echo_length_ft": -163.28816366521076
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.390625,
+                                "one_way_length_m": -96.027271703125,
+                                "one_way_length_ft": -315.0501040128772,
+                                "echo_length_m": -48.0136358515625,
+                                "echo_length_ft": -157.5250520064386
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.390625,
+                                "one_way_length_m": -101.88259314843751,
+                                "one_way_length_ft": -334.26047620878444,
+                                "echo_length_m": -50.941296574218754,
+                                "echo_length_ft": -167.13023810439222
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 6,
+                        "tap_offset": -1,
+                        "is_main_tap": false,
+                        "real": 24,
+                        "imag": 8,
+                        "magnitude": 25.298221281347036,
+                        "magnitude_power_db": 28.06179973983887,
+                        "delay_samples": -1.0,
+                        "delay_us": -0.1953125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.1953125,
+                                "one_way_length_m": -49.77023228515625,
+                                "one_way_length_ft": -163.28816366521076,
+                                "echo_length_m": -24.885116142578124,
+                                "echo_length_ft": -81.64408183260538
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.1953125,
+                                "one_way_length_m": -48.0136358515625,
+                                "one_way_length_ft": -157.5250520064386,
+                                "echo_length_m": -24.00681792578125,
+                                "echo_length_ft": -78.7625260032193
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.1953125,
+                                "one_way_length_m": -50.941296574218754,
+                                "one_way_length_ft": -167.13023810439222,
+                                "echo_length_m": -25.470648287109377,
+                                "echo_length_ft": -83.56511905219611
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 7,
+                        "tap_offset": 0,
+                        "is_main_tap": true,
+                        "real": 2047,
+                        "imag": 0,
+                        "magnitude": 2047.0,
+                        "magnitude_power_db": 66.2223568532501,
+                        "delay_samples": 0.0,
+                        "delay_us": 0.0,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.0,
+                                "one_way_length_m": 0.0,
+                                "one_way_length_ft": 0.0,
+                                "echo_length_m": 0.0,
+                                "echo_length_ft": 0.0
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.0,
+                                "one_way_length_m": 0.0,
+                                "one_way_length_ft": 0.0,
+                                "echo_length_m": 0.0,
+                                "echo_length_ft": 0.0
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.0,
+                                "one_way_length_m": 0.0,
+                                "one_way_length_ft": 0.0,
+                                "echo_length_m": 0.0,
+                                "echo_length_ft": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 8,
+                        "tap_offset": 1,
+                        "is_main_tap": false,
+                        "real": 28,
+                        "imag": 12,
+                        "magnitude": 30.463092423455635,
+                        "magnitude_power_db": 29.67547976218862,
+                        "delay_samples": 1.0,
+                        "delay_us": 0.1953125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.1953125,
+                                "one_way_length_m": 49.77023228515625,
+                                "one_way_length_ft": 163.28816366521076,
+                                "echo_length_m": 24.885116142578124,
+                                "echo_length_ft": 81.64408183260538
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.1953125,
+                                "one_way_length_m": 48.0136358515625,
+                                "one_way_length_ft": 157.5250520064386,
+                                "echo_length_m": 24.00681792578125,
+                                "echo_length_ft": 78.7625260032193
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.1953125,
+                                "one_way_length_m": 50.941296574218754,
+                                "one_way_length_ft": 167.13023810439222,
+                                "echo_length_m": 25.470648287109377,
+                                "echo_length_ft": 83.56511905219611
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 9,
+                        "tap_offset": 2,
+                        "is_main_tap": false,
+                        "real": -8,
+                        "imag": 0,
+                        "magnitude": 8.0,
+                        "magnitude_power_db": 18.06179973983887,
+                        "delay_samples": 2.0,
+                        "delay_us": 0.390625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.390625,
+                                "one_way_length_m": 99.5404645703125,
+                                "one_way_length_ft": 326.5763273304215,
+                                "echo_length_m": 49.77023228515625,
+                                "echo_length_ft": 163.28816366521076
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.390625,
+                                "one_way_length_m": 96.027271703125,
+                                "one_way_length_ft": 315.0501040128772,
+                                "echo_length_m": 48.0136358515625,
+                                "echo_length_ft": 157.5250520064386
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.390625,
+                                "one_way_length_m": 101.88259314843751,
+                                "one_way_length_ft": 334.26047620878444,
+                                "echo_length_m": 50.941296574218754,
+                                "echo_length_ft": 167.13023810439222
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 10,
+                        "tap_offset": 3,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 2,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 3.0,
+                        "delay_us": 0.5859375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.5859375,
+                                "one_way_length_m": 149.31069685546873,
+                                "one_way_length_ft": 489.86449099563225,
+                                "echo_length_m": 74.65534842773437,
+                                "echo_length_ft": 244.93224549781613
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.5859375,
+                                "one_way_length_m": 144.04090755468746,
+                                "one_way_length_ft": 472.5751560193158,
+                                "echo_length_m": 72.02045377734373,
+                                "echo_length_ft": 236.2875780096579
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.5859375,
+                                "one_way_length_m": 152.82388972265625,
+                                "one_way_length_ft": 501.3907143131766,
+                                "echo_length_m": 76.41194486132812,
+                                "echo_length_ft": 250.6953571565883
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 11,
+                        "tap_offset": 4,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 0,
+                        "magnitude": 0.0,
+                        "magnitude_power_db": null,
+                        "delay_samples": 4.0,
+                        "delay_us": 0.78125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.78125,
+                                "one_way_length_m": 199.080929140625,
+                                "one_way_length_ft": 653.152654660843,
+                                "echo_length_m": 99.5404645703125,
+                                "echo_length_ft": 326.5763273304215
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.78125,
+                                "one_way_length_m": 192.05454340625,
+                                "one_way_length_ft": 630.1002080257545,
+                                "echo_length_m": 96.027271703125,
+                                "echo_length_ft": 315.0501040128772
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.78125,
+                                "one_way_length_m": 203.76518629687502,
+                                "one_way_length_ft": 668.5209524175689,
+                                "echo_length_m": 101.88259314843751,
+                                "echo_length_ft": 334.26047620878444
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 12,
+                        "tap_offset": 5,
+                        "is_main_tap": false,
+                        "real": 2,
+                        "imag": 4,
+                        "magnitude": 4.47213595499958,
+                        "magnitude_power_db": 13.010299956639813,
+                        "delay_samples": 5.0,
+                        "delay_us": 0.9765625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.9765625,
+                                "one_way_length_m": 248.85116142578124,
+                                "one_way_length_ft": 816.4408183260539,
+                                "echo_length_m": 124.42558071289062,
+                                "echo_length_ft": 408.22040916302694
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.9765625,
+                                "one_way_length_m": 240.0681792578125,
+                                "one_way_length_ft": 787.6252600321931,
+                                "echo_length_m": 120.03408962890624,
+                                "echo_length_ft": 393.81263001609653
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.9765625,
+                                "one_way_length_m": 254.70648287109375,
+                                "one_way_length_ft": 835.6511905219611,
+                                "echo_length_m": 127.35324143554688,
+                                "echo_length_ft": 417.82559526098055
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 13,
+                        "tap_offset": 6,
+                        "is_main_tap": false,
+                        "real": 2,
+                        "imag": 0,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 6.0,
+                        "delay_us": 1.171875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.171875,
+                                "one_way_length_m": 298.62139371093747,
+                                "one_way_length_ft": 979.7289819912645,
+                                "echo_length_m": 149.31069685546873,
+                                "echo_length_ft": 489.86449099563225
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.171875,
+                                "one_way_length_m": 288.08181510937493,
+                                "one_way_length_ft": 945.1503120386316,
+                                "echo_length_m": 144.04090755468746,
+                                "echo_length_ft": 472.5751560193158
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.171875,
+                                "one_way_length_m": 305.6477794453125,
+                                "one_way_length_ft": 1002.7814286263532,
+                                "echo_length_m": 152.82388972265625,
+                                "echo_length_ft": 501.3907143131766
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 14,
+                        "tap_offset": 7,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": 2,
+                        "magnitude": 2.8284271247461903,
+                        "magnitude_power_db": 9.030899869919436,
+                        "delay_samples": 7.0,
+                        "delay_us": 1.3671875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.3671875,
+                                "one_way_length_m": 348.3916259960937,
+                                "one_way_length_ft": 1143.0171456564753,
+                                "echo_length_m": 174.19581299804685,
+                                "echo_length_ft": 571.5085728282377
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.3671875,
+                                "one_way_length_m": 336.09545096093746,
+                                "one_way_length_ft": 1102.6753640450702,
+                                "echo_length_m": 168.04772548046873,
+                                "echo_length_ft": 551.3376820225351
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.3671875,
+                                "one_way_length_m": 356.58907601953126,
+                                "one_way_length_ft": 1169.9116667307455,
+                                "echo_length_m": 178.29453800976563,
+                                "echo_length_ft": 584.9558333653728
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 15,
+                        "tap_offset": 8,
+                        "is_main_tap": false,
+                        "real": 4,
+                        "imag": 0,
+                        "magnitude": 4.0,
+                        "magnitude_power_db": 12.041199826559248,
+                        "delay_samples": 8.0,
+                        "delay_us": 1.5625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.5625,
+                                "one_way_length_m": 398.16185828125,
+                                "one_way_length_ft": 1306.305309321686,
+                                "echo_length_m": 199.080929140625,
+                                "echo_length_ft": 653.152654660843
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.5625,
+                                "one_way_length_m": 384.1090868125,
+                                "one_way_length_ft": 1260.200416051509,
+                                "echo_length_m": 192.05454340625,
+                                "echo_length_ft": 630.1002080257545
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.5625,
+                                "one_way_length_m": 407.53037259375003,
+                                "one_way_length_ft": 1337.0419048351378,
+                                "echo_length_m": 203.76518629687502,
+                                "echo_length_ft": 668.5209524175689
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 16,
+                        "tap_offset": 9,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": 2,
+                        "magnitude": 2.8284271247461903,
+                        "magnitude_power_db": 9.030899869919436,
+                        "delay_samples": 9.0,
+                        "delay_us": 1.7578125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.7578125,
+                                "one_way_length_m": 447.9320905664062,
+                                "one_way_length_ft": 1469.5934729868968,
+                                "echo_length_m": 223.9660452832031,
+                                "echo_length_ft": 734.7967364934484
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.7578125,
+                                "one_way_length_m": 432.12272266406245,
+                                "one_way_length_ft": 1417.7254680579474,
+                                "echo_length_m": 216.06136133203123,
+                                "echo_length_ft": 708.8627340289737
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.7578125,
+                                "one_way_length_m": 458.47166916796874,
+                                "one_way_length_ft": 1504.1721429395297,
+                                "echo_length_m": 229.23583458398437,
+                                "echo_length_ft": 752.0860714697649
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 17,
+                        "tap_offset": 10,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 2,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 10.0,
+                        "delay_us": 1.953125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.953125,
+                                "one_way_length_m": 497.7023228515625,
+                                "one_way_length_ft": 1632.8816366521078,
+                                "echo_length_m": 248.85116142578124,
+                                "echo_length_ft": 816.4408183260539
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.953125,
+                                "one_way_length_m": 480.136358515625,
+                                "one_way_length_ft": 1575.2505200643861,
+                                "echo_length_m": 240.0681792578125,
+                                "echo_length_ft": 787.6252600321931
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.953125,
+                                "one_way_length_m": 509.4129657421875,
+                                "one_way_length_ft": 1671.3023810439222,
+                                "echo_length_m": 254.70648287109375,
+                                "echo_length_ft": 835.6511905219611
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 18,
+                        "tap_offset": 11,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 0,
+                        "magnitude": 0.0,
+                        "magnitude_power_db": null,
+                        "delay_samples": 11.0,
+                        "delay_us": 2.1484375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.1484375,
+                                "one_way_length_m": 547.4725551367187,
+                                "one_way_length_ft": 1796.1698003173185,
+                                "echo_length_m": 273.73627756835936,
+                                "echo_length_ft": 898.0849001586593
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.1484375,
+                                "one_way_length_m": 528.1499943671874,
+                                "one_way_length_ft": 1732.7755720708249,
+                                "echo_length_m": 264.0749971835937,
+                                "echo_length_ft": 866.3877860354124
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.1484375,
+                                "one_way_length_m": 560.3542623164063,
+                                "one_way_length_ft": 1838.4326191483146,
+                                "echo_length_m": 280.17713115820317,
+                                "echo_length_ft": 919.2163095741573
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 19,
+                        "tap_offset": 12,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 0,
+                        "magnitude": 0.0,
+                        "magnitude_power_db": null,
+                        "delay_samples": 12.0,
+                        "delay_us": 2.34375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.34375,
+                                "one_way_length_m": 597.2427874218749,
+                                "one_way_length_ft": 1959.457963982529,
+                                "echo_length_m": 298.62139371093747,
+                                "echo_length_ft": 979.7289819912645
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.34375,
+                                "one_way_length_m": 576.1636302187499,
+                                "one_way_length_ft": 1890.3006240772631,
+                                "echo_length_m": 288.08181510937493,
+                                "echo_length_ft": 945.1503120386316
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.34375,
+                                "one_way_length_m": 611.295558890625,
+                                "one_way_length_ft": 2005.5628572527064,
+                                "echo_length_m": 305.6477794453125,
+                                "echo_length_ft": 1002.7814286263532
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 20,
+                        "tap_offset": 13,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 0,
+                        "magnitude": 0.0,
+                        "magnitude_power_db": null,
+                        "delay_samples": 13.0,
+                        "delay_us": 2.5390625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.5390625,
+                                "one_way_length_m": 647.0130197070312,
+                                "one_way_length_ft": 2122.7461276477397,
+                                "echo_length_m": 323.5065098535156,
+                                "echo_length_ft": 1061.3730638238699
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.5390625,
+                                "one_way_length_m": 624.1772660703124,
+                                "one_way_length_ft": 2047.8256760837019,
+                                "echo_length_m": 312.0886330351562,
+                                "echo_length_ft": 1023.9128380418509
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.5390625,
+                                "one_way_length_m": 662.2368554648438,
+                                "one_way_length_ft": 2172.6930953570986,
+                                "echo_length_m": 331.1184277324219,
+                                "echo_length_ft": 1086.3465476785493
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 21,
+                        "tap_offset": 14,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 2,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 14.0,
+                        "delay_us": 2.734375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.734375,
+                                "one_way_length_m": 696.7832519921874,
+                                "one_way_length_ft": 2286.0342913129507,
+                                "echo_length_m": 348.3916259960937,
+                                "echo_length_ft": 1143.0171456564753
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.734375,
+                                "one_way_length_m": 672.1909019218749,
+                                "one_way_length_ft": 2205.3507280901404,
+                                "echo_length_m": 336.09545096093746,
+                                "echo_length_ft": 1102.6753640450702
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.734375,
+                                "one_way_length_m": 713.1781520390625,
+                                "one_way_length_ft": 2339.823333461491,
+                                "echo_length_m": 356.58907601953126,
+                                "echo_length_ft": 1169.9116667307455
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 22,
+                        "tap_offset": 15,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 2,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 15.0,
+                        "delay_us": 2.9296875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.9296875,
+                                "one_way_length_m": 746.5534842773437,
+                                "one_way_length_ft": 2449.3224549781617,
+                                "echo_length_m": 373.27674213867186,
+                                "echo_length_ft": 1224.6612274890808
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.9296875,
+                                "one_way_length_m": 720.2045377734374,
+                                "one_way_length_ft": 2362.875780096579,
+                                "echo_length_m": 360.1022688867187,
+                                "echo_length_ft": 1181.4378900482895
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.9296875,
+                                "one_way_length_m": 764.1194486132813,
+                                "one_way_length_ft": 2506.953571565883,
+                                "echo_length_m": 382.05972430664065,
+                                "echo_length_ft": 1253.4767857829415
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 23,
+                        "tap_offset": 16,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 2,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 16.0,
+                        "delay_us": 3.125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 3.125,
+                                "one_way_length_m": 796.3237165625,
+                                "one_way_length_ft": 2612.610618643372,
+                                "echo_length_m": 398.16185828125,
+                                "echo_length_ft": 1306.305309321686
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 3.125,
+                                "one_way_length_m": 768.218173625,
+                                "one_way_length_ft": 2520.400832103018,
+                                "echo_length_m": 384.1090868125,
+                                "echo_length_ft": 1260.200416051509
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 3.125,
+                                "one_way_length_m": 815.0607451875001,
+                                "one_way_length_ft": 2674.0838096702755,
+                                "echo_length_m": 407.53037259375003,
+                                "echo_length_ft": 1337.0419048351378
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "82": {
+            "main_tap_location": 8,
+            "taps_per_symbol": 1,
+            "num_taps": 24,
+            "reserved": 0,
+            "header_hex": "08 01 18 00",
+            "payload_hex": "08 01 18 00 FF FA FF FC 00 04 00 04 FF FE FF FB 00 01 00 0A FF FA FF F4 00 08 00 16 FF E1 FF E3 07 F9 FF FC FF F5 00 8C FF F9 FF D1 00 00 00 1B FF FE FF EF 00 01 00 0C 00 03 FF FA FF FE 00 04 00 04 FF FC 00 00 00 02 00 00 FF FE 00 04 00 01 00 00 00 02 FF FF 00 01 00 00 00 00 FF FD 00 00 FF FD FF FD",
+            "payload_preview_hex": "08 01 18 00 FF FA FF FC 00 04 00 04 FF FE FF FB 00 01 00 0A FF FA FF F4 00 08 00 16 FF E1 FF E3 07 F9 FF FC",
+            "taps": [
+                {
+                    "real": -6,
+                    "imag": -4,
+                    "magnitude": 7.21,
+                    "magnitude_power_dB": 17.16,
+                    "real_hex": "FFFA",
+                    "imag_hex": "FFFC"
+                },
+                {
+                    "real": 4,
+                    "imag": 4,
+                    "magnitude": 5.66,
+                    "magnitude_power_dB": 15.05,
+                    "real_hex": "0004",
+                    "imag_hex": "0004"
+                },
+                {
+                    "real": -2,
+                    "imag": -5,
+                    "magnitude": 5.39,
+                    "magnitude_power_dB": 14.62,
+                    "real_hex": "FFFE",
+                    "imag_hex": "FFFB"
+                },
+                {
+                    "real": 1,
+                    "imag": 10,
+                    "magnitude": 10.05,
+                    "magnitude_power_dB": 20.04,
+                    "real_hex": "0001",
+                    "imag_hex": "000A"
+                },
+                {
+                    "real": -6,
+                    "imag": -12,
+                    "magnitude": 13.42,
+                    "magnitude_power_dB": 22.55,
+                    "real_hex": "FFFA",
+                    "imag_hex": "FFF4"
+                },
+                {
+                    "real": 8,
+                    "imag": 22,
+                    "magnitude": 23.41,
+                    "magnitude_power_dB": 27.39,
+                    "real_hex": "0008",
+                    "imag_hex": "0016"
+                },
+                {
+                    "real": -31,
+                    "imag": -29,
+                    "magnitude": 42.45,
+                    "magnitude_power_dB": 32.56,
+                    "real_hex": "FFE1",
+                    "imag_hex": "FFE3"
+                },
+                {
+                    "real": 2041,
+                    "imag": -4,
+                    "magnitude": 2041.0,
+                    "magnitude_power_dB": 66.2,
+                    "real_hex": "07F9",
+                    "imag_hex": "FFFC"
+                },
+                {
+                    "real": -11,
+                    "imag": 140,
+                    "magnitude": 140.43,
+                    "magnitude_power_dB": 42.95,
+                    "real_hex": "FFF5",
+                    "imag_hex": "008C"
+                },
+                {
+                    "real": -7,
+                    "imag": -47,
+                    "magnitude": 47.52,
+                    "magnitude_power_dB": 33.54,
+                    "real_hex": "FFF9",
+                    "imag_hex": "FFD1"
+                },
+                {
+                    "real": 0,
+                    "imag": 27,
+                    "magnitude": 27.0,
+                    "magnitude_power_dB": 28.63,
+                    "real_hex": "0000",
+                    "imag_hex": "001B"
+                },
+                {
+                    "real": -2,
+                    "imag": -17,
+                    "magnitude": 17.12,
+                    "magnitude_power_dB": 24.67,
+                    "real_hex": "FFFE",
+                    "imag_hex": "FFEF"
+                },
+                {
+                    "real": 1,
+                    "imag": 12,
+                    "magnitude": 12.04,
+                    "magnitude_power_dB": 21.61,
+                    "real_hex": "0001",
+                    "imag_hex": "000C"
+                },
+                {
+                    "real": 3,
+                    "imag": -6,
+                    "magnitude": 6.71,
+                    "magnitude_power_dB": 16.53,
+                    "real_hex": "0003",
+                    "imag_hex": "FFFA"
+                },
+                {
+                    "real": -2,
+                    "imag": 4,
+                    "magnitude": 4.47,
+                    "magnitude_power_dB": 13.01,
+                    "real_hex": "FFFE",
+                    "imag_hex": "0004"
+                },
+                {
+                    "real": 4,
+                    "imag": -4,
+                    "magnitude": 5.66,
+                    "magnitude_power_dB": 15.05,
+                    "real_hex": "0004",
+                    "imag_hex": "FFFC"
+                },
+                {
+                    "real": 0,
+                    "imag": 2,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0000",
+                    "imag_hex": "0002"
+                },
+                {
+                    "real": 0,
+                    "imag": -2,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0000",
+                    "imag_hex": "FFFE"
+                },
+                {
+                    "real": 4,
+                    "imag": 1,
+                    "magnitude": 4.12,
+                    "magnitude_power_dB": 12.3,
+                    "real_hex": "0004",
+                    "imag_hex": "0001"
+                },
+                {
+                    "real": 0,
+                    "imag": 2,
+                    "magnitude": 2.0,
+                    "magnitude_power_dB": 6.02,
+                    "real_hex": "0000",
+                    "imag_hex": "0002"
+                },
+                {
+                    "real": -1,
+                    "imag": 1,
+                    "magnitude": 1.41,
+                    "magnitude_power_dB": 3.01,
+                    "real_hex": "FFFF",
+                    "imag_hex": "0001"
+                },
+                {
+                    "real": 0,
+                    "imag": 0,
+                    "magnitude": 0.0,
+                    "magnitude_power_dB": null,
+                    "real_hex": "0000",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": -3,
+                    "imag": 0,
+                    "magnitude": 3.0,
+                    "magnitude_power_dB": 9.54,
+                    "real_hex": "FFFD",
+                    "imag_hex": "0000"
+                },
+                {
+                    "real": -3,
+                    "imag": -3,
+                    "magnitude": 4.24,
+                    "magnitude_power_dB": 12.55,
+                    "real_hex": "FFFD",
+                    "imag_hex": "FFFD"
+                }
+            ],
+            "metrics": {
+                "main_tap_energy": 4165697.0,
+                "main_tap_nominal_energy": 8380418.0,
+                "pre_main_tap_energy": 2744.0,
+                "post_main_tap_energy": 23301.0,
+                "total_tap_energy": 4191742.0,
+                "main_tap_compression": 0.027068666367698904,
+                "main_tap_ratio": 22.039633157456343,
+                "non_main_tap_energy_ratio": -22.06670182382404,
+                "pre_main_tap_total_energy_ratio": -31.84010437116406,
+                "post_main_tap_total_energy_ratio": -22.550199842769235,
+                "pre_post_energy_symmetry_ratio": 9.289904528394828,
+                "pre_post_tap_symmetry_ratio": -10.39174146450523,
+                "frequency_response": {
+                    "fft_size": 24,
+                    "frequency_bins": [
+                        0.0,
+                        0.041666666666666664,
+                        0.08333333333333333,
+                        0.125,
+                        0.16666666666666666,
+                        0.20833333333333334,
+                        0.25,
+                        0.2916666666666667,
+                        0.3333333333333333,
+                        0.375,
+                        0.4166666666666667,
+                        0.4583333333333333,
+                        0.5,
+                        0.5416666666666666,
+                        0.5833333333333334,
+                        0.625,
+                        0.6666666666666666,
+                        0.7083333333333334,
+                        0.75,
+                        0.7916666666666666,
+                        0.8333333333333334,
+                        0.875,
+                        0.9166666666666666,
+                        0.9583333333333334
+                    ],
+                    "magnitude": [
+                        1994.1233662940717,
+                        2025.6401603683412,
+                        2056.265642493662,
+                        2078.8130132582223,
+                        2136.1416552855553,
+                        2156.077671654184,
+                        2174.0009199630067,
+                        2204.297600040103,
+                        2237.0174785162462,
+                        2271.755097696322,
+                        2270.7425233830727,
+                        2257.444688969552,
+                        2113.849568914496,
+                        1921.6140495164352,
+                        1855.137991827725,
+                        1886.1740258810348,
+                        1888.4471930167429,
+                        1880.029377216813,
+                        1892.1522137502573,
+                        1917.484884726648,
+                        1930.6772978812091,
+                        1939.529008829405,
+                        1964.440640812899,
+                        1972.7511965641881
+                    ],
+                    "magnitude_power_db": [
+                        65.99504044805292,
+                        66.13124597501402,
+                        66.26158438172625,
+                        66.35630853639097,
+                        66.59260097901233,
+                        66.67328804089892,
+                        66.7451944705784,
+                        66.86540455613712,
+                        66.99338754776632,
+                        67.12723022518243,
+                        67.12335785820964,
+                        67.07234236403343,
+                        66.50148155427276,
+                        65.67332330664243,
+                        65.36752439072374,
+                        65.51163519955482,
+                        65.52209690159673,
+                        65.48329271148077,
+                        65.53912140381877,
+                        65.65463898299996,
+                        65.7141937981016,
+                        65.75392559138272,
+                        65.86477820679066,
+                        65.90144630947515
+                    ],
+                    "magnitude_power_db_normalized": [
+                        0.0,
+                        0.13620552696110622,
+                        0.26654393367333284,
+                        0.3612680883380506,
+                        0.597560530959413,
+                        0.6782475928460059,
+                        0.7501540225254786,
+                        0.8703641080842033,
+                        0.9983470997133992,
+                        1.1321897771295113,
+                        1.1283174101567255,
+                        1.077301915980513,
+                        0.5064411062198388,
+                        -0.32171714141048824,
+                        -0.6275160573291743,
+                        -0.4834052484981015,
+                        -0.4729435464561931,
+                        -0.511747736572147,
+                        -0.4559190442341503,
+                        -0.3404014650529632,
+                        -0.2808466499513145,
+                        -0.24111485667019394,
+                        -0.13026224126225827,
+                        -0.09359413857777099
+                    ],
+                    "phase_radians": [
+                        0.046151943105348876,
+                        -1.7951610588706228,
+                        2.665159614222232,
+                        0.8103383551082821,
+                        -1.0238010316019885,
+                        -2.8649198132847666,
+                        1.571716289736837,
+                        -0.28149936502983824,
+                        -2.1143723740873797,
+                        2.3112694393230595,
+                        0.46633981200759134,
+                        -1.3829711536352087,
+                        3.0553870799140146,
+                        1.2477722138102043,
+                        -0.5595327079261362,
+                        -2.375197390827048,
+                        2.0899928117683624,
+                        0.2722772005237913,
+                        -1.5581120176761802,
+                        2.9044795499986025,
+                        1.0829575372099693,
+                        -0.7534136130896608,
+                        -2.580494490273635,
+                        1.8858112514276633
+                    ]
+                }
+            },
+            "group_delay": {
+                "channel_width_hz": 6400000,
+                "rolloff": 0.25,
+                "taps_per_symbol": 1,
+                "symbol_rate": 5120000.0,
+                "symbol_time_us": 0.1953125,
+                "sample_period_us": 0.1953125,
+                "fft_size": 24,
+                "delay_samples": [
+                    7.033297585052467,
+                    6.998063797753862,
+                    7.023862668506647,
+                    7.045395859852743,
+                    7.019226055663431,
+                    7.042927061139485,
+                    7.066030386906576,
+                    7.039910778271487,
+                    7.048176341913283,
+                    7.071202786625928,
+                    7.055479816080506,
+                    7.055283952969518,
+                    6.975650268778132,
+                    6.903988237385583,
+                    6.919362254996493,
+                    6.939779000309983,
+                    6.943695984915813,
+                    6.967366998282166,
+                    6.972863818355798,
+                    6.95592870348429,
+                    6.986061338490558,
+                    6.996677987448521,
+                    6.95945180257236,
+                    6.939968732364573
+                ],
+                "delay_us": [
+                    1.37369093458056,
+                    1.3668093354988011,
+                    1.3718481774427045,
+                    1.3760538788774888,
+                    1.370942588996764,
+                    1.3755716916288057,
+                    1.3800840599426905,
+                    1.3749825738811499,
+                    1.3765969417799382,
+                    1.3810942942628766,
+                    1.3780234015782238,
+                    1.377985147064359,
+                    1.362431693120729,
+                    1.3484352026143718,
+                    1.3514379404290024,
+                    1.3554255859980435,
+                    1.3561906220538698,
+                    1.3608138668519856,
+                    1.3618874645226167,
+                    1.3585798248992753,
+                    1.3644651051739372,
+                    1.3665386694235393,
+                    1.359267930189914,
+                    1.3554626430399557
+                ]
+            },
+            "tap_delay_summary": {
+                "symbol_rate": 5120000.0,
+                "taps_per_symbol": 1,
+                "symbol_time_us": 0.1953125,
+                "sample_period_us": 0.1953125,
+                "main_tap_index": 7,
+                "main_echo_tap_index": 8,
+                "main_echo_tap_offset": 1,
+                "main_echo_magnitude": 140.4314779527724,
+                "taps": [
+                    {
+                        "tap_index": 0,
+                        "tap_offset": -7,
+                        "is_main_tap": false,
+                        "real": -6,
+                        "imag": -4,
+                        "magnitude": 7.211102550927978,
+                        "magnitude_power_db": 17.16003343634799,
+                        "delay_samples": -7.0,
+                        "delay_us": -1.3671875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -1.3671875,
+                                "one_way_length_m": -348.3916259960937,
+                                "one_way_length_ft": -1143.0171456564753,
+                                "echo_length_m": -174.19581299804685,
+                                "echo_length_ft": -571.5085728282377
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -1.3671875,
+                                "one_way_length_m": -336.09545096093746,
+                                "one_way_length_ft": -1102.6753640450702,
+                                "echo_length_m": -168.04772548046873,
+                                "echo_length_ft": -551.3376820225351
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -1.3671875,
+                                "one_way_length_m": -356.58907601953126,
+                                "one_way_length_ft": -1169.9116667307455,
+                                "echo_length_m": -178.29453800976563,
+                                "echo_length_ft": -584.9558333653728
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 1,
+                        "tap_offset": -6,
+                        "is_main_tap": false,
+                        "real": 4,
+                        "imag": 4,
+                        "magnitude": 5.656854249492381,
+                        "magnitude_power_db": 15.051499783199061,
+                        "delay_samples": -6.0,
+                        "delay_us": -1.171875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -1.171875,
+                                "one_way_length_m": -298.62139371093747,
+                                "one_way_length_ft": -979.7289819912645,
+                                "echo_length_m": -149.31069685546873,
+                                "echo_length_ft": -489.86449099563225
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -1.171875,
+                                "one_way_length_m": -288.08181510937493,
+                                "one_way_length_ft": -945.1503120386316,
+                                "echo_length_m": -144.04090755468746,
+                                "echo_length_ft": -472.5751560193158
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -1.171875,
+                                "one_way_length_m": -305.6477794453125,
+                                "one_way_length_ft": -1002.7814286263532,
+                                "echo_length_m": -152.82388972265625,
+                                "echo_length_ft": -501.3907143131766
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 2,
+                        "tap_offset": -5,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": -5,
+                        "magnitude": 5.385164807134504,
+                        "magnitude_power_db": 14.62397997898956,
+                        "delay_samples": -5.0,
+                        "delay_us": -0.9765625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.9765625,
+                                "one_way_length_m": -248.85116142578124,
+                                "one_way_length_ft": -816.4408183260539,
+                                "echo_length_m": -124.42558071289062,
+                                "echo_length_ft": -408.22040916302694
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.9765625,
+                                "one_way_length_m": -240.0681792578125,
+                                "one_way_length_ft": -787.6252600321931,
+                                "echo_length_m": -120.03408962890624,
+                                "echo_length_ft": -393.81263001609653
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.9765625,
+                                "one_way_length_m": -254.70648287109375,
+                                "one_way_length_ft": -835.6511905219611,
+                                "echo_length_m": -127.35324143554688,
+                                "echo_length_ft": -417.82559526098055
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 3,
+                        "tap_offset": -4,
+                        "is_main_tap": false,
+                        "real": 1,
+                        "imag": 10,
+                        "magnitude": 10.04987562112089,
+                        "magnitude_power_db": 20.043213737826427,
+                        "delay_samples": -4.0,
+                        "delay_us": -0.78125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.78125,
+                                "one_way_length_m": -199.080929140625,
+                                "one_way_length_ft": -653.152654660843,
+                                "echo_length_m": -99.5404645703125,
+                                "echo_length_ft": -326.5763273304215
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.78125,
+                                "one_way_length_m": -192.05454340625,
+                                "one_way_length_ft": -630.1002080257545,
+                                "echo_length_m": -96.027271703125,
+                                "echo_length_ft": -315.0501040128772
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.78125,
+                                "one_way_length_m": -203.76518629687502,
+                                "one_way_length_ft": -668.5209524175689,
+                                "echo_length_m": -101.88259314843751,
+                                "echo_length_ft": -334.26047620878444
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 4,
+                        "tap_offset": -3,
+                        "is_main_tap": false,
+                        "real": -6,
+                        "imag": -12,
+                        "magnitude": 13.416407864998739,
+                        "magnitude_power_db": 22.55272505103306,
+                        "delay_samples": -3.0,
+                        "delay_us": -0.5859375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.5859375,
+                                "one_way_length_m": -149.31069685546873,
+                                "one_way_length_ft": -489.86449099563225,
+                                "echo_length_m": -74.65534842773437,
+                                "echo_length_ft": -244.93224549781613
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.5859375,
+                                "one_way_length_m": -144.04090755468746,
+                                "one_way_length_ft": -472.5751560193158,
+                                "echo_length_m": -72.02045377734373,
+                                "echo_length_ft": -236.2875780096579
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.5859375,
+                                "one_way_length_m": -152.82388972265625,
+                                "one_way_length_ft": -501.3907143131766,
+                                "echo_length_m": -76.41194486132812,
+                                "echo_length_ft": -250.6953571565883
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 5,
+                        "tap_offset": -2,
+                        "is_main_tap": false,
+                        "real": 8,
+                        "imag": 22,
+                        "magnitude": 23.40939982143925,
+                        "magnitude_power_db": 27.38780558484369,
+                        "delay_samples": -2.0,
+                        "delay_us": -0.390625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.390625,
+                                "one_way_length_m": -99.5404645703125,
+                                "one_way_length_ft": -326.5763273304215,
+                                "echo_length_m": -49.77023228515625,
+                                "echo_length_ft": -163.28816366521076
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.390625,
+                                "one_way_length_m": -96.027271703125,
+                                "one_way_length_ft": -315.0501040128772,
+                                "echo_length_m": -48.0136358515625,
+                                "echo_length_ft": -157.5250520064386
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.390625,
+                                "one_way_length_m": -101.88259314843751,
+                                "one_way_length_ft": -334.26047620878444,
+                                "echo_length_m": -50.941296574218754,
+                                "echo_length_ft": -167.13023810439222
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 6,
+                        "tap_offset": -1,
+                        "is_main_tap": false,
+                        "real": -31,
+                        "imag": -29,
+                        "magnitude": 42.44997055358225,
+                        "magnitude_power_db": 32.55754786643044,
+                        "delay_samples": -1.0,
+                        "delay_us": -0.1953125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": -0.1953125,
+                                "one_way_length_m": -49.77023228515625,
+                                "one_way_length_ft": -163.28816366521076,
+                                "echo_length_m": -24.885116142578124,
+                                "echo_length_ft": -81.64408183260538
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": -0.1953125,
+                                "one_way_length_m": -48.0136358515625,
+                                "one_way_length_ft": -157.5250520064386,
+                                "echo_length_m": -24.00681792578125,
+                                "echo_length_ft": -78.7625260032193
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": -0.1953125,
+                                "one_way_length_m": -50.941296574218754,
+                                "one_way_length_ft": -167.13023810439222,
+                                "echo_length_m": -25.470648287109377,
+                                "echo_length_ft": -83.56511905219611
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 7,
+                        "tap_offset": 0,
+                        "is_main_tap": true,
+                        "real": 2041,
+                        "imag": -4,
+                        "magnitude": 2041.003919643468,
+                        "magnitude_power_db": 66.19687677514351,
+                        "delay_samples": 0.0,
+                        "delay_us": 0.0,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.0,
+                                "one_way_length_m": 0.0,
+                                "one_way_length_ft": 0.0,
+                                "echo_length_m": 0.0,
+                                "echo_length_ft": 0.0
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.0,
+                                "one_way_length_m": 0.0,
+                                "one_way_length_ft": 0.0,
+                                "echo_length_m": 0.0,
+                                "echo_length_ft": 0.0
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.0,
+                                "one_way_length_m": 0.0,
+                                "one_way_length_ft": 0.0,
+                                "echo_length_m": 0.0,
+                                "echo_length_ft": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 8,
+                        "tap_offset": 1,
+                        "is_main_tap": false,
+                        "real": -11,
+                        "imag": 140,
+                        "magnitude": 140.4314779527724,
+                        "magnitude_power_db": 42.94928933093567,
+                        "delay_samples": 1.0,
+                        "delay_us": 0.1953125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.1953125,
+                                "one_way_length_m": 49.77023228515625,
+                                "one_way_length_ft": 163.28816366521076,
+                                "echo_length_m": 24.885116142578124,
+                                "echo_length_ft": 81.64408183260538
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.1953125,
+                                "one_way_length_m": 48.0136358515625,
+                                "one_way_length_ft": 157.5250520064386,
+                                "echo_length_m": 24.00681792578125,
+                                "echo_length_ft": 78.7625260032193
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.1953125,
+                                "one_way_length_m": 50.941296574218754,
+                                "one_way_length_ft": 167.13023810439222,
+                                "echo_length_m": 25.470648287109377,
+                                "echo_length_ft": 83.56511905219611
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 9,
+                        "tap_offset": 2,
+                        "is_main_tap": false,
+                        "real": -7,
+                        "imag": -47,
+                        "magnitude": 47.51841748206689,
+                        "magnitude_power_db": 33.53723937588949,
+                        "delay_samples": 2.0,
+                        "delay_us": 0.390625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.390625,
+                                "one_way_length_m": 99.5404645703125,
+                                "one_way_length_ft": 326.5763273304215,
+                                "echo_length_m": 49.77023228515625,
+                                "echo_length_ft": 163.28816366521076
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.390625,
+                                "one_way_length_m": 96.027271703125,
+                                "one_way_length_ft": 315.0501040128772,
+                                "echo_length_m": 48.0136358515625,
+                                "echo_length_ft": 157.5250520064386
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.390625,
+                                "one_way_length_m": 101.88259314843751,
+                                "one_way_length_ft": 334.26047620878444,
+                                "echo_length_m": 50.941296574218754,
+                                "echo_length_ft": 167.13023810439222
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 10,
+                        "tap_offset": 3,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 27,
+                        "magnitude": 27.0,
+                        "magnitude_power_db": 28.62727528317975,
+                        "delay_samples": 3.0,
+                        "delay_us": 0.5859375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.5859375,
+                                "one_way_length_m": 149.31069685546873,
+                                "one_way_length_ft": 489.86449099563225,
+                                "echo_length_m": 74.65534842773437,
+                                "echo_length_ft": 244.93224549781613
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.5859375,
+                                "one_way_length_m": 144.04090755468746,
+                                "one_way_length_ft": 472.5751560193158,
+                                "echo_length_m": 72.02045377734373,
+                                "echo_length_ft": 236.2875780096579
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.5859375,
+                                "one_way_length_m": 152.82388972265625,
+                                "one_way_length_ft": 501.3907143131766,
+                                "echo_length_m": 76.41194486132812,
+                                "echo_length_ft": 250.6953571565883
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 11,
+                        "tap_offset": 4,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": -17,
+                        "magnitude": 17.11724276862369,
+                        "magnitude_power_db": 24.668676203541096,
+                        "delay_samples": 4.0,
+                        "delay_us": 0.78125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.78125,
+                                "one_way_length_m": 199.080929140625,
+                                "one_way_length_ft": 653.152654660843,
+                                "echo_length_m": 99.5404645703125,
+                                "echo_length_ft": 326.5763273304215
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.78125,
+                                "one_way_length_m": 192.05454340625,
+                                "one_way_length_ft": 630.1002080257545,
+                                "echo_length_m": 96.027271703125,
+                                "echo_length_ft": 315.0501040128772
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.78125,
+                                "one_way_length_m": 203.76518629687502,
+                                "one_way_length_ft": 668.5209524175689,
+                                "echo_length_m": 101.88259314843751,
+                                "echo_length_ft": 334.26047620878444
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 12,
+                        "tap_offset": 5,
+                        "is_main_tap": false,
+                        "real": 1,
+                        "imag": 12,
+                        "magnitude": 12.041594578792296,
+                        "magnitude_power_db": 21.613680022349747,
+                        "delay_samples": 5.0,
+                        "delay_us": 0.9765625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 0.9765625,
+                                "one_way_length_m": 248.85116142578124,
+                                "one_way_length_ft": 816.4408183260539,
+                                "echo_length_m": 124.42558071289062,
+                                "echo_length_ft": 408.22040916302694
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 0.9765625,
+                                "one_way_length_m": 240.0681792578125,
+                                "one_way_length_ft": 787.6252600321931,
+                                "echo_length_m": 120.03408962890624,
+                                "echo_length_ft": 393.81263001609653
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 0.9765625,
+                                "one_way_length_m": 254.70648287109375,
+                                "one_way_length_ft": 835.6511905219611,
+                                "echo_length_m": 127.35324143554688,
+                                "echo_length_ft": 417.82559526098055
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 13,
+                        "tap_offset": 6,
+                        "is_main_tap": false,
+                        "real": 3,
+                        "imag": -6,
+                        "magnitude": 6.708203932499369,
+                        "magnitude_power_db": 16.532125137753436,
+                        "delay_samples": 6.0,
+                        "delay_us": 1.171875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.171875,
+                                "one_way_length_m": 298.62139371093747,
+                                "one_way_length_ft": 979.7289819912645,
+                                "echo_length_m": 149.31069685546873,
+                                "echo_length_ft": 489.86449099563225
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.171875,
+                                "one_way_length_m": 288.08181510937493,
+                                "one_way_length_ft": 945.1503120386316,
+                                "echo_length_m": 144.04090755468746,
+                                "echo_length_ft": 472.5751560193158
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.171875,
+                                "one_way_length_m": 305.6477794453125,
+                                "one_way_length_ft": 1002.7814286263532,
+                                "echo_length_m": 152.82388972265625,
+                                "echo_length_ft": 501.3907143131766
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 14,
+                        "tap_offset": 7,
+                        "is_main_tap": false,
+                        "real": -2,
+                        "imag": 4,
+                        "magnitude": 4.47213595499958,
+                        "magnitude_power_db": 13.010299956639813,
+                        "delay_samples": 7.0,
+                        "delay_us": 1.3671875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.3671875,
+                                "one_way_length_m": 348.3916259960937,
+                                "one_way_length_ft": 1143.0171456564753,
+                                "echo_length_m": 174.19581299804685,
+                                "echo_length_ft": 571.5085728282377
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.3671875,
+                                "one_way_length_m": 336.09545096093746,
+                                "one_way_length_ft": 1102.6753640450702,
+                                "echo_length_m": 168.04772548046873,
+                                "echo_length_ft": 551.3376820225351
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.3671875,
+                                "one_way_length_m": 356.58907601953126,
+                                "one_way_length_ft": 1169.9116667307455,
+                                "echo_length_m": 178.29453800976563,
+                                "echo_length_ft": 584.9558333653728
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 15,
+                        "tap_offset": 8,
+                        "is_main_tap": false,
+                        "real": 4,
+                        "imag": -4,
+                        "magnitude": 5.656854249492381,
+                        "magnitude_power_db": 15.051499783199061,
+                        "delay_samples": 8.0,
+                        "delay_us": 1.5625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.5625,
+                                "one_way_length_m": 398.16185828125,
+                                "one_way_length_ft": 1306.305309321686,
+                                "echo_length_m": 199.080929140625,
+                                "echo_length_ft": 653.152654660843
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.5625,
+                                "one_way_length_m": 384.1090868125,
+                                "one_way_length_ft": 1260.200416051509,
+                                "echo_length_m": 192.05454340625,
+                                "echo_length_ft": 630.1002080257545
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.5625,
+                                "one_way_length_m": 407.53037259375003,
+                                "one_way_length_ft": 1337.0419048351378,
+                                "echo_length_m": 203.76518629687502,
+                                "echo_length_ft": 668.5209524175689
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 16,
+                        "tap_offset": 9,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 2,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 9.0,
+                        "delay_us": 1.7578125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.7578125,
+                                "one_way_length_m": 447.9320905664062,
+                                "one_way_length_ft": 1469.5934729868968,
+                                "echo_length_m": 223.9660452832031,
+                                "echo_length_ft": 734.7967364934484
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.7578125,
+                                "one_way_length_m": 432.12272266406245,
+                                "one_way_length_ft": 1417.7254680579474,
+                                "echo_length_m": 216.06136133203123,
+                                "echo_length_ft": 708.8627340289737
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.7578125,
+                                "one_way_length_m": 458.47166916796874,
+                                "one_way_length_ft": 1504.1721429395297,
+                                "echo_length_m": 229.23583458398437,
+                                "echo_length_ft": 752.0860714697649
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 17,
+                        "tap_offset": 10,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": -2,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 10.0,
+                        "delay_us": 1.953125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 1.953125,
+                                "one_way_length_m": 497.7023228515625,
+                                "one_way_length_ft": 1632.8816366521078,
+                                "echo_length_m": 248.85116142578124,
+                                "echo_length_ft": 816.4408183260539
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 1.953125,
+                                "one_way_length_m": 480.136358515625,
+                                "one_way_length_ft": 1575.2505200643861,
+                                "echo_length_m": 240.0681792578125,
+                                "echo_length_ft": 787.6252600321931
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 1.953125,
+                                "one_way_length_m": 509.4129657421875,
+                                "one_way_length_ft": 1671.3023810439222,
+                                "echo_length_m": 254.70648287109375,
+                                "echo_length_ft": 835.6511905219611
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 18,
+                        "tap_offset": 11,
+                        "is_main_tap": false,
+                        "real": 4,
+                        "imag": 1,
+                        "magnitude": 4.123105625617661,
+                        "magnitude_power_db": 12.30448921378274,
+                        "delay_samples": 11.0,
+                        "delay_us": 2.1484375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.1484375,
+                                "one_way_length_m": 547.4725551367187,
+                                "one_way_length_ft": 1796.1698003173185,
+                                "echo_length_m": 273.73627756835936,
+                                "echo_length_ft": 898.0849001586593
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.1484375,
+                                "one_way_length_m": 528.1499943671874,
+                                "one_way_length_ft": 1732.7755720708249,
+                                "echo_length_m": 264.0749971835937,
+                                "echo_length_ft": 866.3877860354124
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.1484375,
+                                "one_way_length_m": 560.3542623164063,
+                                "one_way_length_ft": 1838.4326191483146,
+                                "echo_length_m": 280.17713115820317,
+                                "echo_length_ft": 919.2163095741573
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 19,
+                        "tap_offset": 12,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 2,
+                        "magnitude": 2.0,
+                        "magnitude_power_db": 6.020599913279624,
+                        "delay_samples": 12.0,
+                        "delay_us": 2.34375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.34375,
+                                "one_way_length_m": 597.2427874218749,
+                                "one_way_length_ft": 1959.457963982529,
+                                "echo_length_m": 298.62139371093747,
+                                "echo_length_ft": 979.7289819912645
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.34375,
+                                "one_way_length_m": 576.1636302187499,
+                                "one_way_length_ft": 1890.3006240772631,
+                                "echo_length_m": 288.08181510937493,
+                                "echo_length_ft": 945.1503120386316
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.34375,
+                                "one_way_length_m": 611.295558890625,
+                                "one_way_length_ft": 2005.5628572527064,
+                                "echo_length_m": 305.6477794453125,
+                                "echo_length_ft": 1002.7814286263532
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 20,
+                        "tap_offset": 13,
+                        "is_main_tap": false,
+                        "real": -1,
+                        "imag": 1,
+                        "magnitude": 1.4142135623730951,
+                        "magnitude_power_db": 3.010299956639813,
+                        "delay_samples": 13.0,
+                        "delay_us": 2.5390625,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.5390625,
+                                "one_way_length_m": 647.0130197070312,
+                                "one_way_length_ft": 2122.7461276477397,
+                                "echo_length_m": 323.5065098535156,
+                                "echo_length_ft": 1061.3730638238699
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.5390625,
+                                "one_way_length_m": 624.1772660703124,
+                                "one_way_length_ft": 2047.8256760837019,
+                                "echo_length_m": 312.0886330351562,
+                                "echo_length_ft": 1023.9128380418509
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.5390625,
+                                "one_way_length_m": 662.2368554648438,
+                                "one_way_length_ft": 2172.6930953570986,
+                                "echo_length_m": 331.1184277324219,
+                                "echo_length_ft": 1086.3465476785493
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 21,
+                        "tap_offset": 14,
+                        "is_main_tap": false,
+                        "real": 0,
+                        "imag": 0,
+                        "magnitude": 0.0,
+                        "magnitude_power_db": null,
+                        "delay_samples": 14.0,
+                        "delay_us": 2.734375,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.734375,
+                                "one_way_length_m": 696.7832519921874,
+                                "one_way_length_ft": 2286.0342913129507,
+                                "echo_length_m": 348.3916259960937,
+                                "echo_length_ft": 1143.0171456564753
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.734375,
+                                "one_way_length_m": 672.1909019218749,
+                                "one_way_length_ft": 2205.3507280901404,
+                                "echo_length_m": 336.09545096093746,
+                                "echo_length_ft": 1102.6753640450702
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.734375,
+                                "one_way_length_m": 713.1781520390625,
+                                "one_way_length_ft": 2339.823333461491,
+                                "echo_length_m": 356.58907601953126,
+                                "echo_length_ft": 1169.9116667307455
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 22,
+                        "tap_offset": 15,
+                        "is_main_tap": false,
+                        "real": -3,
+                        "imag": 0,
+                        "magnitude": 3.0,
+                        "magnitude_power_db": 9.542425094393248,
+                        "delay_samples": 15.0,
+                        "delay_us": 2.9296875,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 2.9296875,
+                                "one_way_length_m": 746.5534842773437,
+                                "one_way_length_ft": 2449.3224549781617,
+                                "echo_length_m": 373.27674213867186,
+                                "echo_length_ft": 1224.6612274890808
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 2.9296875,
+                                "one_way_length_m": 720.2045377734374,
+                                "one_way_length_ft": 2362.875780096579,
+                                "echo_length_m": 360.1022688867187,
+                                "echo_length_ft": 1181.4378900482895
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 2.9296875,
+                                "one_way_length_m": 764.1194486132813,
+                                "one_way_length_ft": 2506.953571565883,
+                                "echo_length_m": 382.05972430664065,
+                                "echo_length_ft": 1253.4767857829415
+                            }
+                        ]
+                    },
+                    {
+                        "tap_index": 23,
+                        "tap_offset": 16,
+                        "is_main_tap": false,
+                        "real": -3,
+                        "imag": -3,
+                        "magnitude": 4.242640687119285,
+                        "magnitude_power_db": 12.552725051033061,
+                        "delay_samples": 16.0,
+                        "delay_us": 3.125,
+                        "cable_delays": [
+                            {
+                                "cable_type": "RG6",
+                                "velocity_factor": 0.85,
+                                "propagation_speed_m_s": 254823589.29999998,
+                                "delay_us": 3.125,
+                                "one_way_length_m": 796.3237165625,
+                                "one_way_length_ft": 2612.610618643372,
+                                "echo_length_m": 398.16185828125,
+                                "echo_length_ft": 1306.305309321686
+                            },
+                            {
+                                "cable_type": "RG59",
+                                "velocity_factor": 0.82,
+                                "propagation_speed_m_s": 245829815.55999997,
+                                "delay_us": 3.125,
+                                "one_way_length_m": 768.218173625,
+                                "one_way_length_ft": 2520.400832103018,
+                                "echo_length_m": 384.1090868125,
+                                "echo_length_ft": 1260.200416051509
+                            },
+                            {
+                                "cable_type": "RG11",
+                                "velocity_factor": 0.87,
+                                "propagation_speed_m_s": 260819438.46,
+                                "delay_us": 3.125,
+                                "one_way_length_m": 815.0607451875001,
+                                "one_way_length_ft": 2674.0838096702755,
+                                "echo_length_m": 407.53037259375003,
+                                "echo_length_ft": 1337.0419048351378
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+}
+````
+</details>

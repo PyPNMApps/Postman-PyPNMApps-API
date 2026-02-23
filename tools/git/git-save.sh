@@ -49,6 +49,12 @@ run_quality_gates() {
     echo "[skip]  sanitize --check (tools/sanitize.py not found)"
   fi
 
+  if [[ -f "./tools/docs/build_visual_docs.py" ]]; then
+    run_check "visual docs build --check" "${py_bin}" ./tools/docs/build_visual_docs.py --check
+  else
+    echo "[skip]  visual docs build --check (tools/docs/build_visual_docs.py not found)"
+  fi
+
   if [[ -d "tests" ]]; then
     run_check "pytest -q" "${py_bin}" -m pytest -q
   else

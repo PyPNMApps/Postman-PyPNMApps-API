@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyPNM / DOCSIS-3.1 / US-OFDMA-ChannelStats</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 12px;
+      background: #f8fafc;
+      color: #111827;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .frame {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .error {
+      white-space: pre-wrap;
+      color: #fecaca;
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      padding: 8px;
+      border-radius: 6px;
+    }
+    .note {
+      margin-bottom: 8px;
+      color: #475569;
+      font-size: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #0f172a;
+        color: #e5e7eb;
+      }
+      .frame {
+        background: #111827;
+        border-color: #374151;
+      }
+      .note {
+        color: #cbd5e1;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/handlebars@4.7.8/dist/handlebars.min.js"></script>
+</head>
+<body>
+  <div class="note">Preview uses a lightweight Postman visualizer shim (`pm.response.json`, `pm.getData`, `pm.visualizer.set`).</div>
+  <div id="app" class="frame"></div>
+  <script>
+  (function() {
+    const sampleData = {"mac_address": "aa:bb:cc:dd:ee:ff", "status": 0, "message": "Pre-check successful: CableModem reachable via ping and SNMP", "results": [{"index": 83, "channel_id": 41, "entry": {"docsIf31CmUsOfdmaChanChannelId": 41, "docsIf31CmUsOfdmaChanConfigChangeCt": 0, "docsIf31CmUsOfdmaChanSubcarrierZeroFreq": 36200000, "docsIf31CmUsOfdmaChanFirstActiveSubcarrierNum": 148, "docsIf31CmUsOfdmaChanLastActiveSubcarrierNum": 1923, "docsIf31CmUsOfdmaChanNumActiveSubcarriers": 1776, "docsIf31CmUsOfdmaChanSubcarrierSpacing": 25, "docsIf31CmUsOfdmaChanCyclicPrefix": 160, "docsIf31CmUsOfdmaChanRollOffPeriod": 64, "docsIf31CmUsOfdmaChanNumSymbolsPerFrame": 12, "docsIf31CmUsOfdmaChanTxPower": 18.4, "docsIf31CmUsOfdmaChanPreEqEnabled": true, "docsIf31CmStatusOfdmaUsT3Timeouts": 0, "docsIf31CmStatusOfdmaUsT4Timeouts": 0, "docsIf31CmStatusOfdmaUsRangingAborteds": 0, "docsIf31CmStatusOfdmaUsT3Exceededs": 0, "docsIf31CmStatusOfdmaUsIsMuted": false, "docsIf31CmStatusOfdmaUsRangingStatus": "success"}}]};
+    const visualSource = "// Postman Visualizer - US OFDMA Channel Statistics (Dark Mode)\n// Separate, useful visuals per channel (no overlap):\n// 1) Global View: Active spectrum windows (start/end) for all channels, with per-channel Tx power marker (secondary chart)\n// 2) Per-channel: Active spectrum window (range bar) with derived start/end from subcarrier params\n// 3) Per-channel: Timeouts/Events (T3/T4/Abort/Exceed) as vertical bars\n// 4) Per-channel: Status + config (Tx power, pre-eq enabled, muted, ranging status) as a compact KPI strip\n\nconst template = `\n<style>\n  body {\n    font-family: Arial, sans-serif;\n    padding: 20px;\n    background-color: #0f1220;\n    color: #eaeaea;\n  }\n  .header {\n    background-color: #151a2e;\n    border: 1px solid rgba(255,255,255,0.08);\n    padding: 16px 16px 12px 16px;\n    border-radius: 10px;\n    margin-bottom: 18px;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.35);\n  }\n  .title {\n    font-size: 18px;\n    font-weight: bold;\n    margin: 0 0 10px 0;\n    color: #ff4d6d;\n  }\n  .meta {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 10px;\n    margin-bottom: 10px;\n  }\n  .pill {\n    background: rgba(255,255,255,0.06);\n    border: 1px solid rgba(255,255,255,0.08);\n    border-radius: 999px;\n    padding: 6px 10px;\n    font-size: 12px;\n    color: #eaeaea;\n  }\n  .pill b { color: #9fb4ff; font-weight: 700; }\n\n  .kpi {\n    display: grid;\n    grid-template-columns: repeat(4, minmax(0, 1fr));\n    gap: 10px;\n    margin-top: 12px;\n  }\n  .kpiItem {\n    background: rgba(255,255,255,0.06);\n    border: 1px solid rgba(255,255,255,0.08);\n    border-radius: 10px;\n    padding: 10px;\n  }\n  .kpiItem .k { font-size: 11px; color: rgba(234,234,234,0.8); margin-bottom: 4px; }\n  .kpiItem .v { font-size: 16px; font-weight: 700; color: #eaeaea; }\n  .kpiItem .h { margin-top: 4px; font-size: 11px; color: rgba(159,180,255,0.95); }\n\n  .sub {\n    margin: 0;\n    font-size: 12px;\n    color: rgba(234,234,234,0.85);\n  }\n  .divider {\n    height: 1px;\n    background: rgba(255,255,255,0.08);\n    margin: 14px 0;\n  }\n\n  .grid {\n    display: grid;\n    grid-template-columns: 1fr;\n    gap: 16px;\n  }\n  .card {\n    background-color: #151a2e;\n    border: 1px solid rgba(255,255,255,0.08);\n    border-radius: 10px;\n    padding: 14px;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.35);\n  }\n  .card h3 {\n    margin: 0 0 6px 0;\n    font-size: 14px;\n    color: #9fb4ff;\n  }\n\n  .strip {\n    display: grid;\n    grid-template-columns: repeat(5, minmax(0, 1fr));\n    gap: 10px;\n    margin: 10px 0 12px 0;\n  }\n  .stripItem {\n    background: rgba(255,255,255,0.06);\n    border: 1px solid rgba(255,255,255,0.08);\n    border-radius: 10px;\n    padding: 10px;\n  }\n  .stripItem .k { font-size: 11px; color: rgba(234,234,234,0.8); margin-bottom: 4px; }\n  .stripItem .v { font-size: 14px; font-weight: 700; color: #eaeaea; }\n\n  table {\n    width: 100%;\n    border-collapse: collapse;\n    margin-top: 10px;\n    font-size: 12px;\n  }\n  th, td {\n    border-bottom: 1px solid rgba(255,255,255,0.08);\n    padding: 8px 6px;\n    text-align: left;\n    white-space: nowrap;\n  }\n  th { color: #9fb4ff; font-weight: 700; }\n</style>\n\n<div class=\"header\">\n  <div class=\"title\">US OFDMA Channel Statistics</div>\n  <div class=\"meta\">\n    <div class=\"pill\"><b>MAC</b> {{mac}}</div>\n    <div class=\"pill\"><b>Status</b> {{statusText}}</div>\n    <div class=\"pill\"><b>Channels</b> {{channelCount}}</div>\n    <div class=\"pill\"><b>Pre-check</b> {{precheck}}</div>\n  </div>\n  <p class=\"sub\">{{message}}</p>\n\n  <div class=\"kpi\">\n    <div class=\"kpiItem\">\n      <div class=\"k\">Total Active Subcarriers</div>\n      <div class=\"v\">{{kpi.totalActive}}</div>\n      <div class=\"h\">Sum across channels</div>\n    </div>\n    <div class=\"kpiItem\">\n      <div class=\"k\">Global Active Spectrum Span</div>\n      <div class=\"v\">{{kpi.globalSpanMHz}}</div>\n      <div class=\"h\">{{kpi.globalSpanRange}}</div>\n    </div>\n    <div class=\"kpiItem\">\n      <div class=\"k\">Worst T3 Timeouts</div>\n      <div class=\"v\">{{kpi.worstT3}}</div>\n      <div class=\"h\">Ch {{kpi.worstT3Ch}}</div>\n    </div>\n    <div class=\"kpiItem\">\n      <div class=\"k\">Any Muted</div>\n      <div class=\"v\">{{kpi.anyMuted}}</div>\n      <div class=\"h\">Muted flag across channels</div>\n    </div>\n  </div>\n\n  <div class=\"divider\"></div>\n\n  <div class=\"sub\"><b>Global View · Active Spectrum Windows (All Channels)</b></div>\n  <div class=\"sub\">Each row is one channel. Bar shows active start/end.</div>\n  <canvas id=\"globalRangeChart\" height=\"110\"></canvas>\n\n  <div class=\"divider\"></div>\n\n  <div class=\"sub\"><b>Global View · Tx Power (dBmV)</b></div>\n  <div class=\"sub\">One bar per channel.</div>\n  <canvas id=\"globalTxChart\" height=\"90\"></canvas>\n\n  <div class=\"divider\"></div>\n\n  <div class=\"sub\"><b>Quick Table</b></div>\n  <table>\n    <thead>\n      <tr>\n        <th>Channel</th>\n        <th>Zero (MHz)</th>\n        <th>Start (MHz)</th>\n        <th>End (MHz)</th>\n        <th>BW (MHz)</th>\n        <th>Tx (dBmV)</th>\n        <th>Pre-EQ</th>\n        <th>Muted</th>\n        <th>Ranging</th>\n      </tr>\n    </thead>\n    <tbody>\n      {{#each tableRows}}\n      <tr>\n        <td>{{channel}}</td>\n        <td>{{zero}}</td>\n        <td>{{start}}</td>\n        <td>{{end}}</td>\n        <td>{{bw}}</td>\n        <td>{{tx}}</td>\n        <td>{{preeq}}</td>\n        <td>{{muted}}</td>\n        <td>{{ranging}}</td>\n      </tr>\n      {{/each}}\n    </tbody>\n  </table>\n</div>\n\n<div class=\"grid\">\n  {{#each channels}}\n  <div class=\"card\">\n    <h3>{{label}} · Active Spectrum Window</h3>\n    <p class=\"sub\">Range bar derived from subcarrier params. Uses MHz.</p>\n\n    <div class=\"strip\">\n      <div class=\"stripItem\">\n        <div class=\"k\">Tx Power (dBmV)</div>\n        <div class=\"v\">{{txPower}}</div>\n      </div>\n      <div class=\"stripItem\">\n        <div class=\"k\">Pre-EQ Enabled</div>\n        <div class=\"v\">{{preEq}}</div>\n      </div>\n      <div class=\"stripItem\">\n        <div class=\"k\">Muted</div>\n        <div class=\"v\">{{muted}}</div>\n      </div>\n      <div class=\"stripItem\">\n        <div class=\"k\">Ranging Status</div>\n        <div class=\"v\">{{rangingStatus}}</div>\n      </div>\n      <div class=\"stripItem\">\n        <div class=\"k\">Config Change Ct</div>\n        <div class=\"v\">{{cfgChange}}</div>\n      </div>\n    </div>\n\n    <canvas id=\"range_{{canvas_id}}\" height=\"90\"></canvas>\n\n    <div class=\"divider\"></div>\n\n    <h3>{{label}} · Timeout / Event Counters</h3>\n    <p class=\"sub\">T3/T4/Abort/Exceed as bars.</p>\n    <canvas id=\"events_{{canvas_id}}\" height=\"110\"></canvas>\n  </div>\n  {{/each}}\n</div>\n\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js\"><\/script>\n<script>\npm.getData(function (err, value) {\n  if (err) {\n    console.error(err);\n    return;\n  }\n\n  var gridColor = 'rgba(255,255,255,0.12)';\n  var tickColor = 'rgba(234,234,234,0.85)';\n  var labelColor = '#eaeaea';\n\n  var cRange = 'rgb(54, 162, 235)';\n  var cTx    = 'rgb(75, 192, 192)';\n  var cErr   = 'rgb(255, 99, 132)';\n\n  var rgbaFill = function(rgb, a) {\n    return rgb.replace('rgb', 'rgba').replace(')', ', ' + a + ')');\n  };\n\n  // Global range chart\n  (function renderGlobalRanges() {\n    var canvas = document.getElementById('globalRangeChart');\n    if (!canvas) return;\n\n    var labels = (value.global || {}).labels || [];\n    var ranges = (value.global || {}).ranges || []; // {x:[start,end], y:i}\n\n    new Chart(canvas.getContext('2d'), {\n      type: 'horizontalBar',\n      data: {\n        labels: labels,\n        datasets: [{\n          label: 'Active Window (MHz)',\n          data: ranges,\n          backgroundColor: rgbaFill(cRange, 0.45),\n          borderColor: cRange,\n          borderWidth: 1\n        }]\n      },\n      options: {\n        responsive: true,\n        maintainAspectRatio: true,\n        legend: { display: true, labels: { fontColor: labelColor } },\n        tooltips: {\n          mode: 'nearest',\n          intersect: false,\n          callbacks: {\n            label: function(tooltipItem, data) {\n              var v = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];\n              if (v && v.x && Array.isArray(v.x)) {\n                return 'Active: ' + v.x[0].toFixed(3) + ' - ' + v.x[1].toFixed(3) + ' MHz';\n              }\n              return tooltipItem.xLabel;\n            }\n          }\n        },\n        scales: {\n          xAxes: [{\n            ticks: { fontColor: tickColor },\n            gridLines: { color: gridColor },\n            scaleLabel: { display: true, labelString: 'Frequency (MHz)', fontColor: labelColor }\n          }],\n          yAxes: [{\n            ticks: { fontColor: tickColor },\n            gridLines: { color: gridColor }\n          }]\n        }\n      }\n    });\n  })();\n\n  // Global Tx chart\n  (function renderGlobalTx() {\n    var canvas = document.getElementById('globalTxChart');\n    if (!canvas) return;\n\n    var labels = (value.tx || {}).labels || [];\n    var txData = (value.tx || {}).tx || [];\n\n    new Chart(canvas.getContext('2d'), {\n      type: 'bar',\n      data: {\n        labels: labels,\n        datasets: [{\n          label: 'Tx Power (dBmV)',\n          data: txData,\n          backgroundColor: rgbaFill(cTx, 0.45),\n          borderColor: cTx,\n          borderWidth: 1\n        }]\n      },\n      options: {\n        responsive: true,\n        maintainAspectRatio: true,\n        legend: { display: true, labels: { fontColor: labelColor } },\n        scales: {\n          xAxes: [{\n            ticks: { fontColor: tickColor },\n            gridLines: { color: gridColor }\n          }],\n          yAxes: [{\n            ticks: { fontColor: tickColor, beginAtZero: true },\n            gridLines: { color: gridColor },\n            scaleLabel: { display: true, labelString: 'dBmV', fontColor: labelColor }\n          }]\n        }\n      }\n    });\n  })();\n\n  // Per-channel charts (no overlap)\n  (value.channels || []).forEach(function(ch) {\n    // Range chart\n    (function renderRange() {\n      var canvas = document.getElementById('range_' + ch.canvas_id);\n      if (!canvas) return;\n\n      var ranges = [{ x: [ch.activeStartMHz, ch.activeEndMHz], y: 0 }];\n\n      new Chart(canvas.getContext('2d'), {\n        type: 'horizontalBar',\n        data: {\n          labels: ['Active'],\n          datasets: [{\n            label: 'Active Window (MHz)',\n            data: ranges,\n            backgroundColor: rgbaFill(cRange, 0.45),\n            borderColor: cRange,\n            borderWidth: 1\n          }]\n        },\n        options: {\n          responsive: true,\n          maintainAspectRatio: true,\n          legend: { display: true, labels: { fontColor: labelColor } },\n          tooltips: {\n            callbacks: {\n              label: function(tooltipItem, data) {\n                var v = data.datasets[0].data[0];\n                return 'Active: ' + v.x[0].toFixed(3) + ' - ' + v.x[1].toFixed(3) + ' MHz';\n              }\n            }\n          },\n          scales: {\n            xAxes: [{\n              ticks: { fontColor: tickColor },\n              gridLines: { color: gridColor },\n              scaleLabel: { display: true, labelString: 'Frequency (MHz)', fontColor: labelColor }\n            }],\n            yAxes: [{\n              ticks: { fontColor: tickColor },\n              gridLines: { color: gridColor }\n            }]\n          }\n        }\n      });\n    })();\n\n    // Events chart\n    (function renderEvents() {\n      var canvas = document.getElementById('events_' + ch.canvas_id);\n      if (!canvas) return;\n\n      new Chart(canvas.getContext('2d'), {\n        type: 'bar',\n        data: {\n          labels: ['T3', 'T4', 'Abort', 'Exceed'],\n          datasets: [{\n            label: 'Count',\n            data: [ch.t3, ch.t4, ch.abort, ch.exceed],\n            backgroundColor: rgbaFill(cErr, 0.55),\n            borderColor: cErr,\n            borderWidth: 1\n          }]\n        },\n        options: {\n          responsive: true,\n          maintainAspectRatio: true,\n          legend: { display: true, labels: { fontColor: labelColor } },\n          scales: {\n            xAxes: [{\n              ticks: { fontColor: tickColor },\n              gridLines: { color: gridColor }\n            }],\n            yAxes: [{\n              ticks: { fontColor: tickColor, beginAtZero: true },\n              gridLines: { color: gridColor }\n            }]\n          }\n        }\n      });\n    })();\n  });\n});\n<\/script>\n`;\n\nfunction constructVisualizerPayload() {\n  const r = pm.response.json();\n\n  const mac = r.mac_address || 'N/A';\n  const status = (r.status !== undefined && r.status !== null) ? r.status : 'N/A';\n  const statusText = status === 0 ? 'Success' : String(status);\n  const message = r.message ? r.message : '';\n  const precheck = message && message.toLowerCase().indexOf('pre-check') >= 0 ? 'OK' : 'N/A';\n\n  const results = Array.isArray(r.results) ? r.results : [];\n\n  let totalActive = 0;\n  let anyMuted = false;\n\n  let worstT3 = -1;\n  let worstT3Ch = 'N/A';\n\n  let globalMinMHz = null;\n  let globalMaxMHz = null;\n\n  const tableRows = [];\n\n  const channels = results.map((item, idx) => {\n    const channelId = (item && item.channel_id !== undefined && item.channel_id !== null) ? item.channel_id : ('idx-' + (idx + 1));\n    const e = item && item.entry ? item.entry : {};\n\n    // NOTE: spacing appears to be \"50\" in sample payload (likely kHz). We defensively interpret:\n    // - if spacing >= 1000: assume Hz\n    // - else: assume kHz and convert to Hz (common: 50 kHz for OFDMA)\n    const zeroHz = Number(e.docsIf31CmUsOfdmaChanSubcarrierZeroFreq || 0);\n    const first = Number(e.docsIf31CmUsOfdmaChanFirstActiveSubcarrierNum || 0);\n    const last = Number(e.docsIf31CmUsOfdmaChanLastActiveSubcarrierNum || 0);\n    const numActive = Number(e.docsIf31CmUsOfdmaChanNumActiveSubcarriers || 0);\n\n    const spacingRaw = Number(e.docsIf31CmUsOfdmaChanSubcarrierSpacing || 0);\n    const spacingHz = (spacingRaw >= 1000) ? spacingRaw : (spacingRaw * 1000);\n\n    const activeStartHz = zeroHz + (first * spacingHz);\n    const activeEndHz = zeroHz + (last * spacingHz);\n    const bwHz = (last >= first) ? ((last - first + 1) * spacingHz) : 0;\n\n    const zeroMHz = zeroHz / 1e6;\n    const activeStartMHz = activeStartHz / 1e6;\n    const activeEndMHz = activeEndHz / 1e6;\n    const bwMHz = bwHz / 1e6;\n\n    const txPower = (e.docsIf31CmUsOfdmaChanTxPower !== undefined && e.docsIf31CmUsOfdmaChanTxPower !== null)\n      ? Number(e.docsIf31CmUsOfdmaChanTxPower)\n      : 0;\n\n    const preEqEnabled = !!e.docsIf31CmUsOfdmaChanPreEqEnabled;\n    const isMuted = !!e.docsIf31CmStatusOfdmaUsIsMuted;\n    const rangingStatus = (e.docsIf31CmStatusOfdmaUsRangingStatus !== undefined && e.docsIf31CmStatusOfdmaUsRangingStatus !== null)\n      ? String(e.docsIf31CmStatusOfdmaUsRangingStatus)\n      : 'N/A';\n\n    const cfgChange = Number(e.docsIf31CmUsOfdmaChanConfigChangeCt || 0);\n\n    const t3 = Number(e.docsIf31CmStatusOfdmaUsT3Timeouts || 0);\n    const t4 = Number(e.docsIf31CmStatusOfdmaUsT4Timeouts || 0);\n    const abort = Number(e.docsIf31CmStatusOfdmaUsRangingAborteds || 0);\n    const exceed = Number(e.docsIf31CmStatusOfdmaUsT3Exceededs || 0);\n\n    totalActive += numActive;\n\n    if (isMuted) anyMuted = true;\n    if (t3 > worstT3) {\n      worstT3 = t3;\n      worstT3Ch = String(channelId);\n    }\n\n    if (Number.isFinite(activeStartMHz) && Number.isFinite(activeEndMHz)) {\n      if (globalMinMHz === null || activeStartMHz < globalMinMHz) globalMinMHz = activeStartMHz;\n      if (globalMaxMHz === null || activeEndMHz > globalMaxMHz) globalMaxMHz = activeEndMHz;\n    }\n\n    tableRows.push({\n      channel: String(channelId),\n      zero: zeroMHz.toFixed(3),\n      start: activeStartMHz.toFixed(3),\n      end: activeEndMHz.toFixed(3),\n      bw: bwMHz.toFixed(3),\n      tx: txPower.toFixed(1),\n      preeq: preEqEnabled ? 'true' : 'false',\n      muted: isMuted ? 'true' : 'false',\n      ranging: rangingStatus\n    });\n\n    return {\n      label: 'OFDMA Channel ' + String(channelId),\n      canvas_id: 'c' + String(idx + 1),\n\n      activeStartMHz,\n      activeEndMHz,\n      bwMHz,\n\n      txPower: txPower.toFixed(1),\n      preEq: preEqEnabled ? 'true' : 'false',\n      muted: isMuted ? 'true' : 'false',\n      rangingStatus: rangingStatus,\n      cfgChange: String(cfgChange),\n\n      t3, t4, abort, exceed\n    };\n  });\n\n  const labels = channels.map(ch => ch.label.replace('OFDMA ', 'Ch '));\n  const ranges = channels.map((ch, i) => ({ x: [ch.activeStartMHz, ch.activeEndMHz], y: i }));\n\n  const txLabels = channels.map(ch => ch.label.replace('OFDMA Channel ', 'Ch '));\n  const tx = channels.map(ch => Number(ch.txPower));\n\n  const globalSpanMHz = (globalMinMHz !== null && globalMaxMHz !== null) ? (globalMaxMHz - globalMinMHz) : 0;\n  const globalSpanRange = (globalMinMHz !== null && globalMaxMHz !== null)\n    ? (globalMinMHz.toFixed(3) + ' - ' + globalMaxMHz.toFixed(3) + ' MHz')\n    : 'N/A';\n\n  const kpi = {\n    totalActive: String(totalActive),\n    globalSpanMHz: globalSpanMHz.toFixed(3) + ' MHz',\n    globalSpanRange: globalSpanRange,\n    worstT3: String(Math.max(0, worstT3)),\n    worstT3Ch: worstT3Ch,\n    anyMuted: anyMuted ? 'true' : 'false'\n  };\n\n  return {\n    mac,\n    statusText,\n    message,\n    precheck,\n    channelCount: channels.length,\n    kpi,\n    tableRows,\n    global: { labels, ranges },\n    tx: { labels: txLabels, tx },\n    channels\n  };\n}\n\npm.visualizer.set(template, constructVisualizerPayload());\n";
+    const app = document.getElementById("app");
+    let visualizerData = sampleData;
+    let lastTemplate = null;
+
+    function executeRenderedScripts(root) {
+      const scripts = Array.from(root.querySelectorAll("script"));
+      for (const oldScript of scripts) {
+        const newScript = document.createElement("script");
+        for (const attr of oldScript.attributes) {
+          newScript.setAttribute(attr.name, attr.value);
+        }
+        newScript.textContent = oldScript.textContent;
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+      }
+    }
+
+    function renderTemplate(template, data) {
+      lastTemplate = template;
+      visualizerData = data == null ? sampleData : data;
+      try {
+        if (window.Handlebars && typeof template === "string") {
+          const compiled = window.Handlebars.compile(template);
+          app.innerHTML = compiled(visualizerData);
+          executeRenderedScripts(app);
+        } else if (typeof template === "string") {
+          app.innerHTML = template;
+          executeRenderedScripts(app);
+        } else {
+          app.textContent = String(template);
+        }
+      } catch (err) {
+        app.innerHTML = '<div class="error">Template render error\n' + String(err && err.stack || err) + '</div>';
+      }
+    }
+
+    function makeKVStore() {
+      const store = Object.create(null);
+      return {
+        get: function(key) { return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : undefined; },
+        set: function(key, value) { store[key] = value; return value; },
+        unset: function(key) { delete store[key]; }
+      };
+    }
+
+    window.pm = {
+      response: {
+        json: function() { return sampleData; },
+        text: function() { return JSON.stringify(sampleData); }
+      },
+      request: {
+        body: {
+          raw: "{}"
+        }
+      },
+      environment: makeKVStore(),
+      globals: makeKVStore(),
+      variables: makeKVStore(),
+      getData: function(cb) {
+        if (typeof cb === "function") cb(null, visualizerData);
+      },
+      visualizer: {
+        set: function(template, data) {
+          renderTemplate(template, data);
+        }
+      }
+    };
+
+    window.console = window.console || { log(){}, warn(){}, error(){} };
+
+    try {
+      const fn = new Function(visualSource);
+      fn();
+      if (!lastTemplate && !app.innerHTML.trim()) {
+        app.innerHTML = '<div class="error">No visualizer output produced. The script may require unsupported Postman APIs.</div>';
+      }
+    } catch (err) {
+      app.innerHTML = '<div class="error">Script execution error\n' + String(err && err.stack || err) + '</div>';
+    }
+  })();
+  </script>
+</body>
+</html>

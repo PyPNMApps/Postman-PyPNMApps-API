@@ -1,0 +1,1304 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Generated documentation and previews for Postman visual examples">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+    
+    
+      
+        <title>PyPNM / DOCSIS-3.0 / US-ATDMA-Stats - Postman PyPNMApps API Visual Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pypnm-docsis-30-us-atdma-stats" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Postman PyPNMApps API Visual Docs" class="md-header__button md-logo" aria-label="Postman PyPNMApps API Visual Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Postman PyPNMApps API Visual Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              PyPNM / DOCSIS-3.0 / US-ATDMA-Stats
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/PyPNMApps/Postman-PyPNMApps-API" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Postman PyPNMApps API Visual Docs" class="md-nav__button md-logo" aria-label="Postman PyPNMApps API Visual Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Postman PyPNMApps API Visual Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/PyPNMApps/Postman-PyPNMApps-API" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docs Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visual Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../visual-mkdocs-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visual MkDocs Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#source-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source Files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="pypnm-docsis-30-us-atdma-stats">PyPNM / DOCSIS-3.0 / US-ATDMA-Stats</h1>
+<h2 id="source-files">Source Files</h2>
+<ul>
+<li>HTML/script: <code>visual/PyPNM/DOCSIS-3.0/US-ATDMA-Stats.html</code></li>
+<li>JSON sample: <code>visual/PyPNM/DOCSIS-3.0/US-ATDMA-Stats.json</code></li>
+</ul>
+<h2 id="preview">Preview</h2>
+<iframe src="/visual-previews/DOCSIS-3.0/US-ATDMA-Stats.html" style="width:100%;height:900px;border:1px solid #ccc;border-radius:6px;"></iframe>
+
+<p>Preview is best-effort. Some templates may rely on Postman-specific APIs that are not yet shimmed.</p>
+<details>
+<summary>Visualizer HTML/script source</summary>
+
+
+<pre><code class="language-html">// Postman Visualizer: Upstream ATDMA Channel Stats (Per-Channel Cards)
+// FIX: Bar graph now uses an absolute padded Y-axis (not min/max normalization), so the min channel
+//      does not collapse to a thin line.
+// X = channel_id, Y = dBmV, sorted by Frequency (low → high).
+// EQ data excluded from visuals.
+// Paste into Tests tab.
+
+(function () {
+  const resp = pm.response.json();
+
+  const safe = (v, d = &quot;&quot;) =&gt; (v === undefined || v === null ? d : v);
+  const esc = (s) =&gt;
+    String(s)
+      .replace(/&amp;/g, &quot;&amp;amp;&quot;)
+      .replace(/&lt;/g, &quot;&amp;lt;&quot;)
+      .replace(/&gt;/g, &quot;&amp;gt;&quot;)
+      .replace(/&quot;/g, &quot;&amp;quot;&quot;)
+      .replace(/'/g, &quot;&amp;#039;&quot;);
+
+  const fmt = (v, digits = 2) =&gt; (typeof v === &quot;number&quot; &amp;&amp; isFinite(v) ? v.toFixed(digits) : &quot;—&quot;);
+
+  const results = safe(resp.results, {});
+  const entriesRaw = Array.isArray(results.entries) ? results.entries.slice() : [];
+  const dwr = results.dwr_window_check || {};
+
+  const warnDb = Number(dwr.dwr_warning_db);
+  const violDb = Number(dwr.dwr_violation_db);
+
+  const entries = entriesRaw.slice().sort((a, b) =&gt; {
+    const fa = Number(a?.entry?.docsIfUpChannelFrequency);
+    const fb = Number(b?.entry?.docsIfUpChannelFrequency);
+    if (isFinite(fa) &amp;&amp; isFinite(fb) &amp;&amp; fa !== fb) return fa - fb;
+    if (isFinite(fa) &amp;&amp; !isFinite(fb)) return -1;
+    if (!isFinite(fa) &amp;&amp; isFinite(fb)) return 1;
+
+    const ca = Number(a?.channel_id);
+    const cb = Number(b?.channel_id);
+    if (isFinite(ca) &amp;&amp; isFinite(cb) &amp;&amp; ca !== cb) return ca - cb;
+
+    return Number(a?.index) - Number(b?.index);
+  });
+
+  const ch = entries.map((rec) =&gt; {
+    const chId = rec?.channel_id;
+    const freqHz = Number(rec?.entry?.docsIfUpChannelFrequency);
+    const txp = Number(rec?.entry?.docsIf3CmStatusUsTxPower);
+    return { rec, chId, freqHz, txp };
+  });
+
+  const pVals = ch.map((x) =&gt; x.txp).filter((v) =&gt; isFinite(v));
+  const pMin = pVals.length ? Math.min(...pVals) : 0;
+  const pMax = pVals.length ? Math.max(...pVals) : 1;
+
+  const spreadDb = Number(dwr.spread_db);
+  const setState =
+    isFinite(violDb) &amp;&amp; isFinite(spreadDb) &amp;&amp; spreadDb &gt;= violDb
+      ? &quot;bad&quot;
+      : isFinite(warnDb) &amp;&amp; isFinite(spreadDb) &amp;&amp; spreadDb &gt;= warnDb
+      ? &quot;warn&quot;
+      : &quot;good&quot;;
+
+  function hzToMHz(v) {
+    const n = Number(v);
+    if (!isFinite(n)) return &quot;—&quot;;
+    return fmt(n / 1e6, 3);
+  }
+
+  function statusBadge(label, kind) {
+    return `&lt;span class=&quot;badge ${esc(kind)}&quot;&gt;${esc(label)}&lt;/span&gt;`;
+  }
+
+  function rangingStatusBadge(code) {
+    const n = Number(code);
+    if (!Number.isInteger(n)) return statusBadge(&quot;Ranging: —&quot;, &quot;neutral&quot;);
+    if (n === 4) return statusBadge(&quot;Ranging: 4&quot;, &quot;good&quot;);
+    if (n === 0) return statusBadge(&quot;Ranging: 0&quot;, &quot;warn&quot;);
+    return statusBadge(`Ranging: ${n}`, &quot;neutral&quot;);
+  }
+
+  function chTypeBadge(code) {
+    const n = Number(code);
+    if (!Number.isInteger(n)) return statusBadge(&quot;Type: —&quot;, &quot;neutral&quot;);
+    return statusBadge(`Type: ${n}`, &quot;neutral&quot;);
+  }
+
+  function boolPill(v) {
+    const b = Boolean(v);
+    return b ? `&lt;span class=&quot;pill yes&quot;&gt;true&lt;/span&gt;` : `&lt;span class=&quot;pill no&quot;&gt;false&lt;/span&gt;`;
+  }
+
+  // Absolute Y-axis with padding (prevents min channel looking like &quot;zero&quot;)
+  const PAD_DB = 1.0;
+  const ROUND_STEP_DB = 0.5;
+
+  function floorToStep(v, step) {
+    return Math.floor(v / step) * step;
+  }
+
+  function ceilToStep(v, step) {
+    return Math.ceil(v / step) * step;
+  }
+
+  const yMinRaw = pMin - PAD_DB;
+  const yMaxRaw = pMax + PAD_DB;
+  const yMin = floorToStep(yMinRaw, ROUND_STEP_DB);
+  const yMax = ceilToStep(yMaxRaw, ROUND_STEP_DB);
+  const ySpan = Math.max(1e-9, yMax - yMin);
+
+  function barHeightPctAbsolute(p) {
+    if (!(typeof p === &quot;number&quot; &amp;&amp; isFinite(p))) return 0;
+    const pct = ((p - yMin) / ySpan) * 100;
+    const clamped = Math.min(100, Math.max(0, pct));
+
+    const MIN_VISIBLE = 6; // percent (only for finite values)
+    if (clamped &lt;= 0) return MIN_VISIBLE;
+    return Math.max(MIN_VISIBLE, clamped);
+  }
+
+  function buildVerticalPowerBars() {
+    const state = setState;
+    const hasP = pVals.length &gt; 0;
+
+    const tooltipLines = (x) =&gt; {
+      const f = Number(x?.rec?.entry?.docsIfUpChannelFrequency);
+      const w = Number(x?.rec?.entry?.docsIfUpChannelWidth);
+      return [
+        `ChId: ${safe(x.chId, &quot;—&quot;)}`,
+        `TxP: ${fmt(x.txp, 1)} dBmV`,
+        `Freq: ${hzToMHz(f)} MHz`,
+        `Width: ${hzToMHz(w)} MHz`,
+      ].join(&quot;\n&quot;);
+    };
+
+    const yMid = (yMin + yMax) / 2;
+
+    return `
+      &lt;div class=&quot;bars-wrap&quot;&gt;
+        &lt;div class=&quot;bars-head&quot;&gt;
+          &lt;div class=&quot;bars-title&quot;&gt;Tx Power (Y = dBmV, X = Channel ID, Sorted By Frequency Low → High)&lt;/div&gt;
+          &lt;div class=&quot;bars-meta mono&quot;&gt;
+            axis=${esc(fmt(yMin, 1))}..${esc(fmt(yMax, 1))} dBmV · min=${esc(fmt(pMin, 1))} · max=${esc(fmt(pMax, 1))} · spread=${esc(fmt(spreadDb, 2))} dB
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;bars-plot&quot; role=&quot;img&quot; aria-label=&quot;Per-channel Tx power vertical bars sorted by frequency&quot;&gt;
+          ${
+            hasP
+              ? ch
+                  .map((x) =&gt; {
+                    const missing = !(typeof x.txp === &quot;number&quot; &amp;&amp; isFinite(x.txp));
+                    const h = missing ? 0 : barHeightPctAbsolute(x.txp);
+                    const label = safe(x.chId, &quot;—&quot;);
+                    return `
+                      &lt;div class=&quot;bar-col&quot; title=&quot;${esc(tooltipLines(x))}&quot;&gt;
+                        &lt;div class=&quot;bar-slot&quot;&gt;
+                          &lt;div class=&quot;vbar ${esc(state)} ${missing ? &quot;missing&quot; : &quot;&quot;}&quot; style=&quot;height:${h.toFixed(2)}%&quot;&gt;&lt;/div&gt;
+                        &lt;/div&gt;
+                        &lt;div class=&quot;bar-x mono&quot;&gt;Ch ${esc(String(label))}&lt;/div&gt;
+                        &lt;div class=&quot;bar-x2 mono&quot;&gt;${esc(hzToMHz(x.freqHz))} MHz&lt;/div&gt;
+                      &lt;/div&gt;
+                    `;
+                  })
+                  .join(&quot;&quot;)
+              : `&lt;div class=&quot;bars-empty&quot;&gt;No docsIf3CmStatusUsTxPower values found.&lt;/div&gt;`
+          }
+        &lt;/div&gt;
+
+        &lt;div class=&quot;bars-axis&quot;&gt;
+          &lt;div class=&quot;mono&quot;&gt;${esc(fmt(yMin, 1))} dBmV&lt;/div&gt;
+          &lt;div class=&quot;mono&quot;&gt;${esc(fmt(yMid, 1))} dBmV&lt;/div&gt;
+          &lt;div class=&quot;mono&quot;&gt;${esc(fmt(yMax, 1))} dBmV&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;legend&quot;&gt;
+          &lt;div class=&quot;leg&quot;&gt;&lt;span class=&quot;sw good&quot;&gt;&lt;/span&gt;&lt;span&gt;Good&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;leg&quot;&gt;&lt;span class=&quot;sw warn&quot;&gt;&lt;/span&gt;&lt;span&gt;Warning&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;leg&quot;&gt;&lt;span class=&quot;sw bad&quot;&gt;&lt;/span&gt;&lt;span&gt;Violation&lt;/span&gt;&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    `;
+  }
+
+  function buildDwrPanel() {
+    const warn = Number(dwr.dwr_warning_db);
+    const viol = Number(dwr.dwr_violation_db);
+    const spread = Number(dwr.spread_db);
+    const chCount = safe(dwr.channel_count, entries.length);
+
+    const minP = safe(dwr.min_power_dbmv, isFinite(pMin) ? pMin : &quot;—&quot;);
+    const maxP = safe(dwr.max_power_dbmv, isFinite(pMax) ? pMax : &quot;—&quot;);
+
+    const isWarn = Boolean(dwr.is_warning);
+    const isViol = Boolean(dwr.is_violation);
+
+    const extreme = Array.isArray(dwr.extreme_channel_ids) ? dwr.extreme_channel_ids : [];
+    const extremeStr = extreme.length ? extreme.join(&quot;, &quot;) : &quot;—&quot;;
+
+    let state = statusBadge(&quot;OK&quot;, &quot;good&quot;);
+    if (isViol) state = statusBadge(&quot;VIOLATION&quot;, &quot;bad&quot;);
+    else if (isWarn) state = statusBadge(&quot;WARNING&quot;, &quot;warn&quot;);
+
+    return `
+      &lt;div class=&quot;dwr&quot;&gt;
+        &lt;div class=&quot;dwr-head&quot;&gt;
+          &lt;div class=&quot;h1&quot;&gt;DWR Window Check&lt;/div&gt;
+          &lt;div class=&quot;badges&quot;&gt;
+            ${state}
+            ${statusBadge(`Channels ${esc(String(chCount))}`, &quot;neutral&quot;)}
+            ${isFinite(warn) ? statusBadge(`Warn ${esc(fmt(warn, 2))} dB`, &quot;neutral&quot;) : &quot;&quot;}
+            ${isFinite(viol) ? statusBadge(`Viol ${esc(fmt(viol, 2))} dB`, &quot;neutral&quot;) : &quot;&quot;}
+            ${isFinite(spread) ? statusBadge(`Spread ${esc(fmt(spread, 2))} dB`, &quot;accent&quot;) : &quot;&quot;}
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;dwr-grid&quot;&gt;
+          &lt;div class=&quot;kv&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Min Power&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(fmt(Number(minP), 1))} dBmV&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;kv&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Max Power&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(fmt(Number(maxP), 1))} dBmV&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;kv&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Spread&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(fmt(spread, 2))} dB&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;kv&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Extreme Channel IDs&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(extremeStr)}&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    `;
+  }
+
+  function buildChannelCard(rec) {
+    const idx = safe(rec.index, &quot;—&quot;);
+    const chId = safe(rec.channel_id, &quot;—&quot;);
+    const e = rec.entry || {};
+
+    const upId = safe(e.docsIfUpChannelId, &quot;—&quot;);
+    const freqHz = Number(e.docsIfUpChannelFrequency);
+    const widthHz = Number(e.docsIfUpChannelWidth);
+    const txp = Number(e.docsIf3CmStatusUsTxPower);
+
+    const isMuted = Boolean(e.docsIf3CmStatusUsIsMuted);
+    const preEqEnabled = Boolean(e.docsIfUpChannelPreEqEnable);
+    const status = safe(e.docsIfUpChannelStatus, &quot;—&quot;);
+
+    const t3 = safe(e.docsIf3CmStatusUsT3Timeouts, &quot;—&quot;);
+    const t4 = safe(e.docsIf3CmStatusUsT4Timeouts, &quot;—&quot;);
+    const t3x = safe(e.docsIf3CmStatusUsT3Exceededs, &quot;—&quot;);
+    const abort = safe(e.docsIf3CmStatusUsRangingAborteds, &quot;—&quot;);
+
+    const modType = safe(e.docsIf3CmStatusUsModulationType, &quot;—&quot;);
+    const slot = safe(e.docsIfUpChannelSlotSize, &quot;—&quot;);
+    const timing = safe(e.docsIfUpChannelTxTimingOffset, &quot;—&quot;);
+
+    const ranging = rangingStatusBadge(e.docsIf3CmStatusUsRangingStatus);
+    const ctype = chTypeBadge(e.docsIfUpChannelType);
+
+    const badges = [
+      statusBadge(`Index ${idx}`, &quot;neutral&quot;),
+      statusBadge(`ChId ${chId}`, &quot;accent&quot;),
+      statusBadge(`UpId ${upId}`, &quot;neutral&quot;),
+      statusBadge(`Freq ${hzToMHz(freqHz)} MHz`, &quot;neutral&quot;),
+      ranging,
+      ctype,
+      isMuted ? statusBadge(&quot;Muted&quot;, &quot;bad&quot;) : statusBadge(&quot;Not Muted&quot;, &quot;good&quot;),
+    ].join(&quot;&quot;);
+
+    return `
+      &lt;div class=&quot;card&quot;&gt;
+        &lt;div class=&quot;card-head&quot;&gt;
+          &lt;div class=&quot;card-title&quot;&gt;
+            &lt;div class=&quot;h1&quot;&gt;US Channel ${esc(String(chId))}&lt;/div&gt;
+            &lt;div class=&quot;badges&quot;&gt;${badges}&lt;/div&gt;
+          &lt;/div&gt;
+
+          &lt;div class=&quot;power&quot;&gt;
+            &lt;div class=&quot;power-top&quot;&gt;
+              &lt;div class=&quot;k&quot;&gt;Tx Power&lt;/div&gt;
+              &lt;div class=&quot;v mono&quot;&gt;${esc(fmt(txp, 1))} dBmV&lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class=&quot;power-foot mono&quot;&gt;
+              axis=${esc(fmt(yMin, 1))}..${esc(fmt(yMax, 1))} · min=${esc(fmt(pMin, 1))} · max=${esc(fmt(pMax, 1))}
+            &lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;kv-grid&quot;&gt;
+          &lt;div class=&quot;kv&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Frequency&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(hzToMHz(freqHz))} MHz&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;kv&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Width&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(hzToMHz(widthHz))} MHz&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;kv&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Status&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(String(status))}&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;kv&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Pre-EQ Enable&lt;/div&gt;
+            &lt;div class=&quot;v&quot;&gt;${boolPill(preEqEnabled)}&lt;/div&gt;
+          &lt;/div&gt;
+
+          &lt;div class=&quot;kv&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Mod Type&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(String(modType))}&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;kv&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Slot Size&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(String(slot))}&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;kv&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Tx Timing Offset&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(String(timing))}&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;kv&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Muted&lt;/div&gt;
+            &lt;div class=&quot;v&quot;&gt;${boolPill(isMuted)}&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+        &lt;div class=&quot;counters&quot;&gt;
+          &lt;div class=&quot;ct&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;T3 Timeouts&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(String(t3))}&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;ct&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;T4 Timeouts&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(String(t4))}&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;ct&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;T3 Exceededs&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(String(t3x))}&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;ct&quot;&gt;
+            &lt;div class=&quot;k&quot;&gt;Ranging Aborteds&lt;/div&gt;
+            &lt;div class=&quot;v mono&quot;&gt;${esc(String(abort))}&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    `;
+  }
+
+  const template = `
+  &lt;style&gt;
+    :root {
+      --bg: #0b1220;
+      --panel: #0f1a2b;
+      --panel2: #0c1727;
+      --text: #e6edf3;
+      --muted: #94a3b8;
+
+      --accent: #60a5fa;
+
+      --good: #34d399;
+      --warn: #fbbf24;
+      --bad:  #fb7185;
+
+      --border: rgba(148,163,184,0.22);
+      --shadow: rgba(0,0,0,0.40);
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    body { margin: 0; padding: 18px 18px 28px 18px; background: var(--bg); color: var(--text); font-family: var(--sans); }
+
+    .top { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: baseline; margin-bottom: 14px; }
+    .title { font-size: 18px; font-weight: 800; letter-spacing: 0.2px; }
+    .sub { color: var(--muted); font-size: 12px; }
+    .mono { font-family: var(--mono); }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .chip { background: rgba(96,165,250,0.12); border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; font-size: 12px; color: var(--text); }
+    .chip .k { color: var(--muted); margin-right: 6px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 14px; }
+
+    .h1 { font-size: 14px; font-weight: 800; letter-spacing: 0.2px; }
+
+    .badges { display: flex; flex-wrap: wrap; gap: 8px; }
+    .badge { border-radius: 999px; padding: 4px 8px; font-size: 11px; border: 1px solid var(--border); background: rgba(148,163,184,0.10); color: var(--text); font-weight: 700; }
+    .badge.accent { background: rgba(96,165,250,0.18); border-color: rgba(96,165,250,0.38); }
+    .badge.good { background: rgba(52,211,153,0.14); border-color: rgba(52,211,153,0.38); }
+    .badge.warn { background: rgba(251,191,36,0.14); border-color: rgba(251,191,36,0.42); }
+    .badge.bad  { background: rgba(251,113,133,0.14); border-color: rgba(251,113,133,0.42); }
+    .badge.neutral { background: rgba(148,163,184,0.10); border-color: var(--border); }
+
+    .pill { display: inline-block; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 800; border: 1px solid var(--border); }
+    .pill.yes { background: rgba(52,211,153,0.14); border-color: rgba(52,211,153,0.38); color: var(--text); }
+    .pill.no  { background: rgba(148,163,184,0.10); border-color: var(--border); color: var(--text); }
+
+    .dwr {
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 12px 26px var(--shadow);
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .dwr-head { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .dwr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+
+    .kv .k { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .kv .v { font-size: 12px; font-weight: 700; margin-top: 2px; }
+
+    .bars-wrap {
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 12px 26px var(--shadow);
+      padding: 12px 14px 14px 14px;
+      margin-bottom: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .bars-head { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: baseline; }
+    .bars-title { font-size: 12px; font-weight: 800; }
+    .bars-meta { font-size: 11px; color: var(--muted); }
+
+    .bars-plot {
+      height: 210px;
+      border-radius: 12px;
+      border: 1px solid rgba(148,163,184,0.20);
+      background: rgba(148,163,184,0.08);
+      padding: 10px 10px 6px 10px;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(56px, 1fr);
+      gap: 8px;
+      align-items: end;
+      overflow: hidden;
+    }
+
+    .bar-col { display: grid; gap: 6px; align-items: end; }
+    .bar-slot {
+      height: 130px;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,0.16);
+      background: rgba(0,0,0,0.14);
+      display: flex;
+      align-items: end;
+      padding: 6px;
+    }
+
+    .vbar {
+      width: 100%;
+      height: 0%;
+      border-radius: 8px 8px 4px 4px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+      transition: height 120ms ease;
+    }
+
+    .vbar.good { background: linear-gradient(180deg, rgba(52,211,153,0.95), rgba(96,165,250,0.65)); }
+    .vbar.warn { background: linear-gradient(180deg, rgba(251,191,36,0.95), rgba(96,165,250,0.55)); }
+    .vbar.bad  { background: linear-gradient(180deg, rgba(251,113,133,0.95), rgba(96,165,250,0.50)); }
+
+    .vbar.missing {
+      height: 6px !important;
+      background: rgba(148,163,184,0.28);
+      box-shadow: none;
+      border-radius: 8px;
+    }
+
+    .bar-x { text-align: center; color: rgba(148,163,184,0.95); font-size: 11px; }
+    .bar-x2 { text-align: center; color: rgba(148,163,184,0.70); font-size: 10px; margin-top: -2px; }
+
+    .bars-axis {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .bars-axis &gt; div:nth-child(1) { text-align: left; }
+    .bars-axis &gt; div:nth-child(2) { text-align: center; }
+    .bars-axis &gt; div:nth-child(3) { text-align: right; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .leg { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: 11px; font-weight: 800; }
+    .sw { width: 14px; height: 10px; border-radius: 4px; border: 1px solid rgba(148,163,184,0.25); display: inline-block; }
+    .sw.good { background: rgba(52,211,153,0.85); }
+    .sw.warn { background: rgba(251,191,36,0.90); }
+    .sw.bad  { background: rgba(251,113,133,0.85); }
+
+    .bars-empty { color: var(--muted); font-size: 12px; padding: 10px; }
+
+    .card {
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 12px 26px var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 1fr minmax(220px, 260px);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .card-title { display: grid; gap: 8px; }
+
+    .kv-grid {
+      padding: 12px 14px 10px 14px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 12px;
+    }
+
+    .divider { height: 1px; background: var(--border); margin: 0 14px; }
+
+    .counters {
+      padding: 10px 14px 14px 14px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .ct {
+      border: 1px solid rgba(148,163,184,0.18);
+      background: rgba(148,163,184,0.06);
+      border-radius: 12px;
+      padding: 8px 10px;
+      display: grid;
+      gap: 2px;
+    }
+    .ct .k { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .ct .v { font-size: 13px; font-weight: 900; }
+
+    @media (max-width: 980px) {
+      .card-head { grid-template-columns: 1fr; }
+      .counters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  &lt;/style&gt;
+
+  &lt;div class=&quot;top&quot;&gt;
+    &lt;div class=&quot;title&quot;&gt;Upstream ATDMA Channel Statistics&lt;/div&gt;
+    &lt;div class=&quot;sub&quot;&gt;Per-channel cards (EQ excluded) + Tx power bar graph (absolute y-axis) sorted by frequency&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;chips&quot;&gt;
+    &lt;div class=&quot;chip&quot;&gt;&lt;span class=&quot;k&quot;&gt;MAC&lt;/span&gt; &lt;span class=&quot;mono&quot;&gt;${esc(safe(resp.mac_address, &quot;&quot;))}&lt;/span&gt;&lt;/div&gt;
+    &lt;div class=&quot;chip&quot;&gt;&lt;span class=&quot;k&quot;&gt;Status&lt;/span&gt; &lt;span class=&quot;mono&quot;&gt;${esc(String(safe(resp.status, &quot;&quot;)))}&lt;/span&gt;&lt;/div&gt;
+    &lt;div class=&quot;chip&quot;&gt;&lt;span class=&quot;k&quot;&gt;Message&lt;/span&gt; &lt;span&gt;${esc(safe(resp.message, &quot;&quot;))}&lt;/span&gt;&lt;/div&gt;
+    &lt;div class=&quot;chip&quot;&gt;&lt;span class=&quot;k&quot;&gt;Channels&lt;/span&gt; &lt;span class=&quot;mono&quot;&gt;${esc(String(entries.length))}&lt;/span&gt;&lt;/div&gt;
+    &lt;div class=&quot;chip&quot;&gt;&lt;span class=&quot;k&quot;&gt;DWR State&lt;/span&gt; &lt;span class=&quot;mono&quot;&gt;${esc(setState.toUpperCase())}&lt;/span&gt;&lt;/div&gt;
+    &lt;div class=&quot;chip&quot;&gt;&lt;span class=&quot;k&quot;&gt;Warn/Viol&lt;/span&gt; &lt;span class=&quot;mono&quot;&gt;${esc(fmt(warnDb, 2))}/${esc(fmt(violDb, 2))} dB&lt;/span&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  ${buildDwrPanel()}
+
+  ${buildVerticalPowerBars()}
+
+  &lt;div class=&quot;grid&quot;&gt;
+    ${entries.map(buildChannelCard).join(&quot;&quot;)}
+  &lt;/div&gt;
+  `;
+
+  pm.visualizer.set(template, {});
+})();
+</code></pre>
+
+</details>
+
+<details>
+<summary>Sample JSON payload</summary>
+
+
+<pre><code class="language-json">{
+    &quot;mac_address&quot;: &quot;aa:bb:cc:dd:ee:ff&quot;,
+    &quot;status&quot;: 0,
+    &quot;message&quot;: &quot;Successfully retrieved upstream ATDMA channel statistics&quot;,
+    &quot;results&quot;: {
+        &quot;entries&quot;: [
+            {
+                &quot;index&quot;: 4,
+                &quot;channel_id&quot;: 4,
+                &quot;entry&quot;: {
+                    &quot;docsIfUpChannelId&quot;: 4,
+                    &quot;docsIfUpChannelFrequency&quot;: 35200000,
+                    &quot;docsIfUpChannelWidth&quot;: 6400000,
+                    &quot;docsIfUpChannelModulationProfile&quot;: 0,
+                    &quot;docsIfUpChannelSlotSize&quot;: 1,
+                    &quot;docsIfUpChannelTxTimingOffset&quot;: 8588,
+                    &quot;docsIfUpChannelRangingBackoffStart&quot;: 3,
+                    &quot;docsIfUpChannelRangingBackoffEnd&quot;: 8,
+                    &quot;docsIfUpChannelTxBackoffStart&quot;: 2,
+                    &quot;docsIfUpChannelTxBackoffEnd&quot;: 6,
+                    &quot;docsIfUpChannelType&quot;: 2,
+                    &quot;docsIfUpChannelCloneFrom&quot;: 0,
+                    &quot;docsIfUpChannelUpdate&quot;: false,
+                    &quot;docsIfUpChannelStatus&quot;: 1,
+                    &quot;docsIfUpChannelPreEqEnable&quot;: true,
+                    &quot;docsIf3CmStatusUsTxPower&quot;: 50.8,
+                    &quot;docsIf3CmStatusUsT3Timeouts&quot;: 0,
+                    &quot;docsIf3CmStatusUsT4Timeouts&quot;: 0,
+                    &quot;docsIf3CmStatusUsRangingAborteds&quot;: 0,
+                    &quot;docsIf3CmStatusUsModulationType&quot;: 2,
+                    &quot;docsIf3CmStatusUsEqData&quot;: &quot;0x08011800fffefffe0004fffc00000004fffcfffa0002000afffeffeefffa002407fd0000ffd4ffc400080018fffafff400000006fffefffa00020002fffcfffe00020000fffcfffe000000000000fffe0002000000000000fffe00000000000200000000&quot;,
+                    &quot;docsIf3CmStatusUsT3Exceededs&quot;: 0,
+                    &quot;docsIf3CmStatusUsIsMuted&quot;: false,
+                    &quot;docsIf3CmStatusUsRangingStatus&quot;: &quot;success&quot;
+                }
+            },
+            {
+                &quot;index&quot;: 80,
+                &quot;channel_id&quot;: 1,
+                &quot;entry&quot;: {
+                    &quot;docsIfUpChannelId&quot;: 1,
+                    &quot;docsIfUpChannelFrequency&quot;: 16000000,
+                    &quot;docsIfUpChannelWidth&quot;: 6400000,
+                    &quot;docsIfUpChannelModulationProfile&quot;: 0,
+                    &quot;docsIfUpChannelSlotSize&quot;: 1,
+                    &quot;docsIfUpChannelTxTimingOffset&quot;: 8588,
+                    &quot;docsIfUpChannelRangingBackoffStart&quot;: 3,
+                    &quot;docsIfUpChannelRangingBackoffEnd&quot;: 8,
+                    &quot;docsIfUpChannelTxBackoffStart&quot;: 2,
+                    &quot;docsIfUpChannelTxBackoffEnd&quot;: 6,
+                    &quot;docsIfUpChannelType&quot;: 2,
+                    &quot;docsIfUpChannelCloneFrom&quot;: 0,
+                    &quot;docsIfUpChannelUpdate&quot;: false,
+                    &quot;docsIfUpChannelStatus&quot;: 1,
+                    &quot;docsIfUpChannelPreEqEnable&quot;: true,
+                    &quot;docsIf3CmStatusUsTxPower&quot;: 50.8,
+                    &quot;docsIf3CmStatusUsT3Timeouts&quot;: 0,
+                    &quot;docsIf3CmStatusUsT4Timeouts&quot;: 0,
+                    &quot;docsIf3CmStatusUsRangingAborteds&quot;: 0,
+                    &quot;docsIf3CmStatusUsModulationType&quot;: 2,
+                    &quot;docsIf3CmStatusUsEqData&quot;: &quot;0x08011800000100040000fff70003000efffcffe900060020fffbffc4fff9009807f6ffec0006ffb2fffd00290004ffe6fffe00110003fff5000000070001fffc000300010000ffff0000ffff0000fffffffe0001fffffffefffeffff0000ffff00000001&quot;,
+                    &quot;docsIf3CmStatusUsT3Exceededs&quot;: 0,
+                    &quot;docsIf3CmStatusUsIsMuted&quot;: false,
+                    &quot;docsIf3CmStatusUsRangingStatus&quot;: &quot;success&quot;
+                }
+            },
+            {
+                &quot;index&quot;: 81,
+                &quot;channel_id&quot;: 3,
+                &quot;entry&quot;: {
+                    &quot;docsIfUpChannelId&quot;: 3,
+                    &quot;docsIfUpChannelFrequency&quot;: 28800000,
+                    &quot;docsIfUpChannelWidth&quot;: 6400000,
+                    &quot;docsIfUpChannelModulationProfile&quot;: 0,
+                    &quot;docsIfUpChannelSlotSize&quot;: 1,
+                    &quot;docsIfUpChannelTxTimingOffset&quot;: 8588,
+                    &quot;docsIfUpChannelRangingBackoffStart&quot;: 3,
+                    &quot;docsIfUpChannelRangingBackoffEnd&quot;: 8,
+                    &quot;docsIfUpChannelTxBackoffStart&quot;: 2,
+                    &quot;docsIfUpChannelTxBackoffEnd&quot;: 6,
+                    &quot;docsIfUpChannelType&quot;: 2,
+                    &quot;docsIfUpChannelCloneFrom&quot;: 0,
+                    &quot;docsIfUpChannelUpdate&quot;: false,
+                    &quot;docsIfUpChannelStatus&quot;: 1,
+                    &quot;docsIfUpChannelPreEqEnable&quot;: true,
+                    &quot;docsIf3CmStatusUsTxPower&quot;: 50.8,
+                    &quot;docsIf3CmStatusUsT3Timeouts&quot;: 0,
+                    &quot;docsIf3CmStatusUsT4Timeouts&quot;: 0,
+                    &quot;docsIf3CmStatusUsRangingAborteds&quot;: 0,
+                    &quot;docsIf3CmStatusUsModulationType&quot;: 2,
+                    &quot;docsIf3CmStatusUsEqData&quot;: &quot;0x0801180000020002000200020002fffe0000000000060002fff60000001a000a07ff00000018000efff8fffc00020002fffcfffefffe000000020002fffe00020004000000000002fffe000000000004fffe00020000fffefffe0002fffe0000fffe0002&quot;,
+                    &quot;docsIf3CmStatusUsT3Exceededs&quot;: 0,
+                    &quot;docsIf3CmStatusUsIsMuted&quot;: false,
+                    &quot;docsIf3CmStatusUsRangingStatus&quot;: &quot;success&quot;
+                }
+            },
+            {
+                &quot;index&quot;: 82,
+                &quot;channel_id&quot;: 2,
+                &quot;entry&quot;: {
+                    &quot;docsIfUpChannelId&quot;: 2,
+                    &quot;docsIfUpChannelFrequency&quot;: 22400000,
+                    &quot;docsIfUpChannelWidth&quot;: 6400000,
+                    &quot;docsIfUpChannelModulationProfile&quot;: 0,
+                    &quot;docsIfUpChannelSlotSize&quot;: 1,
+                    &quot;docsIfUpChannelTxTimingOffset&quot;: 8589,
+                    &quot;docsIfUpChannelRangingBackoffStart&quot;: 3,
+                    &quot;docsIfUpChannelRangingBackoffEnd&quot;: 8,
+                    &quot;docsIfUpChannelTxBackoffStart&quot;: 2,
+                    &quot;docsIfUpChannelTxBackoffEnd&quot;: 6,
+                    &quot;docsIfUpChannelType&quot;: 2,
+                    &quot;docsIfUpChannelCloneFrom&quot;: 0,
+                    &quot;docsIfUpChannelUpdate&quot;: false,
+                    &quot;docsIfUpChannelStatus&quot;: 1,
+                    &quot;docsIfUpChannelPreEqEnable&quot;: true,
+                    &quot;docsIf3CmStatusUsTxPower&quot;: 50.8,
+                    &quot;docsIf3CmStatusUsT3Timeouts&quot;: 1,
+                    &quot;docsIf3CmStatusUsT4Timeouts&quot;: 0,
+                    &quot;docsIf3CmStatusUsRangingAborteds&quot;: 0,
+                    &quot;docsIf3CmStatusUsModulationType&quot;: 2,
+                    &quot;docsIf3CmStatusUsEqData&quot;: &quot;0x08011800fffafffc00040004fffefffb0001000afffafff400080016ffe1ffe307f9fffcfff5008cfff9ffd10000001bfffeffef0001000c0003fffafffe00040004fffc000000020000fffe0004000100000002ffff000100000000fffd0000fffdfffd&quot;,
+                    &quot;docsIf3CmStatusUsT3Exceededs&quot;: 0,
+                    &quot;docsIf3CmStatusUsIsMuted&quot;: false,
+                    &quot;docsIf3CmStatusUsRangingStatus&quot;: &quot;success&quot;
+                }
+            }
+        ],
+        &quot;dwr_window_check&quot;: {
+            &quot;dwr_warning_db&quot;: 6.0,
+            &quot;dwr_violation_db&quot;: 12.0,
+            &quot;channel_count&quot;: 4,
+            &quot;min_power_dbmv&quot;: 50.8,
+            &quot;max_power_dbmv&quot;: 50.8,
+            &quot;spread_db&quot;: 0.0,
+            &quot;is_warning&quot;: false,
+            &quot;is_violation&quot;: false,
+            &quot;extreme_channel_ids&quot;: [
+                4,
+                1,
+                3,
+                2
+            ]
+        }
+    }
+}
+</code></pre>
+
+</details>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
