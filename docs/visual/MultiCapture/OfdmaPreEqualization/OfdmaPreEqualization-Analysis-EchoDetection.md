@@ -7,7 +7,7 @@
 
 ## Preview
 
-<iframe src="/visual-previews/MultiCapture/OfdmaPreEqualization/OfdmaPreEqualization-Analysis-EchoDetection.html" style="width:100%;height:900px;border:1px solid #ccc;border-radius:6px;"></iframe>
+<iframe src="../../../../visual-previews/MultiCapture/OfdmaPreEqualization/OfdmaPreEqualization-Analysis-EchoDetection.html" style="width:100%;height:900px;border:1px solid #ccc;border-radius:6px;"></iframe>
 
 Preview is best-effort. Some templates may rely on Postman-specific APIs that are not yet shimmed.
 

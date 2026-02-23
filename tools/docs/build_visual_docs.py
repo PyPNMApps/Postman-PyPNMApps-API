@@ -401,8 +401,12 @@ def main(argv: list[str]) -> int:
                 changed_count += 1
                 written_count += 0 if check_only else 1
                 print(f"{'DRIFT' if check_only else 'WRITE'}: {preview_path.relative_to(repo_root)}")
-            # Use a site-root-relative path to avoid MkDocs directory-URL relative path issues.
-            preview_rel_from_page = Path("/") / preview_path.relative_to(docs_root)
+            # MkDocs serves markdown pages as directory URLs by default, e.g.
+            # docs/visual/foo/bar.md -> /visual/foo/bar/, so relative iframe paths
+            # must be computed from a virtual "bar/" directory, not page_path.parent.
+            # Relative URLs are required for GitHub Pages project sites so the repo
+            # path prefix is preserved.
+            preview_rel_from_page = Path(os_path_rel(page_path.with_suffix(""), preview_path))
 
         md_content = build_example_markdown(
             example=ex,
