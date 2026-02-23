@@ -31,11 +31,21 @@
 ## Visual Development Rules (Required)
 
 - `visual/` is the source of truth for visual HTML (`*.html`) and sample JSON (`*.json`) in this repo version.
+- Start new visual work from `visual/templates/Postman-Visualizer-SectionTemplate.md` and build the page section-by-section from that scaffold.
 - Do not manually edit generated visual docs (`docs/visual/`, `docs/visual-previews/`); regenerate from `visual/`.
 - No comments in visual code/templates unless explicitly requested.
 - At the top of each visual HTML file, maintain the visual rules/constraints and indicate that `CODING_AGENTS.md` defines the canonical rules so they are not forgotten.
 - Visuals should support dark/light mode behavior and check system settings when rendering theme-sensitive output.
 - If `sysDescr` / `system_description` is present in the JSON response, show it prominently at the top of the visual.
+- Standardize `sysDescr` / `system_description` presentation as a dedicated `Device Info` block separate from channel/capture graph blocks.
+- `Device Info` should render before channel-specific charts/content.
+- Prefer a horizontal one-row table for common modem identity fields with display labels exactly:
+- `MacAddress`, `Model`, `Vendor`, `SW Version`, `HW Version`, `Boot ROM`
+- Use proper display casing/spacing for labels (for example `SW Version`, not `SW_REV`; `Boot ROM`, not `BOOTR`).
+- Keep channel metadata in a separate block below `Device Info` (for example `Channel`, center/subcarrier frequency).
+- Display frequencies in `MHz` for UI-facing labels; raw `Hz` may be shown secondarily in parentheses when useful.
+- Avoid redundant repetition of values already shown in `Device Info` (for example, do not repeat `MacAddress` in the channel header if it is already in the device table).
+- If `system_description` is missing/partial, render `N/A` for missing fields instead of vendor-specific fallback values.
 - JSON responses may contain multiple upstream/downstream channels; each channel must render as its own graph for the selected graph type.
 - Multi-channel views should also include a combined graph at the bottom with all channels lined up by frequency in a single graph.
 
