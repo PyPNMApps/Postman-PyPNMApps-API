@@ -1,4 +1,4 @@
-// Postman Visualizer - OFDMA Pre-EQ (PNN6 vs PNN7) Grouped By Channel
+// Postman Visualizer - OFDMA Pre-EQ (Current vs Last Update) Grouped By Channel
 //
 // Assumptions (based on your JSON):
 // - pm.response.json().data.analysis is an array of per-(channel_id, file_type_version) analysis objects
@@ -19,9 +19,24 @@ const template = `
   .container { max-width: 1400px; margin: 0 auto; }
   h1 { color: #e0e0e0; text-align: center; margin-bottom: 30px; }
   .channel-section { background: #2d2d2d; padding: 25px; margin: 30px 0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-  .channel-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+  .channel-header { background: linear-gradient(135deg, #5a6fd8 0%, #6f4aa6 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
+  .device-info-block { background: #343447; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
   .channel-title { font-size: 28px; font-weight: bold; margin: 0; }
-  .channel-subtitle { font-size: 16px; margin: 5px 0 0 0; opacity: 0.9; }
+  .channel-subtitle { font-size: 15px; margin: 6px 0 0 0; opacity: 0.92; }
+  .channel-meta-wrap { margin-top: 0; background: rgba(255,255,255,0.08); border-radius: 10px; overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); }
+  .channel-meta-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; padding: 10px 12px; background: rgba(0,0,0,0.18); opacity: 0.95; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .channel-meta-table { width: 100%; border-collapse: collapse; min-width: 680px; }
+  .channel-meta-table th { text-align: left; width: 180px; padding: 9px 12px; font-size: 11px; color: #dbe3ff; border-bottom: 1px solid rgba(255,255,255,0.08); text-transform: uppercase; letter-spacing: 0.45px; }
+  .channel-meta-table td { padding: 10px 12px; font-size: 12px; color: #ffffff; border-bottom: 1px solid rgba(255,255,255,0.08); word-break: break-word; }
+  .channel-meta-table tr:last-child th, .channel-meta-table tr:last-child td { border-bottom: none; }
+  .device-info-table th { width: auto; white-space: nowrap; background: rgba(255,255,255,0.03); }
+  .device-info-table td { white-space: nowrap; }
+  .device-info-table td:nth-child(1),
+  .device-info-table td:nth-child(4),
+  .device-info-table td:nth-child(5),
+  .device-info-table td:nth-child(6) { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+  .device-info-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
+  .channel-info { margin-top: 14px; }
 
   .series-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin: 10px 0 24px 0; }
   .series-card { background: #3d3d3d; padding: 16px; border-radius: 8px; border-left: 4px solid #ff6c37; }
@@ -45,19 +60,48 @@ const template = `
 </style>
 
 <div class="container">
-  <h1>Pre-Equalization Analysis (PNN6 vs PNN7)</h1>
+	  <h1>Pre-Equalization Analysis</h1>
 
   {{#each channels}}
-    <div class="channel-section">
-      <div class="channel-header">
-        <div class="channel-title">Channel {{channelId}}</div>
-        <div class="channel-subtitle">MAC: {{macAddress}} | Subcarrier-0 Freq: {{subcarrierZeroFreq}} Hz</div>
-      </div>
+	    <div class="channel-section">
+	      <div class="device-info-block">
+	        <div class="channel-meta-wrap">
+	          <div class="channel-meta-title">Device Info</div>
+	          <table class="channel-meta-table device-info-table">
+		            <thead>
+		              <tr>
+                  <th>MacAddress</th>
+                  <th>Model</th>
+                  <th>Vendor</th>
+                  <th>SW Version</th>
+                  <th>HW Version</th>
+                  <th>Boot ROM</th>
+		              </tr>
+		            </thead>
+		            <tbody>
+		              <tr>
+		                <td>{{macAddress}}</td>
+		                <td>{{deviceInfo.MODEL}}</td>
+		                <td>{{deviceInfo.VENDOR}}</td>
+		                <td>{{deviceInfo.SW_REV}}</td>
+		                <td>{{deviceInfo.HW_REV}}</td>
+		                <td>{{deviceInfo.BOOTR}}</td>
+		              </tr>
+		            </tbody>
+		          </table>
+	        </div>
+	      </div>
+	      <div class="channel-header">
+	        <div class="channel-info">
+	          <div class="channel-title">Channel {{channelId}}</div>
+	          <div class="channel-subtitle">Subcarrier-0 Frequency: {{subcarrierZeroFreqMHz}} MHz{{#if subcarrierZeroFreqHzLabel}} <span class="mono">({{subcarrierZeroFreqHzLabel}} Hz)</span>{{/if}}</div>
+	        </div>
+	      </div>
 
       <div class="series-wrap">
         {{#each series}}
           <div class="series-card">
-            <div class="series-header">PNN v{{version}}</div>
+	            <div class="series-header">{{versionLabel}}</div>
 
             <div class="stats-grid">
               <div class="stat-card">
@@ -116,12 +160,12 @@ const template = `
       </div>
 
       <div class="chart-container">
-        <div class="chart-title">Magnitude Response (Overlay: PNN6 vs PNN7)</div>
+        <div class="chart-title">Magnitude Response (Overlay: Current vs Last Update)</div>
         <canvas id="magnitude-{{channelId}}"></canvas>
       </div>
 
       <div class="chart-container">
-        <div class="chart-title">Group Delay (Overlay: PNN6 vs PNN7)</div>
+        <div class="chart-title">Group Delay (Overlay: Current vs Last Update)</div>
         <canvas id="groupdelay-{{channelId}}"></canvas>
       </div>
     </div>
@@ -170,13 +214,45 @@ pm.getData(function(err, data) {
     elements: { line: { tension: 0 } }
   };
 
-  function padOrTrim(arr, n) {
-    if (!Array.isArray(arr)) return Array(n).fill(null);
-    if (arr.length === n) return arr;
-    if (arr.length > n) return arr.slice(0, n);
-    const out = arr.slice(0);
-    while (out.length < n) out.push(null);
+  function normalizeLabelValue(value) {
+    return value === undefined || value === null ? '' : String(value);
+  }
+
+  function buildAlignedDatasetValues(labels, seriesLabels, seriesValues) {
+    const out = Array(labels.length).fill(null);
+    if (!Array.isArray(seriesLabels) || !Array.isArray(seriesValues)) return out;
+
+    const valueByLabel = new Map();
+    const count = Math.min(seriesLabels.length, seriesValues.length);
+    for (let i = 0; i < count; i++) {
+      const key = normalizeLabelValue(seriesLabels[i]);
+      if (!key) continue;
+      const value = seriesValues[i];
+      valueByLabel.set(key, (typeof value === 'number' && isFinite(value)) ? value : null);
+    }
+
+    for (let i = 0; i < labels.length; i++) {
+      const key = normalizeLabelValue(labels[i]);
+      if (valueByLabel.has(key)) out[i] = valueByLabel.get(key);
+    }
     return out;
+  }
+
+  function buildMasterLabels(seriesList) {
+    const labelSet = new Set();
+    (Array.isArray(seriesList) ? seriesList : []).forEach(s => {
+      (Array.isArray(s.frequencies) ? s.frequencies : []).forEach(label => {
+        const key = normalizeLabelValue(label);
+        if (key) labelSet.add(key);
+      });
+    });
+
+    return Array.from(labelSet).sort((a, b) => {
+      const an = Number(a);
+      const bn = Number(b);
+      if (isFinite(an) && isFinite(bn)) return an - bn;
+      return a.localeCompare(b);
+    });
   }
 
   function seriesStyle(version) {
@@ -190,6 +266,12 @@ pm.getData(function(err, data) {
     return { borderColor: '#b0b0b0', backgroundColor: 'rgba(176, 176, 176, 0.06)' };
   }
 
+  function pnnVersionLabel(version) {
+    if (String(version) === '6') return 'Upstream Pre-Equalizer Coefficients';
+    if (String(version) === '7') return 'Upstream Pre-Equalizer Coefficients (Last Update)';
+    return 'Pre-Equalizer Data (Version ' + version + ')';
+  }
+
   data.channels.forEach(channel => {
     const magCanvas = document.getElementById('magnitude-' + channel.channelId);
     const gdCanvas  = document.getElementById('groupdelay-' + channel.channelId);
@@ -198,15 +280,14 @@ pm.getData(function(err, data) {
     const series = Array.isArray(channel.series) ? channel.series.slice(0) : [];
     if (!series.length) return;
 
-    // Use the first series' frequency labels as the master label set
-    const labels = series[0].frequencies || [];
-    const n = labels.length;
+    const labels = buildMasterLabels(series);
+    if (!labels.length) return;
 
     const magDatasets = series.map(s => {
       const st = seriesStyle(s.version);
       return {
-        label: 'PNN v' + s.version,
-        data: padOrTrim(s.magnitudes, n),
+        label: pnnVersionLabel(s.version),
+        data: buildAlignedDatasetValues(labels, s.frequencies, s.magnitudes),
         borderColor: st.borderColor,
         backgroundColor: st.backgroundColor,
         borderWidth: 2,
@@ -218,8 +299,8 @@ pm.getData(function(err, data) {
     const gdDatasets = series.map(s => {
       const st = seriesStyle(s.version);
       return {
-        label: 'PNN v' + s.version,
-        data: padOrTrim(s.groupDelays, n),
+        label: pnnVersionLabel(s.version),
+        data: buildAlignedDatasetValues(labels, s.frequencies, s.groupDelays),
         borderColor: st.borderColor,
         backgroundColor: st.backgroundColor,
         borderWidth: 2,
@@ -275,6 +356,11 @@ function constructVisualizerPayload() {
     return v.toFixed(digits);
   }
 
+  function toMHzFixedOrNA(v, digits) {
+    if (typeof v !== 'number' || !isFinite(v)) return 'N/A';
+    return (v / 1000000).toFixed(digits);
+  }
+
   function sanitizeMac(value, fallback) {
     var fb = (fallback === undefined || fallback === null) ? 'N/A' : fallback;
     if (value === undefined || value === null) return fb;
@@ -288,18 +374,122 @@ function constructVisualizerPayload() {
     return compact;
   }
 
+  function isPresent(value) {
+    return value !== undefined && value !== null && String(value).trim() !== '';
+  }
+
+  function pnnVersionLabel(version) {
+    if (String(version) === '6') return 'Upstream Pre-Equalizer Coefficients';
+    if (String(version) === '7') return 'Upstream Pre-Equalizer Coefficients (Last Update)';
+    return 'Pre-Equalizer Data (Version ' + version + ')';
+  }
+
+  function toDeviceInfoRecord(value) {
+    const out = {
+      MODEL: 'LCPET-3',
+      VENDOR: 'LANCity',
+      SW_REV: '1.0.0',
+      HW_REV: '1.0',
+      BOOTR: 'NONE'
+    };
+    if (!value) return out;
+
+    if (typeof value === 'string') {
+      if (isPresent(value)) out.MODEL = value.trim();
+      return out;
+    }
+    if (typeof value !== 'object') return out;
+
+    Object.keys(out).forEach(key => {
+      const v = value[key];
+      if (isPresent(v)) out[key] = String(v).trim();
+    });
+    return out;
+  }
+
+  function toSystemDescriptionRows(value) {
+    if (!value) return [];
+    if (typeof value === 'string') {
+      return isPresent(value) ? [{ k: 'sysDescr', v: value.trim() }] : [];
+    }
+    if (typeof value !== 'object') {
+      return [{ k: 'sysDescr', v: String(value) }];
+    }
+
+    const preferredOrder = ['MODEL', 'VENDOR', 'SW_REV', 'HW_REV', 'BOOTR'];
+    const seen = new Set();
+    const rows = [];
+
+    preferredOrder.forEach(key => {
+      if (!Object.prototype.hasOwnProperty.call(value, key)) return;
+      const v = value[key];
+      if (!isPresent(v)) return;
+      rows.push({ k: key, v: String(v).trim() });
+      seen.add(key);
+    });
+
+    Object.keys(value).sort().forEach(key => {
+      if (seen.has(key)) return;
+      const v = value[key];
+      if (!isPresent(v)) return;
+      rows.push({ k: key, v: String(v).trim() });
+    });
+
+    return rows;
+  }
+
   analysis.forEach(item => {
     const channelId = item.channel_id;
     if (channelId === undefined || channelId === null) return;
 
-    if (!channelMap.has(channelId)) {
-      channelMap.set(channelId, {
-        channelId: channelId,
-        macAddress: sanitizeMac(item.mac_address, 'N/A'),
-        subcarrierZeroFreq: item.subcarrier_zero_frequency ?? 'N/A',
-        series: []
-      });
+	    const sanitizedMac = sanitizeMac(item.mac_address, 'N/A');
+	    const subcarrierZeroFreq = item.subcarrier_zero_frequency ?? 'N/A';
+	    const subcarrierZeroFreqMHz = toMHzFixedOrNA(item.subcarrier_zero_frequency, 3);
+	    const deviceInfo = toDeviceInfoRecord(
+	      item.device_details && item.device_details.system_description
+	    );
+	    const systemDescriptionRows = toSystemDescriptionRows(
+	      item.device_details && item.device_details.system_description
+	    );
+
+	    if (!channelMap.has(channelId)) {
+	      channelMap.set(channelId, {
+	        channelId: channelId,
+	        macAddress: sanitizedMac,
+	        subcarrierZeroFreq: subcarrierZeroFreq,
+	        subcarrierZeroFreqMHz: subcarrierZeroFreqMHz,
+	        subcarrierZeroFreqHzLabel: (typeof item.subcarrier_zero_frequency === 'number' && isFinite(item.subcarrier_zero_frequency))
+	          ? String(item.subcarrier_zero_frequency)
+	          : '',
+	        deviceInfo: deviceInfo,
+	        systemDescriptionRows: systemDescriptionRows,
+	        series: []
+	      });
+	    }
+
+    const channelRecord = channelMap.get(channelId);
+    if ((!isPresent(channelRecord.macAddress) || channelRecord.macAddress === 'N/A') && sanitizedMac !== 'N/A') {
+      channelRecord.macAddress = sanitizedMac;
     }
+	    if ((channelRecord.subcarrierZeroFreq === undefined || channelRecord.subcarrierZeroFreq === null || channelRecord.subcarrierZeroFreq === 'N/A')
+	      && subcarrierZeroFreq !== 'N/A') {
+	      channelRecord.subcarrierZeroFreq = subcarrierZeroFreq;
+	      channelRecord.subcarrierZeroFreqMHz = subcarrierZeroFreqMHz;
+	      channelRecord.subcarrierZeroFreqHzLabel = (typeof item.subcarrier_zero_frequency === 'number' && isFinite(item.subcarrier_zero_frequency))
+	        ? String(item.subcarrier_zero_frequency)
+	        : '';
+	    }
+	    if ((!Array.isArray(channelRecord.systemDescriptionRows) || channelRecord.systemDescriptionRows.length === 0)
+	      && Array.isArray(systemDescriptionRows) && systemDescriptionRows.length) {
+	      channelRecord.systemDescriptionRows = systemDescriptionRows;
+	    }
+	    if (channelRecord.deviceInfo) {
+	      ['MODEL', 'VENDOR', 'SW_REV', 'HW_REV', 'BOOTR'].forEach(key => {
+	        if (channelRecord.deviceInfo[key] === 'N/A' && deviceInfo[key] !== 'N/A') {
+	          channelRecord.deviceInfo[key] = deviceInfo[key];
+	        }
+	      });
+	    }
 
     const ver = item.pnm_header && item.pnm_header.file_type_version !== undefined
       ? item.pnm_header.file_type_version
@@ -337,9 +527,10 @@ function constructVisualizerPayload() {
       distanceFt: (typeof echo.distance_ft === 'number' ? echo.distance_ft.toFixed(2) : 'N/A')
     }));
 
-    channelMap.get(channelId).series.push({
-      version: ver,
-      frequencies: frequencies,
+	    channelRecord.series.push({
+	      version: ver,
+	      versionLabel: pnnVersionLabel(ver),
+	      frequencies: frequencies,
       magnitudes: magnitudes,
       groupDelays: groupDelays,
       stats: {
@@ -355,7 +546,14 @@ function constructVisualizerPayload() {
   });
 
   const channels = Array.from(channelMap.values()).map(ch => {
-    ch.series.sort((a, b) => String(a.version).localeCompare(String(b.version)));
+    ch.series.sort((a, b) => {
+      const av = Number(a.version);
+      const bv = Number(b.version);
+      if (isFinite(av) && isFinite(bv)) return av - bv;
+      if (isFinite(av)) return -1;
+      if (isFinite(bv)) return 1;
+      return String(a.version).localeCompare(String(b.version));
+    });
     return ch;
   });
 
