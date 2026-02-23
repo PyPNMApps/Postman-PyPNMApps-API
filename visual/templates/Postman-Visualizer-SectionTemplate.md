@@ -4,7 +4,7 @@ Use this as the starting pattern for new visuals. Build the page in sections and
 
 ## Section Order (Standard)
 
-1. Page header (`<h1>`) only
+1. Page header (title + optional `Capture Time` at top right)
 2. `Device Info` block (separate from channel/capture block)
 3. Channel/capture metadata block (frequencies shown in `MHz`, optional `Hz` in parentheses)
 4. Summary/stat cards
@@ -28,6 +28,8 @@ Rules:
 - Do not repeat `MacAddress` again in the channel header if already shown in `Device Info`.
 - Use `N/A` for missing fields.
 - Do not use vendor-specific fallback values in UI defaults.
+- If available, place `Capture Time` next to the page title/header (layout-only, not inside chart sections).
+- Format `Capture Time` as a human-readable date/time string (not raw epoch seconds).
 
 ## HTML / Visualizer Scaffold (Copy + adapt)
 
@@ -36,7 +38,9 @@ const template = `
 <style>
   body { font-family: Arial, sans-serif; padding: 20px; background: #1e1e1e; color: #e0e0e0; }
   .container { max-width: 1400px; margin: 0 auto; }
-  h1 { color: #e0e0e0; text-align: center; margin-bottom: 24px; }
+  .header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-bottom: 24px; }
+  h1 { color: #e0e0e0; text-align: center; margin: 0; grid-column: 2; }
+  .capture-time { grid-column: 3; justify-self: end; font-size: 12px; color: #cfd6e5; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 6px 10px; white-space: nowrap; }
 
   .section { background: #2d2d2d; padding: 20px; margin: 18px 0; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.25); }
   .device-info-block { background: #343447; border: 1px solid rgba(255,255,255,0.08); }
@@ -62,7 +66,12 @@ const template = `
 </style>
 
 <div class="container">
-  <h1>{{pageTitle}}</h1>
+  <div class="header">
+    <h1>{{pageTitle}}</h1>
+    {{#if captureTime}}
+      <div class="capture-time">Capture Time: {{captureTime}}</div>
+    {{/if}}
+  </div>
 
   {{#each channels}}
     <div class="section device-info-block">
@@ -153,8 +162,24 @@ function constructVisualizerPayload() {
     return (v / 1e6).toFixed(digits);
   }
 
+  function formatCaptureTime(raw) {
+    if (raw === undefined || raw === null || raw === '') return 'N/A';
+    if (typeof raw === 'number' && isFinite(raw)) {
+      var ms = raw > 1e12 ? raw : raw * 1000;
+      var d = new Date(ms);
+      if (isNaN(d.getTime())) return 'N/A';
+      return d.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+    }
+    var n = Number(raw);
+    if (!isNaN(n) && isFinite(n)) return formatCaptureTime(n);
+    var d2 = new Date(raw);
+    if (isNaN(d2.getTime())) return String(raw);
+    return d2.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+  }
+
   return {
     pageTitle: 'Replace Me',
+    captureTime: null, // e.g. formatCaptureTime(((resp.data||{}).analysis||[])[0]?.pnm_header?.capture_time)
     channels: []
   };
 }

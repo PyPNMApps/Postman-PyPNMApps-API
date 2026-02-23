@@ -34,7 +34,9 @@ const template = `
 <style>
   body { font-family: Arial, sans-serif; padding: 20px; background: #1e1e1e; color: #e0e0e0; }
   .container { max-width: 1400px; margin: 0 auto; }
-  h1 { color: #e0e0e0; text-align: center; margin-bottom: 30px; }
+  .header-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-bottom: 30px; }
+  h1 { color: #e0e0e0; text-align: center; margin: 0; grid-column: 2; }
+  .capture-time { grid-column: 3; justify-self: end; font-size: 12px; color: #d7deec; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 6px 10px; white-space: nowrap; }
   .channel-section { background: #2d2d2d; padding: 25px; margin: 30px 0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
   .channel-header { background: linear-gradient(135deg, #5a6fd8 0%, #6f4aa6 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
   .device-info-block { background: #343447; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
@@ -77,7 +79,10 @@ const template = `
 </style>
 
 <div class="container">
+  <div class="header-row">
 	  <h1>Pre-Equalization Analysis</h1>
+    {{#if captureTime}}<div class="capture-time">Capture Time: {{captureTime}}</div>{{/if}}
+  </div>
 
   {{#each channels}}
 	    <div class="channel-section">
@@ -395,6 +400,21 @@ function constructVisualizerPayload() {
     return value !== undefined && value !== null && String(value).trim() !== '';
   }
 
+  function formatCaptureTime(raw) {
+    if (raw === undefined || raw === null || raw === '') return null;
+    if (typeof raw === 'number' && isFinite(raw)) {
+      var ms = raw > 1e12 ? raw : raw * 1000;
+      var d = new Date(ms);
+      if (isNaN(d.getTime())) return null;
+      return d.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+    }
+    var n = Number(raw);
+    if (!isNaN(n) && isFinite(n)) return formatCaptureTime(n);
+    var d2 = new Date(raw);
+    if (isNaN(d2.getTime())) return String(raw);
+    return d2.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+  }
+
   function pnnVersionLabel(version) {
     if (String(version) === '6') return 'Upstream Pre-Equalizer Coefficients';
     if (String(version) === '7') return 'Upstream Pre-Equalizer Coefficients (Last Update)';
@@ -576,7 +596,12 @@ function constructVisualizerPayload() {
 
   channels.sort((a, b) => Number(a.channelId) - Number(b.channelId));
 
-  return { channels };
+  var captureTime = null;
+  if (analysis.length && analysis[0] && analysis[0].pnm_header) {
+    captureTime = formatCaptureTime(analysis[0].pnm_header.capture_time);
+  }
+
+  return { channels, captureTime };
 }
 
 pm.visualizer.set(template, constructVisualizerPayload());

@@ -42,6 +42,8 @@
 - Prefer a horizontal one-row table for common modem identity fields with display labels exactly:
 - `MacAddress`, `Model`, `Vendor`, `SW Version`, `HW Version`, `Boot ROM`
 - Use proper display casing/spacing for labels (for example `SW Version`, not `SW_REV`; `Boot ROM`, not `BOOTR`).
+- When a capture timestamp is available (for example `pnm_header.capture_time`), place `Capture Time` next to the visual title/header as a layout-only element (not inside chart/graph sections).
+- Format capture timestamps as a human-readable date/time string (not raw epoch seconds).
 - Keep channel metadata in a separate block below `Device Info` (for example `Channel`, center/subcarrier frequency).
 - Display frequencies in `MHz` for UI-facing labels; raw `Hz` may be shown secondarily in parentheses when useful.
 - Avoid redundant repetition of values already shown in `Device Info` (for example, do not repeat `MacAddress` in the channel header if it is already in the device table).

@@ -70,6 +70,21 @@
     };
   }
 
+  function formatCaptureTime(raw) {
+    if (raw === undefined || raw === null || raw === "") return null;
+    if (typeof raw === "number" && isFinite(raw)) {
+      var ms = raw > 1e12 ? raw : raw * 1000;
+      var d = new Date(ms);
+      if (isNaN(d.getTime())) return null;
+      return d.toISOString().slice(0, 19).replace("T", " ") + " UTC";
+    }
+    var n = Number(raw);
+    if (!isNaN(n) && isFinite(n)) return formatCaptureTime(n);
+    var d2 = new Date(raw);
+    if (isNaN(d2.getTime())) return String(raw);
+    return d2.toISOString().slice(0, 19).replace("T", " ") + " UTC";
+  }
+
   const list = pickList(res);
 
   // Build metadata (best-effort)
@@ -87,6 +102,7 @@
     HW_REV: safeStr(sys?.HW_REV || device?.hw_rev),
     BOOTR: safeStr(sys?.BOOTR || device?.bootr)
   };
+  const captureTime = formatCaptureTime(firstItem?.pnm_header?.capture_time);
 
   const devLine = [
     `MAC: ${deviceInfo.macAddress}`,
@@ -198,7 +214,9 @@
     .summary-table th.soft-col { color:rgba(47,98,255,0.95); }
     .summary-table th.hard-col { color:rgba(220,70,70,0.95); }
     .mono { font-family: Consolas, "Liberation Mono", Menlo, monospace; }
-    .hdr { font-size:18px; font-weight:700; margin-bottom:10px; color:#f2f2f2; text-align:center; }
+    .header-row { display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; gap:8px; margin-bottom:10px; }
+    .hdr { font-size:18px; font-weight:700; margin:0; color:#f2f2f2; text-align:center; grid-column:2; }
+    .capture-time { grid-column:3; justify-self:end; font-size:12px; color:#d7deec; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:999px; padding:6px 10px; white-space:nowrap; }
     .box { border:1px solid #2a2a2a; border-radius:10px; background:#050505; padding:10px; margin-top:10px; }
     .plot-meta { font-size:12px; color:#cfcfcf; margin-top:8px; }
     .err { margin-top:10px; padding:10px; border:1px solid rgba(255,120,120,0.5); border-radius:10px; background:rgba(255,0,0,0.06); color:#ffd1d1; white-space:pre-wrap; font-size:12px; }
@@ -206,7 +224,10 @@
   </style>
 </head>
 <body>
-  <div class="hdr">OFDM Constellation Display</div>
+  <div class="header-row">
+    <div class="hdr">OFDM Constellation Display</div>
+    {{#if captureTime}}<div class="capture-time">Capture Time: {{captureTime}}</div>{{/if}}
+  </div>
 
   <div class="device-info">
     <div class="device-info-title">Device Info</div>
@@ -394,6 +415,7 @@
 
   pm.visualizer.set(template, {
     deviceInfo: deviceInfo,
+    captureTime: captureTime,
     channelRows: channelRows,
     devLine: devLine,
     chCount: channels.length,
@@ -418,6 +440,7 @@
   // So we provide duplicates:
   pm.visualizer.set(template, {
     deviceInfo: deviceInfo,
+    captureTime: captureTime,
     channelRows: channelRows,
     devLine: devLine,
     chCount: channels.length,

@@ -8,7 +8,9 @@ var template = `
 <style>
   body { font-family: Arial, sans-serif; padding: 20px; background: #1e1e1e; color: #e0e0e0; }
   .container { max-width: 1500px; margin: 0 auto; }
-  h1 { color: #e0e0e0; text-align: center; margin-bottom: 24px; }
+  .header-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-bottom: 24px; }
+  h1 { color: #e0e0e0; text-align: center; margin: 0; grid-column: 2; }
+  .capture-time { grid-column: 3; justify-self: end; font-size: 12px; color: #d7deec; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 6px 10px; white-space: nowrap; }
 
   .device-info-block, .channel-section, .chart-section {
     background: #2d2d2d;
@@ -69,7 +71,10 @@ var template = `
 </style>
 
 <div class="container">
-  <h1>OFDM RxMER Analysis</h1>
+  <div class="header-row">
+    <h1>OFDM RxMER Analysis</h1>
+    {{#if captureTime}}<div class="capture-time">Capture Time: {{captureTime}}</div>{{/if}}
+  </div>
 
   {{#if hasChannels}}
     <div class="device-info-block">
@@ -450,6 +455,21 @@ function constructVisualizerPayload() {
     return (vHz / 1000).toFixed(digits);
   }
 
+  function formatCaptureTime(raw) {
+    if (raw === undefined || raw === null || raw === '') return null;
+    if (typeof raw === 'number' && isFinite(raw)) {
+      var ms = raw > 1e12 ? raw : raw * 1000;
+      var d = new Date(ms);
+      if (isNaN(d.getTime())) return null;
+      return d.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+    }
+    var n = Number(raw);
+    if (!isNaN(n) && isFinite(n)) return formatCaptureTime(n);
+    var d2 = new Date(raw);
+    if (isNaN(d2.getTime())) return String(raw);
+    return d2.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+  }
+
   function summarizeMagnitudes(values) {
     var list = [];
     var i;
@@ -633,10 +653,16 @@ function constructVisualizerPayload() {
     pageDeviceInfo = toDeviceInfoRecord(null, (response && response.mac_address) || null);
   }
 
+  var captureTime = null;
+  if (analysis.length && analysis[0] && analysis[0].pnm_header) {
+    captureTime = formatCaptureTime(analysis[0].pnm_header.capture_time);
+  }
+
   return {
     hasChannels: channels.length > 0,
     deviceInfo: pageDeviceInfo,
-    channels: channels
+    channels: channels,
+    captureTime: captureTime
   };
 }
 
