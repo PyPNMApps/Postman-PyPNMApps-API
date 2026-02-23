@@ -23,4 +23,7 @@
 - When the user asks for a commit message, provide plain text for direct paste into the terminal or UI text box.
 - Do not wrap commit message suggestions in quotes (`"`), backticks (`` ` ``), or code fences unless the user explicitly asks for that format.
 - Prefer detailed commit messages that describe the current change set clearly.
+- Do not default to a one-line commit message when the change set is broad; provide a title plus concise bullet points.
 - Avoid redundant wording and avoid repeating the exact prior commit message suggestion unless the diff is unchanged and the user explicitly asks to reuse it.
+- If the user asks for "in a text box", return plain text only (no markdown fence).
+- If the user asks for "in a markdown text box", return the commit message inside a fenced code block with `text`.
