@@ -29,6 +29,9 @@ markdown_extensions:
   - tables
   - fenced_code
 
+extra_css:
+  - assets/stylesheets/extra.css
+
 nav:
   - Home: index.md
   - Docs Index: docs-index.md
