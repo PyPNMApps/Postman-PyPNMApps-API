@@ -93,3 +93,94 @@ function constructVisualizerPayload() {
 }
 
 pm.visualizer.set(template, constructVisualizerPayload());
+
+
+(function () {
+  function asObj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : null; }
+  function asList(v) { return Array.isArray(v) ? v : []; }
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+  function val(v) { return v === undefined || v === null || String(v).trim() === '' ? 'N/A' : String(v).trim(); }
+  function sanitizeMac(value) {
+    if (value === undefined || value === null) return 'N/A';
+    var text = String(value).trim();
+    if (!text) return 'N/A';
+    var compact = text.replace(/[^0-9a-f]/gi, '').toLowerCase();
+    if (compact.length !== 12) return text;
+    return compact.match(/.{1,2}/g).join(':');
+  }
+  function pickSys(resp) {
+    var top = asObj(resp && resp.system_description) || asObj(resp && resp.data && resp.data.system_description);
+    if (top) return top;
+    var data = asObj(resp && resp.data) || {};
+    var results = asList(data.results);
+    for (var i = 0; i < results.length; i++) {
+      var r = asObj(results[i]) || {};
+      var dd = asObj(r.device_details) || {};
+      var sys = asObj(dd.system_description) || asObj(dd.sysDescr);
+      if (sys) return sys;
+    }
+    var analysis = asList(data.analysis);
+    for (var j = 0; j < analysis.length; j++) {
+      var a = asObj(analysis[j]) || {};
+      var dd2 = asObj(a.device_details) || {};
+      var sys2 = asObj(dd2.system_description) || asObj(dd2.sysDescr);
+      if (sys2) return sys2;
+    }
+    var keys = Object.keys(data);
+    for (var k = 0; k < keys.length; k++) {
+      var ch = asObj(data[keys[k]]) || {};
+      var dd3 = asObj(ch.device_details) || {};
+      var sys3 = asObj(dd3.system_description) || asObj(dd3.sysDescr);
+      if (sys3) return sys3;
+    }
+    return null;
+  }
+  function inject() {
+    if (document.querySelector('[data-mc-sysdescr-top]')) return;
+    if (document.querySelector('.device-info') || document.body.textContent.indexOf('Device Info') !== -1) return;
+    var resp;
+    try { resp = pm.response.json(); } catch (e) { return; }
+    var sys = pickSys(resp);
+    if (!sys) return;
+    var dark = false;
+    try { dark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); } catch (e) {}
+    var bg = dark ? '#151515' : '#ffffff';
+    var border = dark ? '#2a2a2a' : '#d8dee9';
+    var text = dark ? '#e8e8e8' : '#1f2937';
+    var muted = dark ? '#dbe3ff' : '#334155';
+    var chipBg = dark ? 'rgba(255,255,255,0.03)' : '#f8fafc';
+    var host = document.createElement('div');
+    host.setAttribute('data-mc-sysdescr-top', '1');
+    host.style.background = bg;
+    host.style.border = '1px solid ' + border;
+    host.style.borderRadius = '10px';
+    host.style.padding = '12px';
+    host.style.marginBottom = '14px';
+    host.style.color = text;
+    host.style.fontFamily = 'Arial, sans-serif';
+    host.innerHTML = '' +
+      '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:' + muted + ';margin-bottom:8px;">Device Info (CODING_AGENTS)</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">' +
+      '<div style="padding:6px 9px;border:1px solid ' + border + ';border-radius:999px;background:' + chipBg + ';font-size:12px;">MAC <span style="font-family:monospace;">' + esc(sanitizeMac(resp && resp.mac_address)) + '</span></div>' +
+      '<div style="padding:6px 9px;border:1px solid ' + border + ';border-radius:999px;background:' + chipBg + ';font-size:12px;">Vendor ' + esc(val(sys.VENDOR)) + '</div>' +
+      '<div style="padding:6px 9px;border:1px solid ' + border + ';border-radius:999px;background:' + chipBg + ';font-size:12px;">Model ' + esc(val(sys.MODEL)) + '</div>' +
+      '<div style="padding:6px 9px;border:1px solid ' + border + ';border-radius:999px;background:' + chipBg + ';font-size:12px;">SW <span style="font-family:monospace;">' + esc(val(sys.SW_REV)) + '</span></div>' +
+      '<div style="padding:6px 9px;border:1px solid ' + border + ';border-radius:999px;background:' + chipBg + ';font-size:12px;">HW <span style="font-family:monospace;">' + esc(val(sys.HW_REV)) + '</span></div>' +
+      '<div style="padding:6px 9px;border:1px solid ' + border + ';border-radius:999px;background:' + chipBg + ';font-size:12px;">BOOTR <span style="font-family:monospace;">' + esc(val(sys.BOOTR)) + '</span></div>' +
+      '</div>';
+    var container = document.querySelector('.container');
+    if (container) {
+      container.insertBefore(host, container.firstChild);
+    } else {
+      document.body.insertBefore(host, document.body.firstChild);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inject);
+    setTimeout(inject, 0);
+  } else {
+    inject();
+    setTimeout(inject, 0);
+  }
+})();
+

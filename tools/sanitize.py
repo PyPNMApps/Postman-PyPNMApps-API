@@ -125,6 +125,52 @@ def _sanitize_json(obj: Any, parent_key: str | None = None) -> Any:
     return obj
 
 
+def _find_first_system_description(obj: Any) -> dict[str, Any] | None:
+    if isinstance(obj, dict):
+        for key in ("system_description", "sysDescr"):
+            value = obj.get(key)
+            if isinstance(value, dict):
+                return value
+        for value in obj.values():
+            found = _find_first_system_description(value)
+            if found is not None:
+                return found
+        return None
+    if isinstance(obj, list):
+        for item in obj:
+            found = _find_first_system_description(item)
+            if found is not None:
+                return found
+    return None
+
+
+def _looks_like_capture_response_root(obj: dict[str, Any]) -> bool:
+    return "status" in obj and "data" in obj and "mac_address" in obj
+
+
+def _normalize_root_system_description(obj: Any) -> Any:
+    if not isinstance(obj, dict):
+        return obj
+
+    root = dict(obj)
+
+    if "system_description" not in root and "sysDescr" not in root:
+        found = _find_first_system_description(root)
+        if isinstance(found, dict):
+            root["system_description"] = dict(found)
+        elif _looks_like_capture_response_root(root):
+            root["system_description"] = dict(GENERIC_SYSTEM_DESCRIPTION)
+
+    ordered: dict[str, Any] = {}
+    for key in ("system_description", "sysDescr"):
+        if key in root:
+            ordered[key] = root[key]
+    for key, value in root.items():
+        if key not in ordered:
+            ordered[key] = value
+    return ordered
+
+
 def sanitize_file(path: Path, write: bool = True) -> bool:
     try:
         raw = path.read_text(encoding="utf-8")
@@ -138,7 +184,7 @@ def sanitize_file(path: Path, write: bool = True) -> bool:
         except json.JSONDecodeError as exc:
             print(f"WARNING: Skipping {path}: {exc}", file=sys.stderr)
             return False
-        sanitized = _sanitize_json(data)
+        sanitized = _normalize_root_system_description(_sanitize_json(data))
         rendered = json.dumps(sanitized, indent=4) + "\n"
     elif path.suffix.lower() == ".html":
         rendered = _sanitize_text_content(raw)
