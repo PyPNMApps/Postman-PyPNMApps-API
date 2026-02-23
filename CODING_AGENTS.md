@@ -17,3 +17,10 @@
 - Keep the project root lean. Prefer placing executable utilities under `tools/` (for example `tools/release/release.py`, `tools/git/git-save.sh`, `tools/git/git-push.sh`, `tools/support/bump_version.py`).
 - Do not add root-level wrapper scripts for tools unless explicitly requested.
 - Execute tools from their direct path under `tools/`.
+
+## Commit Message Suggestions (Required)
+
+- When the user asks for a commit message, provide plain text for direct paste into the terminal or UI text box.
+- Do not wrap commit message suggestions in quotes (`"`), backticks (`` ` ``), or code fences unless the user explicitly asks for that format.
+- Prefer detailed commit messages that describe the current change set clearly.
+- Avoid redundant wording and avoid repeating the exact prior commit message suggestion unless the diff is unchanged and the user explicitly asks to reuse it.
