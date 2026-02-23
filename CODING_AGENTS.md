@@ -46,6 +46,9 @@
 - Format capture timestamps as a human-readable date/time string (not raw epoch seconds).
 - Keep channel metadata in a separate block below `Device Info` (for example `Channel`, center/subcarrier frequency).
 - Display frequencies in `MHz` for UI-facing labels; raw `Hz` may be shown secondarily in parentheses when useful.
+- Default UI frequency labels/ticks to whole-number `MHz` (no decimal floats) unless precision is required for the specific visual.
+- Include units in graph titles/axis labels for measured values (for example `Magnitude (dB)` instead of `Magnitude`).
+- Center graph/panel titles for scanability and consistent visual layout.
 - Avoid redundant repetition of values already shown in `Device Info` (for example, do not repeat `MacAddress` in the channel header if it is already in the device table).
 - If `system_description` is missing/partial, render `N/A` for missing fields instead of vendor-specific fallback values.
 - JSON responses may contain multiple upstream/downstream channels; each channel must render as its own graph for the selected graph type.
