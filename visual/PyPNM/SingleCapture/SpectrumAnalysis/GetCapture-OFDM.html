@@ -188,9 +188,28 @@ var template = `
     font-size: 14px;
     font-weight: 700;
   }
+  .chart-mode-controls {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    align-items: center;
+    margin: 0 0 8px 0;
+    color: #d6deef;
+    font-size: 12px;
+  }
+  .chart-mode-controls label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .chart-mode-controls input[type="radio"] {
+    accent-color: #5a6fd8;
+    cursor: pointer;
+  }
   .chart-canvas-wrap {
     position: relative;
-    height: calc(100% - 26px);
+    height: calc(100% - 58px);
   }
   .chart-canvas {
     display: block;
@@ -327,6 +346,10 @@ var template = `
 
       <div class="chart-container">
         <div class="chart-title">Spectrum Magnitude by Capture (dB)</div>
+        <div class="chart-mode-controls" data-chart-mode="spectrumChart-ch{{channelId}}">
+          <label><input type="radio" name="mode-spect-ch{{channelId}}" value="actual" checked> Actual</label>
+          <label><input type="radio" name="mode-spect-ch{{channelId}}" value="avg"> Moving Avg</label>
+        </div>
         <div class="chart-canvas-wrap">
           <canvas id="spectrumChart-ch{{channelId}}" class="chart-canvas"></canvas>
         </div>
@@ -374,6 +397,26 @@ var template = `
     return colors[i % colors.length];
   }
 
+  function setChartMode(chart, mode) {
+    if (!chart || !chart.data || !Array.isArray(chart.data.datasets)) return;
+    chart.data.datasets.forEach(function (ds) {
+      if (!ds || !ds._seriesMode) return;
+      ds.hidden = (ds._seriesMode !== mode);
+    });
+    chart.update(0);
+  }
+
+  function bindChartModeControls(canvasId, chart) {
+    var group = document.querySelector('.chart-mode-controls[data-chart-mode="' + canvasId + '"]');
+    if (!group) return;
+    var radios = group.querySelectorAll('input[type="radio"]');
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].addEventListener('change', function (ev) {
+        if (ev && ev.target && ev.target.checked) setChartMode(chart, ev.target.value);
+      });
+    }
+  }
+
   pm.getData(function (err, value) {
     if (err || !value || !Array.isArray(value.channels)) return;
 
@@ -387,13 +430,16 @@ var template = `
           var freqs = Array.isArray(sig.frequencies) ? sig.frequencies : [];
           var mags = Array.isArray(sig.magnitudes) ? sig.magnitudes : [];
           if (!freqs.length || !mags.length) return;
-          var n = Math.min(freqs.length, mags.length);
-          var pts = [];
-          for (var i = 0; i < n; i++) pts.push({ x: freqs[i], y: mags[i] });
           var c = palette(dsIdx++);
+          function points(values) {
+            var n = Math.min(freqs.length, values.length);
+            var out = [];
+            for (var i = 0; i < n; i++) out.push({ x: freqs[i], y: values[i] });
+            return out;
+          }
           combinedDatasets.push({
             label: 'Ch ' + ch.channelId + ' · ' + cap.captureLabel,
-            data: pts,
+            data: points(mags),
             borderColor: c,
             backgroundColor: 'transparent',
             fill: false,
@@ -404,7 +450,7 @@ var template = `
         });
       });
 
-      new Chart(combinedEl.getContext('2d'), {
+      var combinedChart = new Chart(combinedEl.getContext('2d'), {
         type: 'line',
         data: { datasets: combinedDatasets },
         options: {
@@ -458,28 +504,44 @@ var template = `
         var sig = cap.signal_analysis || {};
         var freqs = Array.isArray(sig.frequencies) ? sig.frequencies : [];
         var mags = Array.isArray(sig.magnitudes) ? sig.magnitudes : [];
-        if (!freqs.length || !mags.length) return;
+        var avg = (sig.window_average && Array.isArray(sig.window_average.magnitudes)) ? sig.window_average.magnitudes : [];
+        if (!freqs.length || (!mags.length && !avg.length)) return;
 
-        var pts = [];
-        var n = Math.min(freqs.length, mags.length);
-        for (var i = 0; i < n; i++) {
-          pts.push({ x: freqs[i], y: mags[i] });
+        var actualColor = ((ch.captures || []).length === 1) ? '#7e57c2' : palette(idx);
+        var avgColor = '#c62828';
+        function points(values) {
+          var n = Math.min(freqs.length, values.length);
+          var out = [];
+          for (var i = 0; i < n; i++) out.push({ x: freqs[i], y: values[i] });
+          return out;
         }
-
-        var c = palette(idx);
-        datasets.push({
-          label: cap.captureLabel,
-          data: pts,
-          borderColor: c,
+        if (mags.length) datasets.push({
+          label: cap.captureLabel + ' · Actual',
+          data: points(mags),
+          borderColor: actualColor,
           backgroundColor: 'transparent',
           fill: false,
           borderWidth: 1.6,
           pointRadius: 0,
-          lineTension: 0
+          lineTension: 0,
+          _seriesMode: 'actual',
+          hidden: false
+        });
+        if (avg.length) datasets.push({
+          label: cap.captureLabel + ' · Moving Avg',
+          data: points(avg),
+          borderColor: avgColor,
+          backgroundColor: 'transparent',
+          fill: false,
+          borderWidth: 1.6,
+          pointRadius: 0,
+          lineTension: 0,
+          _seriesMode: 'avg',
+          hidden: true
         });
       });
 
-      new Chart(ctx, {
+      var channelChart = new Chart(ctx, {
         type: 'line',
         data: { datasets: datasets },
         options: {
@@ -526,6 +588,7 @@ var template = `
           }
         }
       });
+      bindChartModeControls('spectrumChart-ch' + ch.channelId, channelChart);
     });
   });
 })();
