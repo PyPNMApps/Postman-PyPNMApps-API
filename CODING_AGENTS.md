@@ -35,6 +35,8 @@
 - Do not manually edit generated visual docs (`docs/visual/`, `docs/visual-previews/`); regenerate from `visual/`.
 - No comments in visual code/templates unless explicitly requested.
 - At the top of each visual HTML file, maintain the visual rules/constraints and indicate that `CODING_AGENTS.md` defines the canonical rules so they are not forgotten.
+- Do not scatter magic numbers through visual HTML/script logic. Put tunable constants in a clearly named `TUNING` section near the top of the visual (for example chart heights, tick limits, sampling caps, render-bin caps, animation timings).
+- When tuning values are chosen for readability/performance, name them descriptively (for example `CHANNEL_CHART_HEIGHT`, `MAX_RENDER_BINS`, `Y_TICKS_PER_CHANNEL`) so later adjustments do not require re-reading the whole file.
 - Visuals should support dark/light mode behavior and check system settings when rendering theme-sensitive output.
 - If `sysDescr` / `system_description` is present in the JSON response, show it prominently at the top of the visual.
 - Standardize `sysDescr` / `system_description` presentation as a dedicated `Device Info` block separate from channel/capture graph blocks.
