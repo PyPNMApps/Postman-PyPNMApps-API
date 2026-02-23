@@ -1,240 +1,467 @@
+// Remarks (CODING_AGENTS visual standard)
+// - Capture Time (when available) is shown next to the title
+// - Device Info block is shown when system_description is available in payload
+// - Frequency axes use MHz with whole-number tick labels
 const template = `
 <style>
-    body {
-        background-color: #1e1e1e;
-        color: #e0e0e0;
-        font-family: Arial, sans-serif;
-        padding: 20px;
-    }
-    .chart-container {
-        background-color: #2d2d2d;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        margin-bottom: 20px;
-    }
-    .chart-title {
-        color: #4a9eff;
-        text-align: center;
-        margin-bottom: 15px;
-        font-size: 20px;
-        font-weight: bold;
-    }
-    .summary {
-        background-color: #2d2d2d;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-    }
-    .summary h3 {
-        color: #4a9eff;
-        margin-top: 0;
-    }
-    .summary-item {
-        display: inline-block;
-        margin-right: 20px;
-        padding: 8px 12px;
-        background-color: #3d3d3d;
-        border-radius: 4px;
-        margin-bottom: 8px;
-    }
+  body {
+    background: #0b0b0b;
+    color: #e8e8e8;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 16px;
+  }
+  .container {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  .header-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .page-title {
+    grid-column: 2;
+    margin: 0;
+    text-align: center;
+    color: #f2f2f2;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .capture-time {
+    grid-column: 3;
+    justify-self: end;
+    font-size: 12px;
+    color: #d7deec;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    padding: 6px 10px;
+    white-space: nowrap;
+  }
+  .device-info {
+    background: #151515;
+    padding: 14px;
+    margin-bottom: 14px;
+    border-radius: 10px;
+    border: 1px solid #2a2a2a;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+  }
+  .table-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    color: #dbe3ff;
+  }
+  .table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+  }
+  .table th {
+    text-align: left;
+    white-space: nowrap;
+    padding: 9px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.45px;
+    color: #dbe3ff;
+    background: rgba(255,255,255,0.03);
+  }
+  .table td {
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #fff;
+    white-space: nowrap;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .mono { font-family: Consolas, "Liberation Mono", Menlo, monospace; }
+
+  .summary {
+    background: #151515;
+    padding: 14px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    border: 1px solid #2a2a2a;
+  }
+  .summary-title {
+    margin: 0 0 10px 0;
+    color: #5a6fd8;
+    font-size: 14px;
+    text-align: center;
+    font-weight: 700;
+  }
+  .summary-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 12px;
+    color: #d6deef;
+  }
+  .chart-container {
+    background: #202020;
+    border: 1px solid #303030;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .chart-title {
+    margin: 0 0 10px 0;
+    color: #5a6fd8;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .chart-wrap {
+    position: relative;
+    height: 320px;
+  }
+  .chart-wrap.tall { height: 360px; }
+  .chart-canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box;
+    background: #1a1a1a;
+    border: 1px solid #4d4d4d;
+    border-radius: 6px;
+  }
+  .channel-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
 </style>
 
-<div class="summary">
-    <h3>Analysis Summary</h3>
-    <div class="summary-item">MAC Address: {{macAddress}}</div>
-    <div class="summary-item">Channels: {{channelCount}}</div>
-    <div class="summary-item">Status: {{status}}</div>
-</div>
+<div class="container">
+  <div class="header-row">
+    <div class="page-title">RxMER Analysis (Min / Avg / Max)</div>
+    {{#if captureTime}}<div class="capture-time">Capture Time: {{captureTime}}</div>{{/if}}
+  </div>
 
-<div class="chart-container">
-    <div class="chart-title">All Channels · RxMER (Avg) Aligned By Frequency</div>
-    <canvas id="rxmerAllChart" height="120"></canvas>
-</div>
+  {{#if showDeviceInfo}}
+  <div class="device-info">
+    <div class="table-wrap">
+      <div class="table-title">Device Info</div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>MacAddress</th>
+            <th>Model</th>
+            <th>Vendor</th>
+            <th>SW Version</th>
+            <th>HW Version</th>
+            <th>Boot ROM</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">{{deviceInfo.macAddress}}</td>
+            <td>{{deviceInfo.MODEL}}</td>
+            <td>{{deviceInfo.VENDOR}}</td>
+            <td class="mono">{{deviceInfo.SW_REV}}</td>
+            <td class="mono">{{deviceInfo.HW_REV}}</td>
+            <td class="mono">{{deviceInfo.BOOTR}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {{/if}}
 
-<div id="perChannelCharts"></div>
+  <div class="summary">
+    <div class="summary-title">Analysis Summary</div>
+    <div class="summary-row">
+      <div class="summary-item">MacAddress: <span class="mono">{{macAddress}}</span></div>
+      <div class="summary-item">Channels: {{channelCount}}</div>
+      <div class="summary-item">Status: {{status}}</div>
+    </div>
+  </div>
+
+  <div class="chart-container">
+    <div class="chart-title">All Channels · RxMER (Avg) Aligned by Frequency</div>
+    <div class="chart-wrap tall">
+      <canvas id="rxmerAllChart" class="chart-canvas"></canvas>
+    </div>
+  </div>
+
+  <div id="perChannelCharts" class="channel-grid"></div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
 <script>
-    pm.getData(function (err, value) {
-        const channelData = Array.isArray(value.channelData) ? value.channelData : [];
-        const perChannelRoot = document.getElementById('perChannelCharts');
+pm.getData(function (err, value) {
+  const channelData = Array.isArray(value.channelData) ? value.channelData : [];
+  const perChannelRoot = document.getElementById('perChannelCharts');
+  if (err || !perChannelRoot) return;
 
-        const textColor = '#e0e0e0';
-        const gridColor = 'rgba(255,255,255,0.1)';
+  const textColor = '#e0e0e0';
+  const gridColor = 'rgba(255,255,255,0.1)';
+  const palette = ['#5a6fd8', '#c62828', '#7bc043', '#f1c40f', '#00bcd4', '#9b59b6', '#ff9800'];
 
-        const channelLineColors = [
-            'rgba(255, 99, 132, 1)',
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)'
-        ];
+  const uniqSorted = (arr) => {
+    const s = new Set();
+    for (const v of arr || []) {
+      const n = Number(v);
+      if (Number.isFinite(n)) s.add(n);
+    }
+    return Array.from(s).sort((a, b) => a - b);
+  };
 
-        const toMHzLabel = (hz) => (hz / 1000000).toFixed(2) + ' MHz';
+  const buildAlignedSeries = (masterFreq, freq, values) => {
+    const map = new Map();
+    const n = Math.min(Array.isArray(freq) ? freq.length : 0, Array.isArray(values) ? values.length : 0);
+    for (let i = 0; i < n; i++) {
+      const f = Number(freq[i]);
+      const v = Number(values[i]);
+      if (!Number.isFinite(f)) continue;
+      map.set(f, Number.isFinite(v) ? v : null);
+    }
+    return masterFreq.map(f => (map.has(f) ? map.get(f) : null));
+  };
 
-        const uniqSorted = (arr) => {
-            const s = new Set();
-            for (const v of arr) {
-                if (v === null || v === undefined) continue;
-                const n = Number(v);
-                if (!Number.isFinite(n)) continue;
-                s.add(n);
-            }
-            return Array.from(s).sort((a, b) => a - b);
-        };
+  const safeChannelId = (c, idx) => {
+    if (c && c.channel_id !== undefined && c.channel_id !== null) return String(c.channel_id);
+    return String(idx + 1);
+  };
 
-        const buildAlignedSeries = (masterFreq, freq, values) => {
-            const map = new Map();
-            const n = Math.min(Array.isArray(freq) ? freq.length : 0, Array.isArray(values) ? values.length : 0);
-            for (let i = 0; i < n; i++) {
-                const f = Number(freq[i]);
-                const v = Number(values[i]);
-                if (!Number.isFinite(f)) continue;
-                map.set(f, Number.isFinite(v) ? v : null);
-            }
-            return masterFreq.map(f => (map.has(f) ? map.get(f) : null));
-        };
+  const toMHzLabel = (hz) => (Number(hz) / 1000000).toFixed(2);
 
-        const safeChannelId = (c, idx) => {
-            if (c && c.channel_id !== undefined && c.channel_id !== null) return String(c.channel_id);
-            return String(idx + 1);
-        };
+  const commonCategoryOptions = (yTitle) => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: textColor } }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: textColor
+        },
+        title: { display: true, text: 'Frequency (MHz)', color: textColor },
+        grid: { color: gridColor }
+      },
+      y: {
+        ticks: { color: textColor },
+        title: { display: true, text: yTitle, color: textColor },
+        grid: { color: gridColor }
+      }
+    }
+  });
 
-        const masterFreq = uniqSorted(
-            channelData.flatMap(c => (Array.isArray(c.frequency) ? c.frequency : []))
-        );
-        const masterLabels = masterFreq.map(toMHzLabel);
+  const commonLinearOptions = (yTitle) => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: textColor } }
+    },
+    scales: {
+      x: {
+        type: 'linear',
+        ticks: {
+          color: textColor,
+          callback: function (v) { return Number(v).toFixed(0); }
+        },
+        title: { display: true, text: 'Frequency (MHz)', color: textColor },
+        grid: { color: gridColor }
+      },
+      y: {
+        ticks: { color: textColor },
+        title: { display: true, text: yTitle, color: textColor },
+        grid: { color: gridColor }
+      }
+    }
+  });
 
-        const allCtx = document.getElementById('rxmerAllChart').getContext('2d');
-        const allDatasets = channelData.map((c, idx) => {
-            const id = safeChannelId(c, idx);
-            const alignedAvg = buildAlignedSeries(masterFreq, c.frequency, c.avg);
-            return {
-                label: 'Channel ' + id,
-                data: alignedAvg,
-                borderColor: channelLineColors[idx % channelLineColors.length],
-                fill: false,
-                tension: 0.1,
-                pointRadius: 0,
-                spanGaps: false
-            };
-        });
-
-        new Chart(allCtx, {
-            type: 'line',
-            data: { labels: masterLabels, datasets: allDatasets },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { labels: { color: textColor } }
-                },
-                scales: {
-                    x: { ticks: { color: textColor }, grid: { color: gridColor } },
-                    y: { ticks: { color: textColor }, grid: { color: gridColor } }
-                }
-            }
-        });
-
-        const mkCanvasId = (id) => 'ch_chart_' + String(id).replace(/[^a-zA-Z0-9_\\-]/g, '_');
-
-        for (let i = 0; i < channelData.length; i++) {
-            const c = channelData[i] || {};
-            const id = safeChannelId(c, i);
-            const canvasId = mkCanvasId(id);
-
-            const container = document.createElement('div');
-            container.className = 'chart-container';
-
-            const title = document.createElement('div');
-            title.className = 'chart-title';
-            title.textContent = 'Channel ' + id + ' · Min / Avg / Max vs Frequency';
-
-            const canvas = document.createElement('canvas');
-            canvas.id = canvasId;
-            canvas.height = 120;
-
-            container.appendChild(title);
-            container.appendChild(canvas);
-            perChannelRoot.appendChild(container);
-
-            const freq = Array.isArray(c.frequency) ? c.frequency : [];
-            const labels = freq.map(toMHzLabel);
-
-            const minArr = Array.isArray(c.min) ? c.min : [];
-            const avgArr = Array.isArray(c.avg) ? c.avg : [];
-            const maxArr = Array.isArray(c.max) ? c.max : [];
-
-            const ctx = document.getElementById(canvasId).getContext('2d');
-
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Min',
-                            data: minArr,
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            fill: false,
-                            tension: 0.1,
-                            pointRadius: 0
-                        },
-                        {
-                            label: 'Avg (RxMER)',
-                            data: avgArr,
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            fill: false,
-                            tension: 0.1,
-                            pointRadius: 0
-                        },
-                        {
-                            label: 'Max',
-                            data: maxArr,
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            fill: false,
-                            tension: 0.1,
-                            pointRadius: 0
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { labels: { color: textColor } }
-                    },
-                    scales: {
-                        x: { ticks: { color: textColor }, grid: { color: gridColor } },
-                        y: { ticks: { color: textColor }, grid: { color: gridColor } }
-                    }
-                }
-            });
-        }
+  // Combined avg overlay
+  const masterFreq = uniqSorted(channelData.flatMap(c => (Array.isArray(c.frequency) ? c.frequency : [])));
+  const masterLabels = masterFreq.map(toMHzLabel);
+  const allCtx = document.getElementById('rxmerAllChart');
+  if (allCtx) {
+    const allDatasets = channelData.map((c, idx) => {
+      const id = safeChannelId(c, idx);
+      const alignedAvg = buildAlignedSeries(masterFreq, c.frequency, c.avg);
+      return {
+        label: 'Channel ' + id,
+        data: alignedAvg,
+        borderColor: palette[idx % palette.length],
+        borderWidth: 1,
+        fill: false,
+        tension: 0.1,
+        pointRadius: 0,
+        spanGaps: false
+      };
     });
+
+    new Chart(allCtx.getContext('2d'), {
+      type: 'line',
+      data: { labels: masterLabels, datasets: allDatasets },
+      options: commonCategoryOptions('RxMER (dB)')
+    });
+  }
+
+  // Per-channel min/avg/max
+  for (let i = 0; i < channelData.length; i++) {
+    const c = channelData[i] || {};
+    const id = safeChannelId(c, i);
+    const freq = Array.isArray(c.frequency) ? c.frequency : [];
+    const minArr = Array.isArray(c.min) ? c.min : [];
+    const avgArr = Array.isArray(c.avg) ? c.avg : [];
+    const maxArr = Array.isArray(c.max) ? c.max : [];
+
+    const container = document.createElement('div');
+    container.className = 'chart-container';
+
+    const title = document.createElement('div');
+    title.className = 'chart-title';
+    title.textContent = 'Channel ' + id + ' · Min / Avg / Max vs Frequency';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'chart-wrap';
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'ch_chart_' + String(id).replace(/[^a-zA-Z0-9_\\-]/g, '_');
+    canvas.className = 'chart-canvas';
+
+    wrap.appendChild(canvas);
+    container.appendChild(title);
+    container.appendChild(wrap);
+    perChannelRoot.appendChild(container);
+
+    const labels = freq.map(toMHzLabel);
+
+    new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Min', data: minArr, borderColor: '#54a3ff', borderWidth: 1, fill: false, tension: 0.1, pointRadius: 0 },
+          { label: 'Avg', data: avgArr, borderColor: '#39c28e', borderWidth: 1, fill: false, tension: 0.1, pointRadius: 0 },
+          { label: 'Max', data: maxArr, borderColor: '#ff6b6b', borderWidth: 1, fill: false, tension: 0.1, pointRadius: 0 }
+        ]
+      },
+      options: commonCategoryOptions('RxMER (dB)')
+    });
+  }
+});
 </script>
 `;
 
+function sanitizeMac(value, fallback) {
+  var fb = (fallback === undefined || fallback === null) ? 'N/A' : fallback;
+  if (value === undefined || value === null) return fb;
+  var text = String(value).trim();
+  if (!text) return fb;
+  var compact = text.replace(/[^0-9a-f]/gi, '').toLowerCase();
+  if (compact.length !== 12) return text;
+  return compact.match(/.{1,2}/g).join(':');
+}
+
+function sanitizeSystemDescription(_sys) {
+  var sys = (_sys && typeof _sys === 'object') ? _sys : {};
+  function present(v) { return v !== undefined && v !== null && String(v).trim() !== ''; }
+  return {
+    HW_REV: present(sys.HW_REV) ? String(sys.HW_REV).trim() : 'N/A',
+    VENDOR: present(sys.VENDOR) ? String(sys.VENDOR).trim() : 'N/A',
+    BOOTR: present(sys.BOOTR) ? String(sys.BOOTR).trim() : 'N/A',
+    SW_REV: present(sys.SW_REV) ? String(sys.SW_REV).trim() : 'N/A',
+    MODEL: present(sys.MODEL) ? String(sys.MODEL).trim() : 'N/A'
+  };
+}
+
+function mergeDeviceInfo(base, incoming) {
+  if (!base) return incoming;
+  if (!incoming) return base;
+  if (base.macAddress === 'N/A' && incoming.macAddress !== 'N/A') base.macAddress = incoming.macAddress;
+  ['MODEL', 'VENDOR', 'SW_REV', 'HW_REV', 'BOOTR'].forEach(function (k) {
+    if (base[k] === 'N/A' && incoming[k] !== 'N/A') base[k] = incoming[k];
+  });
+  return base;
+}
+
+function formatCaptureTime(raw) {
+  if (raw === undefined || raw === null || raw === '') return null;
+  if (typeof raw === 'number' && isFinite(raw)) {
+    var ms = raw > 1e12 ? raw : raw * 1000;
+    var d = new Date(ms);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+  }
+  var n = Number(raw);
+  if (!isNaN(n) && isFinite(n)) return formatCaptureTime(n);
+  var d2 = new Date(raw);
+  if (isNaN(d2.getTime())) return String(raw);
+  return d2.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+}
+
 function constructVisualizerPayload() {
-    const response = pm.response.json();
+  const response = pm.response.json();
+  const raw = (response && response.data && typeof response.data === 'object') ? response.data : {};
 
-    const raw = (response && response.data) ? response.data : {};
-    const channelData = Object.entries(raw).map(([k, v]) => {
-        const obj = (v && typeof v === 'object') ? v : {};
-        const channelId = (obj.channel_id !== undefined && obj.channel_id !== null) ? obj.channel_id : k;
-        return { ...obj, channel_id: channelId };
-    }).sort((a, b) => {
-        const ai = Number(a.channel_id);
-        const bi = Number(b.channel_id);
-        if (Number.isFinite(ai) && Number.isFinite(bi)) return ai - bi;
-        return String(a.channel_id).localeCompare(String(b.channel_id));
+  const channelData = Object.entries(raw).map(([k, v]) => {
+    const obj = (v && typeof v === 'object') ? v : {};
+    const channelId = (obj.channel_id !== undefined && obj.channel_id !== null) ? obj.channel_id : k;
+    return { ...obj, channel_id: channelId };
+  }).sort((a, b) => {
+    const ai = Number(a.channel_id);
+    const bi = Number(b.channel_id);
+    if (Number.isFinite(ai) && Number.isFinite(bi)) return ai - bi;
+    return String(a.channel_id).localeCompare(String(b.channel_id));
+  });
+
+  let deviceInfo = {
+    macAddress: sanitizeMac(response.mac_address, 'N/A'),
+    MODEL: 'LCPET-3',
+    VENDOR: 'LANCity',
+    SW_REV: '1.0.0',
+    HW_REV: '1.0',
+    BOOTR: 'NONE'
+  };
+  let captureTime = null;
+
+  channelData.forEach((c) => {
+    const sys = sanitizeSystemDescription((((c || {}).device_details || {}).system_description) || {});
+    deviceInfo = mergeDeviceInfo(deviceInfo, {
+      macAddress: sanitizeMac(c.mac_address || response.mac_address, 'N/A'),
+      MODEL: sys.MODEL,
+      VENDOR: sys.VENDOR,
+      SW_REV: sys.SW_REV,
+      HW_REV: sys.HW_REV,
+      BOOTR: sys.BOOTR
     });
+    if (!captureTime) captureTime = formatCaptureTime((((c || {}).pnm_header) || {}).capture_time);
+  });
 
-    return {
-        macAddress: response.mac_address,
-        channelCount: channelData.length,
-        status: response.status === 0 ? 'Success' : 'Error',
-        channelData: channelData
-    };
+  const showDeviceInfo = [deviceInfo.MODEL, deviceInfo.VENDOR, deviceInfo.SW_REV, deviceInfo.HW_REV, deviceInfo.BOOTR].some(v => v !== 'N/A');
+
+  return {
+    macAddress: sanitizeMac(response.mac_address, 'N/A'),
+    channelCount: channelData.length,
+    status: response.status === 0 ? 'Success' : 'Error',
+    channelData: channelData,
+    deviceInfo: deviceInfo,
+    showDeviceInfo: showDeviceInfo,
+    captureTime: captureTime
+  };
 }
 
 pm.visualizer.set(template, constructVisualizerPayload());

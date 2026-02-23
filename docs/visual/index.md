@@ -11,7 +11,7 @@ tools/docs/build_visual_docs.py
 
 ## Coverage
 
-- Total visual examples discovered: `30`
+- Total visual examples discovered: `31`
 - Pairing is based on matching `.html` / `.json` paths under `visual/`
 
 ## DOCSIS-3.0
@@ -43,6 +43,7 @@ tools/docs/build_visual_docs.py
 
 | Example | HTML | JSON | Page |
 | --- | --- | --- | --- |
+| `ChannelEstimation-Analysis-Echo-Detection-IFFT` | yes | yes | [`open`](MultiCapture/ChannelEstimation/ChannelEstimation-Analysis-Echo-Detection-IFFT.md) |
 | `ChannelEstimation-Analysis-GroupDelay` | yes | yes | [`open`](MultiCapture/ChannelEstimation/ChannelEstimation-Analysis-GroupDelay.md) |
 | `ChannelEstimation-Analysis-MIN_AVG_MAX` | yes | yes | [`open`](MultiCapture/ChannelEstimation/ChannelEstimation-Analysis-MIN_AVG_MAX.md) |
 | `OfdmaPreEqualization-Analysis-EchoDetection` | yes | yes | [`open`](MultiCapture/OfdmaPreEqualization/OfdmaPreEqualization-Analysis-EchoDetection.md) |

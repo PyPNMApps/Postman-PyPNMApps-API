@@ -26,20 +26,28 @@
   // -----------------------
   // TUNABLES
   // -----------------------
-  const CELL_PX = 8;          // requested ~4x4 pixels
-  const MAX_X_LABELS = 10;    // sparse frequency labels
+  const CELL_PX = 4;          // compact default for Postman
+  const MAX_X_LABELS = 8;     // sparse frequency labels
   const MAX_Y_LABELS = 10;    // sparse time labels
+  const MAX_RENDER_BINS = 1200; // cap rendered columns for Postman SVG performance
   const PANEL_MAX_W = 1200;   // clamp for very wide channels; horizontal scroll
-  const COLORBAR_W = 14;
-  const COLORBAR_PAD = 16;
+  const TARGET_GRID_MAX_W = 900; // prefer fit-without-horizontal-scroll
+  const COLORBAR_W = 10;
+  const COLORBAR_PAD = 10;
   // -----------------------
 
   const data = safe(resp.data, {});
   const chKeys = Object.keys(data).sort((a, b) => Number(a) - Number(b));
+  const renderSpecs = [];
 
   function hzToMHz(hz) {
     if (!isNum(hz)) return "—";
     return (hz / 1e6).toFixed(3);
+  }
+
+  function hzToMHzLabel(hz) {
+    if (!isNum(hz)) return "—";
+    return String(Math.round(hz / 1e6));
   }
 
   function epochToHHMM(epochSec) {
@@ -48,6 +56,30 @@
     const hh = String(d.getHours()).padStart(2, "0");
     const mm = String(d.getMinutes()).padStart(2, "0");
     return `${hh}:${mm}`;
+  }
+
+  function formatCaptureTime(epochSec) {
+    if (!isNum(epochSec)) return null;
+    const d = new Date(epochSec * 1000);
+    if (!isFinite(d.getTime())) return null;
+    const p = (n) => String(n).padStart(2, "0");
+    return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())} UTC`;
+  }
+
+  function getCaptureTimeFromData(dataObj) {
+    const keys = Object.keys(dataObj || {});
+    for (const key of keys) {
+      const ch = dataObj[key] || {};
+      const ts = Array.isArray(ch.timestamps) ? ch.timestamps : [];
+      if (!ts.length) continue;
+      const row0 = Array.isArray(ts[0]) ? ts[0] : [];
+      if (row0.length && isNum(row0[0])) return formatCaptureTime(row0[0]);
+      for (let r = 1; r < Math.min(ts.length, 4); r++) {
+        const row = Array.isArray(ts[r]) ? ts[r] : [];
+        if (row.length && isNum(row[0])) return formatCaptureTime(row[0]);
+      }
+    }
+    return null;
   }
 
   function matrixDims(values) {
@@ -76,15 +108,13 @@
     return { minV, maxV };
   }
 
-  // Fast sequential colormap (avoid hsl() string build per cell where possible)
-  // We still return a string, but keep logic minimal.
+  // Risk-oriented colormap for RxMER: low MER (bad) = red, high MER (good) = green.
   function colorSequential(v, minV, maxV) {
     if (!isNum(v)) return "rgba(148,163,184,0.18)";
     const t = Math.max(0, Math.min(1, (v - minV) / (maxV - minV)));
-    // Blue-ish ramp: low dark, high bright
-    const hue = 205;
-    const sat = 85;
-    const light = 16 + 66 * t; // 16..82
+    const hue = 120 * t;       // 0=red, 60=yellow, 120=green
+    const sat = 88;
+    const light = 20 + 58 * t; // keep lows darker, highs brighter
     return `hsl(${hue} ${sat}% ${light.toFixed(1)}%)`;
   }
 
@@ -109,67 +139,86 @@
     const bins = Math.min(freq.length, N);
     const { minV, maxV } = matrixRange(values);
 
-    const gridW = bins * CELL_PX;
+    const widthLimitedRenderBins = Math.max(64, Math.floor(TARGET_GRID_MAX_W / CELL_PX));
+    const targetRenderBins = Math.min(MAX_RENDER_BINS, widthLimitedRenderBins);
+    const binStep = Math.max(1, Math.ceil(bins / targetRenderBins));
+    const renderBins = Math.ceil(bins / binStep);
+    const gridW = renderBins * CELL_PX;
     const gridH = T * CELL_PX;
 
     // Axis label spacing (sparse)
-    const xEvery = Math.max(1, Math.floor(bins / MAX_X_LABELS));
+    const xEvery = Math.max(1, Math.floor(renderBins / MAX_X_LABELS));
     const yEvery = Math.max(1, Math.floor(T / MAX_Y_LABELS));
 
-    // Build rects without stroke + without <title>
-    // Note: SVG with many <rect> can still be heavy. 4x4 helps (fewer rows/cols if you pre-aggregate),
-    // but this removes the tooltip/title overhead and stroke.
-    let rects = "";
+    const matrix = [];
     for (let r = 0; r < T; r++) {
       const row = Array.isArray(values[r]) ? values[r] : [];
-      const y = r * CELL_PX;
-      for (let c = 0; c < bins; c++) {
-        const v = row[c];
-        const x = c * CELL_PX;
-        rects += `<rect x="${x}" y="${y}" width="${CELL_PX}" height="${CELL_PX}" fill="${colorSequential(v, minV, maxV)}" />`;
+      const aggRow = new Array(renderBins);
+      for (let rc = 0; rc < renderBins; rc++) {
+        const cStart = rc * binStep;
+        const cEnd = Math.min(bins, cStart + binStep);
+        let sum = 0;
+        let count = 0;
+        for (let c = cStart; c < cEnd; c++) {
+          const v0 = row[c];
+          if (isNum(v0)) {
+            sum += v0;
+            count++;
+          }
+        }
+        aggRow[rc] = count ? (sum / count) : null;
       }
+      matrix.push(aggRow);
     }
 
-    // Labels (few)
-    let xLabels = "";
-    for (let c = 0; c < bins; c += xEvery) {
-      const x = c * CELL_PX + 2;
-      xLabels += `<text x="${x}" y="${gridH + 14}" class="axis mono">${esc(hzToMHz(freq[c]))}</text>`;
+    const xLabels = [];
+    for (let rc = 0; rc < renderBins; rc += xEvery) {
+      const cStart = rc * binStep;
+      const cEnd = Math.min(bins, cStart + binStep);
+      const cMid = Math.min(bins - 1, cStart + Math.floor((cEnd - cStart) / 2));
+      xLabels.push({ x: rc * CELL_PX + 1, text: hzToMHzLabel(freq[cMid]) });
     }
 
-    let yLabels = "";
+    const yLabels = [];
     for (let r = 0; r < T; r += yEvery) {
-      const y = r * CELL_PX + 10;
       // Use timestamps[r][0] if present
       const tsRow = Array.isArray(ts[r]) ? ts[r] : [];
       const t0 = tsRow.length > 0 ? tsRow[0] : null;
-      yLabels += `<text x="-6" y="${y}" text-anchor="end" class="axis mono">${esc(epochToHHMM(t0))}</text>`;
+      yLabels.push({ y: r * CELL_PX + 10, text: epochToHHMM(t0) });
     }
 
-    // Colorbar
     const cbH = gridH;
     const cbX = gridW + COLORBAR_PAD;
-    const cbY = 0;
-    const cbSteps = Math.min(60, Math.max(24, Math.floor(cbH / 6))); // scale with height
-
-    let cbRects = "";
-    for (let i = 0; i < cbSteps; i++) {
-      const tt = i / (cbSteps - 1);
-      const v = minV + tt * (maxV - minV);
-      const y = cbY + (1 - tt) * cbH;
-      cbRects += `<rect x="${cbX}" y="${y.toFixed(2)}" width="${COLORBAR_W}" height="${(cbH / cbSteps).toFixed(
-        2
-      )}" fill="${colorSequential(v, minV, maxV)}" />`;
-    }
-
-    const svgW = gridW + COLORBAR_PAD + COLORBAR_W + 54;
-    const svgH = gridH + 22;
+    const LEFT_AXIS_W = 44;
+    const RIGHT_LABEL_W = 40;
+    const canvasW = gridW + COLORBAR_PAD + COLORBAR_W + LEFT_AXIS_W + RIGHT_LABEL_W;
+    const canvasH = gridH + 22 + 12;
 
     const fMin = freq[0];
     const fMax = freq[bins - 1];
 
     // Clamp rendering width with scroll container
-    const renderW = Math.min(svgW + 60, PANEL_MAX_W);
+    const renderW = Math.min(canvasW + 24, PANEL_MAX_W);
+
+    const canvasId = `hm_${String(channelId).replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+    renderSpecs.push({
+      id: canvasId,
+      cellPx: CELL_PX,
+      gridW,
+      gridH,
+      canvasW,
+      canvasH,
+      xOffset: LEFT_AXIS_W,
+      yOffset: 6,
+      colorbarX: cbX,
+      colorbarW: COLORBAR_W,
+      colorbarPad: COLORBAR_PAD,
+      minV,
+      maxV,
+      matrix,
+      xLabels,
+      yLabels
+    });
 
     return `
       <div class="panel">
@@ -178,6 +227,7 @@
             <div class="panel-title">Channel ${esc(channelId)} · RxMER Heatmap</div>
             <div class="meta mono">
               bins=${esc(String(bins))} · rows=${esc(String(T))} · cell=${esc(String(CELL_PX))}px ·
+              ${binStep > 1 ? `render=${esc(String(renderBins))} (agg×${esc(String(binStep))}) · ` : ""}
               f=${esc(hzToMHz(fMin))}..${esc(hzToMHz(fMax))} MHz ·
               rxmer=${esc(minV.toFixed(2))}..${esc(maxV.toFixed(2))} dB
             </div>
@@ -186,18 +236,9 @@
 
         <div class="panel-body">
           <div class="scroll" style="max-width:${renderW}px;">
-            <svg viewBox="0 0 ${svgW} ${svgH}" class="hm-svg" role="img" aria-label="RxMER heatmap dense">
-              <g transform="translate(54, 6)">
-                ${rects}
-                ${yLabels}
-                ${xLabels}
-
-                ${cbRects}
-                <text x="${cbX + COLORBAR_W + 8}" y="10" class="axis mono">${esc(maxV.toFixed(1))}</text>
-                <text x="${cbX + COLORBAR_W + 8}" y="${(cbH + 2).toFixed(2)}" class="axis mono">${esc(minV.toFixed(1))}</text>
-                <text x="${cbX - 2}" y="${(cbH + 18).toFixed(2)}" text-anchor="end" class="axis mono">dB</text>
-              </g>
-            </svg>
+            <div class="hm-stage">
+              <canvas id="${esc(canvasId)}" class="hm-canvas" width="${canvasW}" height="${canvasH}" aria-label="RxMER heatmap dense"></canvas>
+            </div>
           </div>
 
           <div class="meta">
@@ -207,6 +248,31 @@
       </div>
     `;
   }
+
+  function getDeviceInfo(respObj) {
+    const sys = respObj && respObj.system_description && typeof respObj.system_description === "object"
+      ? respObj.system_description
+      : null;
+    if (!sys) return null;
+    const val = (k) => {
+      const v = sys[k];
+      if (v === undefined || v === null) return "N/A";
+      const s = String(v).trim();
+      return s || "N/A";
+    };
+    return {
+      macAddress: respObj && respObj.mac_address ? String(respObj.mac_address).toLowerCase() : "N/A",
+      model: val("MODEL"),
+      vendor: val("VENDOR"),
+      swVersion: val("SW_REV"),
+      hwVersion: val("HW_REV"),
+      bootRom: val("BOOTR")
+    };
+  }
+
+  const captureTime = getCaptureTimeFromData(data);
+  const statusLabel = resp.status === 0 ? "Success" : (resp.status === undefined ? "N/A" : String(resp.status));
+  const deviceInfo = getDeviceInfo(resp);
 
   const template = `
     <style>
@@ -230,14 +296,56 @@
         font-family: var(--sans);
       }
 
-      .top { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: baseline; margin-bottom: 12px; }
-      .title { font-size: 18px; font-weight: 700; letter-spacing: 0.2px; }
-      .sub { color: var(--muted); font-size: 12px; }
+      .header-row {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .title {
+        grid-column: 2;
+        text-align: center;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+      .capture-time {
+        justify-self: end;
+        white-space: nowrap;
+        background: rgba(148,163,184,0.10);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 12px;
+        color: var(--text);
+      }
+      .sub { color: var(--muted); font-size: 12px; text-align: center; margin-bottom: 12px; }
 
       .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
       .chip { background: rgba(148,163,184,0.10); border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; font-size: 12px; }
       .mono { font-family: var(--mono); }
       .meta { color: var(--muted); font-size: 12px; }
+      .device-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        font-size: 12px;
+        margin-bottom: 14px;
+      }
+      .device-table th, .device-table td {
+        border: 1px solid var(--border);
+        padding: 7px 8px;
+        text-align: left;
+        vertical-align: top;
+        word-break: break-word;
+      }
+      .device-table th {
+        background: rgba(148,163,184,0.10);
+      }
+      .device-table td {
+        background: rgba(148,163,184,0.04);
+      }
 
       .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
 
@@ -267,15 +375,19 @@
         overflow-x: auto;
         padding-bottom: 6px;
       }
+      .hm-stage {
+        position: relative;
+        display: inline-block;
+      }
 
-      .hm-svg {
-        width: auto;            /* allow natural width */
+      .hm-canvas {
+        width: auto;
         height: auto;
         border-radius: 10px;
         border: 1px solid rgba(148,163,184,0.18);
         background: rgba(148,163,184,0.06);
+        display: block;
       }
-
       .axis {
         fill: rgba(148,163,184,0.92);
         font-size: 10px;
@@ -283,14 +395,41 @@
       }
     </style>
 
-    <div class="top">
+    <div class="header-row">
+      <div></div>
       <div class="title">RxMER Heatmaps</div>
-      <div class="sub">Dense · No Hover · ${esc(String(CELL_PX))}×${esc(String(CELL_PX))} px cells</div>
+      ${captureTime ? `<div class="capture-time">Capture Time: ${esc(captureTime)}</div>` : ""}
     </div>
+    <div class="sub">Dense · No Hover · ${esc(String(CELL_PX))}×${esc(String(CELL_PX))} px cells</div>
+
+    ${deviceInfo ? `
+      <table class="device-table">
+        <thead>
+          <tr>
+            <th>MacAddress</th>
+            <th>Model</th>
+            <th>Vendor</th>
+            <th>SW Version</th>
+            <th>HW Version</th>
+            <th>Boot ROM</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">${esc(deviceInfo.macAddress)}</td>
+            <td>${esc(deviceInfo.model)}</td>
+            <td>${esc(deviceInfo.vendor)}</td>
+            <td class="mono">${esc(deviceInfo.swVersion)}</td>
+            <td class="mono">${esc(deviceInfo.hwVersion)}</td>
+            <td class="mono">${esc(deviceInfo.bootRom)}</td>
+          </tr>
+        </tbody>
+      </table>
+    ` : ""}
 
     <div class="chips">
-      ${resp.mac_address ? `<div class="chip"><span class="meta">MAC</span> <span class="mono">${esc(resp.mac_address)}</span></div>` : ""}
-      ${resp.status !== undefined ? `<div class="chip"><span class="meta">Status</span> <span class="mono">${esc(String(resp.status))}</span></div>` : ""}
+      ${!deviceInfo && resp.mac_address ? `<div class="chip"><span class="meta">MacAddress</span> <span class="mono">${esc(String(resp.mac_address).toLowerCase())}</span></div>` : ""}
+      <div class="chip"><span class="meta">Status</span> <span class="mono">${esc(statusLabel)}</span></div>
       ${resp.message ? `<div class="chip"><span class="meta">Message</span> <span>${esc(resp.message)}</span></div>` : ""}
       <div class="chip"><span class="meta">Channels</span> <span class="mono">${esc(String(chKeys.length))}</span></div>
     </div>
@@ -298,6 +437,79 @@
     <div class="grid">
       ${chKeys.map((k) => buildChannel(k, data[k] || {})).join("")}
     </div>
+
+    <script>
+      (function () {
+        const specs = ${JSON.stringify(renderSpecs)};
+
+        function isNum(v) { return typeof v === 'number' && isFinite(v); }
+        function colorSequential(v, minV, maxV) {
+          if (!isNum(v)) return 'rgba(148,163,184,0.18)';
+          const t = Math.max(0, Math.min(1, (v - minV) / (maxV - minV)));
+          const hue = 120 * t;
+          const sat = 88;
+          const light = 20 + 58 * t;
+          return 'hsl(' + hue + ' ' + sat + '% ' + light.toFixed(1) + '%)';
+        }
+
+        specs.forEach(function (s) {
+          const canvas = document.getElementById(s.id);
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.save();
+          ctx.translate(s.xOffset, s.yOffset);
+
+          for (let r = 0; r < s.matrix.length; r++) {
+            const row = Array.isArray(s.matrix[r]) ? s.matrix[r] : [];
+            const y = r * s.cellPx;
+            for (let c = 0; c < row.length; c++) {
+              ctx.fillStyle = colorSequential(row[c], s.minV, s.maxV);
+              ctx.fillRect(c * s.cellPx, y, s.cellPx, s.cellPx);
+            }
+          }
+
+          ctx.strokeStyle = 'rgba(148,163,184,0.18)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(0.5, 0.5, s.gridW - 1, s.gridH - 1);
+
+          ctx.font = '10px ui-monospace, SFMono-Regular, Menlo, monospace';
+          ctx.fillStyle = 'rgba(148,163,184,0.92)';
+          ctx.textBaseline = 'alphabetic';
+
+          for (let i = 0; i < s.xLabels.length; i++) {
+            const lbl = s.xLabels[i];
+            ctx.fillText(String(lbl.text || ''), lbl.x, s.gridH + 14);
+          }
+
+          ctx.textAlign = 'right';
+          for (let i = 0; i < s.yLabels.length; i++) {
+            const lbl = s.yLabels[i];
+            ctx.fillText(String(lbl.text || ''), -6, lbl.y);
+          }
+          ctx.textAlign = 'left';
+
+          const cbSteps = Math.min(60, Math.max(24, Math.floor(s.gridH / 6)));
+          for (let i = 0; i < cbSteps; i++) {
+            const tt = i / Math.max(1, (cbSteps - 1));
+            const v = s.minV + tt * (s.maxV - s.minV);
+            const y = (1 - tt) * s.gridH;
+            const h = s.gridH / cbSteps;
+            ctx.fillStyle = colorSequential(v, s.minV, s.maxV);
+            ctx.fillRect(s.colorbarX, y, s.colorbarW, h + 0.5);
+          }
+
+          ctx.fillStyle = 'rgba(148,163,184,0.92)';
+          ctx.fillText(s.maxV.toFixed(1), s.colorbarX + s.colorbarW + 8, 10);
+          ctx.fillText(s.minV.toFixed(1), s.colorbarX + s.colorbarW + 8, s.gridH + 2);
+          ctx.textAlign = 'right';
+          ctx.fillText('dB', s.colorbarX - 2, s.gridH + 18);
+          ctx.restore();
+        });
+      })();
+    </script>
   `;
 
   pm.visualizer.set(template, {});

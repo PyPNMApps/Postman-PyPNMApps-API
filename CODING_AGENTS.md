@@ -35,6 +35,8 @@
 - Do not manually edit generated visual docs (`docs/visual/`, `docs/visual-previews/`); regenerate from `visual/`.
 - No comments in visual code/templates unless explicitly requested.
 - At the top of each visual HTML file, maintain the visual rules/constraints and indicate that `CODING_AGENTS.md` defines the canonical rules so they are not forgotten.
+- Do not scatter magic numbers through visual HTML/script logic. Put tunable constants in a clearly named `TUNING` section near the top of the visual (for example chart heights, tick limits, sampling caps, render-bin caps, animation timings).
+- When tuning values are chosen for readability/performance, name them descriptively (for example `CHANNEL_CHART_HEIGHT`, `MAX_RENDER_BINS`, `Y_TICKS_PER_CHANNEL`) so later adjustments do not require re-reading the whole file.
 - Visuals should support dark/light mode behavior and check system settings when rendering theme-sensitive output.
 - If `sysDescr` / `system_description` is present in the JSON response, show it prominently at the top of the visual.
 - Standardize `sysDescr` / `system_description` presentation as a dedicated `Device Info` block separate from channel/capture graph blocks.
@@ -46,7 +48,8 @@
 - Format capture timestamps as a human-readable date/time string (not raw epoch seconds).
 - Keep channel metadata in a separate block below `Device Info` (for example `Channel`, center/subcarrier frequency).
 - Display frequencies in `MHz` for UI-facing labels; raw `Hz` may be shown secondarily in parentheses when useful.
-- Default UI frequency labels/ticks to whole-number `MHz` (no decimal floats) unless precision is required for the specific visual.
+- Default UI frequency labels/ticks to whole-number `MHz` (frequency is not a float in the UI by default; no decimal floats) unless precision is required for the specific visual.
+- If the axis title already includes the unit (for example `Frequency (MHz)`), do not repeat the unit on every tick label.
 - Include units in graph titles/axis labels for measured values (for example `Magnitude (dB)` instead of `Magnitude`).
 - Center graph/panel titles for scanability and consistent visual layout.
 - When a visual can plot both raw values and moving-average/smoothed values, prefer a per-graph `Actual / Moving Avg` radio toggle instead of showing both at once by default (reduces clutter).
@@ -54,10 +57,13 @@
 - Avoid redundant repetition of values already shown in `Device Info` (for example, do not repeat `MacAddress` in the channel header if it is already in the device table).
 - If `system_description` is missing/partial, render `N/A` for missing fields instead of vendor-specific fallback values.
 - JSON responses may contain multiple upstream/downstream channels; each channel must render as its own graph for the selected graph type.
+- For multi-channel visuals with repeated per-channel panels/boxes, default to a 2-column layout (max 2 per row) with a 1-column fallback on narrower widths.
 - Multi-channel views should also include a combined graph at the bottom with all channels lined up by frequency in a single graph.
 
 ## Visual Color Rules (Required)
 
+- Default visual shell/theme should use the current dark-blue palette family used by recent visuals (for example page bg `#141821`, panel bg `#1b2332`, panel title accent blue, primary text near-white).
+- Do not use the older red-accent page theme (`#e94560` headings on `#1a1a2e` / `#16213e`) for new/refactored visuals unless explicitly requested.
 - High / max = red
 - Mid / avg = blue
 - Low / min = green
