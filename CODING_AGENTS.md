@@ -55,10 +55,13 @@
 - Avoid redundant repetition of values already shown in `Device Info` (for example, do not repeat `MacAddress` in the channel header if it is already in the device table).
 - If `system_description` is missing/partial, render `N/A` for missing fields instead of vendor-specific fallback values.
 - JSON responses may contain multiple upstream/downstream channels; each channel must render as its own graph for the selected graph type.
+- For multi-channel visuals with repeated per-channel panels/boxes, default to a 2-column layout (max 2 per row) with a 1-column fallback on narrower widths.
 - Multi-channel views should also include a combined graph at the bottom with all channels lined up by frequency in a single graph.
 
 ## Visual Color Rules (Required)
 
+- Default visual shell/theme should use the current dark-blue palette family used by recent visuals (for example page bg `#141821`, panel bg `#1b2332`, panel title accent blue, primary text near-white).
+- Do not use the older red-accent page theme (`#e94560` headings on `#1a1a2e` / `#16213e`) for new/refactored visuals unless explicitly requested.
 - High / max = red
 - Mid / avg = blue
 - Low / min = green
