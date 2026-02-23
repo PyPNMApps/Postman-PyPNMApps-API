@@ -5,7 +5,8 @@ Generated from `visual/` (current source of truth for both visualizer HTML/scrip
 How to regenerate:
 
 ```bash
-.venv/bin/python tools/docs/build_visual_docs.py
+source .venv/bin/activate
+tools/docs/build_visual_docs.py
 ```
 
 ## Coverage

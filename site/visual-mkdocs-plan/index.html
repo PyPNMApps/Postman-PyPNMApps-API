@@ -648,8 +648,9 @@
 <li>Switch generator input from filesystem HTML to collection-derived scripts</li>
 </ol>
 <h2 id="commands">Commands</h2>
-<pre><code class="language-bash">.venv/bin/python tools/docs/build_visual_docs.py
-.venv/bin/mkdocs serve
+<pre><code class="language-bash">source .venv/bin/activate
+tools/docs/build_visual_docs.py
+mkdocs serve -a 127.0.0.1:8030
 </code></pre>
 
 

@@ -701,7 +701,7 @@
 </ul>
 <h2 id="install-postman">Install Postman</h2>
 <ol>
-<li>Download Postman Desktop from <code>https://www.postman.com/downloads/</code></li>
+<li>Follow <code>docs/postman-install.md</code> for Ubuntu/Windows download and install steps</li>
 <li>Install and open Postman</li>
 </ol>
 <h2 id="clone-repository">Clone Repository</h2>
@@ -709,20 +709,13 @@
 cd Postman-PyPNMApps-API
 </code></pre>
 <h2 id="import-into-postman">Import Into Postman</h2>
-<p>Import these files in Postman:</p>
+<p>Follow <code>docs/postman-import-and-navigation.md</code> for:</p>
 <ul>
-<li><code>postman/collections/PyPNM.postman_collection.json</code></li>
-<li><code>postman/collections/PyPNM-CMTS.postman_collection.json</code></li>
-<li><code>postman/environments/PyPNM Remote Server.postman_environment.json</code></li>
-<li><code>postman/globals/workspace.postman_globals.json</code></li>
+<li>importing collections/environment/globals</li>
+<li>configuring <code>pypnm_url</code></li>
+<li>navigating the <code>PyPNM</code> collection and first request</li>
 </ul>
 <h2 id="configure-url-and-variables">Configure URL and Variables</h2>
-<p>Important:</p>
-<ul>
-<li>Collection requests use <code>{{pypnm_url}}</code> (global variable)</li>
-<li>The provided environment file contains <code>base_url</code></li>
-<li>Set <code>pypnm_url</code> in Globals, or update requests to use <code>base_url</code></li>
-</ul>
 <p>Minimum globals commonly needed:</p>
 <ul>
 <li><code>pypnm_url</code></li>

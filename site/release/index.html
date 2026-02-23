@@ -633,12 +633,14 @@
 <p>Do not manually update only one of them.</p>
 <h2 id="bump-version">Bump Version</h2>
 <p>Use the bump tool to keep both files synchronized:</p>
-<pre><code class="language-bash">.venv/bin/python tools/support/bump_version.py --version 0.1.1 --check
-.venv/bin/python tools/support/bump_version.py --version 0.1.1
+<pre><code class="language-bash">source .venv/bin/activate
+tools/support/bump_version.py --version 0.1.1 --check
+tools/support/bump_version.py --version 0.1.1
 </code></pre>
 <h2 id="release-flow">Release Flow</h2>
 <p>Use:</p>
-<pre><code class="language-bash">.venv/bin/python tools/release/release.py --no-push
+<pre><code class="language-bash">source .venv/bin/activate
+tools/release/release.py --no-push
 </code></pre>
 <p>What it does:</p>
 <ol>
@@ -655,10 +657,11 @@
 <li>Pushes branch and tag unless <code>--no-push</code> is used</li>
 </ol>
 <h2 id="recommended-sequence">Recommended Sequence</h2>
-<pre><code class="language-bash">.venv/bin/python tools/sanitize.py --check
-.venv/bin/python -m pytest -q
-.venv/bin/python tools/support/bump_version.py --version 0.1.1 --check
-.venv/bin/python tools/release/release.py --version 0.1.1 --no-push
+<pre><code class="language-bash">source .venv/bin/activate
+tools/sanitize.py --check
+pytest -q
+tools/support/bump_version.py --version 0.1.1 --check
+tools/release/release.py --version 0.1.1 --no-push
 </code></pre>
 
 

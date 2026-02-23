@@ -13,7 +13,7 @@ Main artifacts:
 
 ## Install Postman
 
-1. Download Postman Desktop from `https://www.postman.com/downloads/`
+1. Follow `docs/postman-install.md` for Ubuntu/Windows download and install steps
 2. Install and open Postman
 
 ## Clone Repository
@@ -25,20 +25,13 @@ cd Postman-PyPNMApps-API
 
 ## Import Into Postman
 
-Import these files in Postman:
+Follow `docs/postman-import-and-navigation.md` for:
 
-- `postman/collections/PyPNM.postman_collection.json`
-- `postman/collections/PyPNM-CMTS.postman_collection.json`
-- `postman/environments/PyPNM Remote Server.postman_environment.json`
-- `postman/globals/workspace.postman_globals.json`
+- importing collections/environment/globals
+- configuring `pypnm_url`
+- navigating the `PyPNM` collection and first request
 
 ## Configure URL and Variables
-
-Important:
-
-- Collection requests use `{{pypnm_url}}` (global variable)
-- The provided environment file contains `base_url`
-- Set `pypnm_url` in Globals, or update requests to use `base_url`
 
 Minimum globals commonly needed:
 

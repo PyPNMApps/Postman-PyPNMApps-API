@@ -672,6 +672,7 @@
 <h2 id="setup">Setup</h2>
 <p>Create the local virtual environment and install dev dependencies:</p>
 <pre><code class="language-bash">./install.sh
+source .venv/bin/activate
 </code></pre>
 <h2 id="visual-docs-generator-mkdocs">Visual Docs Generator (MkDocs)</h2>
 <p>Path:</p>
@@ -685,9 +686,9 @@
 <li>Generates local preview wrappers under <code>docs/visual-previews/</code></li>
 </ul>
 <p>Usage:</p>
-<pre><code class="language-bash">.venv/bin/python tools/docs/build_visual_docs.py
-.venv/bin/python tools/docs/build_visual_docs.py --check
-.venv/bin/mkdocs serve
+<pre><code class="language-bash">tools/docs/build_visual_docs.py
+tools/docs/build_visual_docs.py --check
+mkdocs serve -a 127.0.0.1:8030
 </code></pre>
 <p>Notes:</p>
 <ul>
@@ -706,8 +707,8 @@
 <li>Normalizes <code>system_description</code> / sysDescr fields to PyPNM defaults</li>
 </ul>
 <p>Usage:</p>
-<pre><code class="language-bash">.venv/bin/python tools/sanitize.py --check
-.venv/bin/python tools/sanitize.py --fix
+<pre><code class="language-bash">tools/sanitize.py --check
+tools/sanitize.py --fix
 </code></pre>
 <p>Modes:</p>
 <ul>
@@ -724,8 +725,8 @@
 <li>Keeps <code>VERSION</code> and <code>pyproject.toml</code> <code>[project].version</code> synchronized</li>
 </ul>
 <p>Usage:</p>
-<pre><code class="language-bash">.venv/bin/python tools/support/bump_version.py --version 0.1.1 --check
-.venv/bin/python tools/support/bump_version.py --version 0.1.1
+<pre><code class="language-bash">tools/support/bump_version.py --version 0.1.1 --check
+tools/support/bump_version.py --version 0.1.1
 </code></pre>
 <h2 id="release-tool">Release Tool</h2>
 <p>Path:</p>
@@ -737,9 +738,9 @@
 <li>Common release workflow helper (branch checks, clean worktree checks, quality gates, version bump, tag creation)</li>
 </ul>
 <p>Usage:</p>
-<pre><code class="language-bash">.venv/bin/python tools/release/release.py --version-info
-.venv/bin/python tools/release/release.py --no-push
-.venv/bin/python tools/release/release.py --version 0.1.1 --no-push
+<pre><code class="language-bash">tools/release/release.py --version-info
+tools/release/release.py --no-push
+tools/release/release.py --version 0.1.1 --no-push
 </code></pre>
 <h2 id="git-convenience-tools">Git Convenience Tools</h2>
 <p>Paths:</p>

@@ -31,6 +31,7 @@ Planned migration path:
 ## Commands
 
 ```bash
-.venv/bin/python tools/docs/build_visual_docs.py
-.venv/bin/mkdocs serve
+source .venv/bin/activate
+tools/docs/build_visual_docs.py
+mkdocs serve -a 127.0.0.1:8030
 ```

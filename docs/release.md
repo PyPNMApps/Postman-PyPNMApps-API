@@ -14,8 +14,9 @@ Do not manually update only one of them.
 Use the bump tool to keep both files synchronized:
 
 ```bash
-.venv/bin/python tools/support/bump_version.py --version 0.1.1 --check
-.venv/bin/python tools/support/bump_version.py --version 0.1.1
+source .venv/bin/activate
+tools/support/bump_version.py --version 0.1.1 --check
+tools/support/bump_version.py --version 0.1.1
 ```
 
 ## Release Flow
@@ -23,7 +24,8 @@ Use the bump tool to keep both files synchronized:
 Use:
 
 ```bash
-.venv/bin/python tools/release/release.py --no-push
+source .venv/bin/activate
+tools/release/release.py --no-push
 ```
 
 What it does:
@@ -43,8 +45,9 @@ What it does:
 ## Recommended Sequence
 
 ```bash
-.venv/bin/python tools/sanitize.py --check
-.venv/bin/python -m pytest -q
-.venv/bin/python tools/support/bump_version.py --version 0.1.1 --check
-.venv/bin/python tools/release/release.py --version 0.1.1 --no-push
+source .venv/bin/activate
+tools/sanitize.py --check
+pytest -q
+tools/support/bump_version.py --version 0.1.1 --check
+tools/release/release.py --version 0.1.1 --no-push
 ```

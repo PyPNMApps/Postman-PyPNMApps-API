@@ -8,6 +8,7 @@ Create the local virtual environment and install dev dependencies:
 
 ```bash
 ./install.sh
+source .venv/bin/activate
 ```
 
 ## Visual Docs Generator (MkDocs)
@@ -25,9 +26,9 @@ Purpose:
 Usage:
 
 ```bash
-.venv/bin/python tools/docs/build_visual_docs.py
-.venv/bin/python tools/docs/build_visual_docs.py --check
-.venv/bin/mkdocs serve
+tools/docs/build_visual_docs.py
+tools/docs/build_visual_docs.py --check
+mkdocs serve -a 127.0.0.1:8030
 ```
 
 Notes:
@@ -50,8 +51,8 @@ Purpose:
 Usage:
 
 ```bash
-.venv/bin/python tools/sanitize.py --check
-.venv/bin/python tools/sanitize.py --fix
+tools/sanitize.py --check
+tools/sanitize.py --fix
 ```
 
 Modes:
@@ -72,8 +73,8 @@ Purpose:
 Usage:
 
 ```bash
-.venv/bin/python tools/support/bump_version.py --version 0.1.1 --check
-.venv/bin/python tools/support/bump_version.py --version 0.1.1
+tools/support/bump_version.py --version 0.1.1 --check
+tools/support/bump_version.py --version 0.1.1
 ```
 
 ## Release Tool
@@ -89,9 +90,9 @@ Purpose:
 Usage:
 
 ```bash
-.venv/bin/python tools/release/release.py --version-info
-.venv/bin/python tools/release/release.py --no-push
-.venv/bin/python tools/release/release.py --version 0.1.1 --no-push
+tools/release/release.py --version-info
+tools/release/release.py --no-push
+tools/release/release.py --version 0.1.1 --no-push
 ```
 
 ## Git Convenience Tools

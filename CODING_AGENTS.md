@@ -9,8 +9,8 @@
 - Use the PyPNM default generic placeholders:
 - MAC: `aa:bb:cc:dd:ee:ff`
 - system_description JSON: `{"HW_REV":"1.0","VENDOR":"LANCity","BOOTR":"NONE","SW_REV":"1.0.0","MODEL":"LCPET-3"}`
-- Before committing visual JSON fixtures, run `.venv/bin/python tools/sanitize.py --check` (check only) or `.venv/bin/python tools/sanitize.py --fix` (apply changes) to sanitize MAC/sysDescr metadata.
-- Version source of truth is the repo `VERSION` file. When bumping versions, use `.venv/bin/python tools/support/bump_version.py --version X.Y.Z` so both `VERSION` and `pyproject.toml` stay in sync.
+- Before committing visual JSON fixtures, activate the repo venv (`source .venv/bin/activate`) and run `tools/sanitize.py --check` (check only) or `tools/sanitize.py --fix` (apply changes) to sanitize MAC/sysDescr metadata.
+- Version source of truth is the repo `VERSION` file. After activating the repo venv, use `tools/support/bump_version.py --version X.Y.Z` so both `VERSION` and `pyproject.toml` stay in sync.
 
 ## Tooling Layout (Required)
 

@@ -583,6 +583,8 @@
 <p>This directory contains user documentation for working with the Postman PyPNMApps API repository.</p>
 <h2 id="documents">Documents</h2>
 <ul>
+<li><code>docs/postman-install.md</code> - Postman Desktop download/install steps for Ubuntu and Windows.</li>
+<li><code>docs/postman-import-and-navigation.md</code> - Import Postman files, configure globals, and navigate collections.</li>
 <li><code>docs/user-guide.md</code> - End-user setup and Postman import/use instructions.</li>
 <li><code>docs/tools.md</code> - Local developer tooling (<code>sanitize</code>, <code>bump_version</code>, <code>release</code>, <code>git-save</code>, <code>git-push</code>).</li>
 <li><code>docs/release.md</code> - Versioning and release workflow (<code>VERSION</code> source of truth).</li>
@@ -593,16 +595,18 @@
 <ol>
 <li>Create the local Python virtual environment:</li>
 <li><code>./install.sh</code></li>
+<li>Activate the virtual environment:</li>
+<li><code>source .venv/bin/activate</code></li>
 <li>Run sanitization checks:</li>
-<li><code>.venv/bin/python tools/sanitize.py --check</code></li>
+<li><code>tools/sanitize.py --check</code></li>
 <li>Review version state:</li>
 <li><code>cat VERSION</code></li>
 <li>Run tests:</li>
-<li><code>.venv/bin/python -m pytest -q</code></li>
+<li><code>pytest -q</code></li>
 <li>Generate visual docs pages:</li>
-<li><code>.venv/bin/python tools/docs/build_visual_docs.py</code></li>
+<li><code>tools/docs/build_visual_docs.py</code></li>
 <li>Serve docs locally:</li>
-<li><code>.venv/bin/mkdocs serve</code></li>
+<li><code>mkdocs serve -a 127.0.0.1:8030</code></li>
 </ol>
 
 
