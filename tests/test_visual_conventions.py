@@ -24,7 +24,7 @@ def test_visual_template_includes_capture_time_header_pattern() -> None:
 
 
 def test_histogram_visual_uses_capture_time_in_header_and_no_measurement_stats_panel() -> None:
-    text = _read("visual/PyPNM/SingleCapture/Histogram/Histogram.html")
+    text = _read("visual/PyPNM/SingleCapture/Histogram-GetCapture.html")
     assert '<div class="capture-time">Capture Time: {{capture_time}}</div>' in text
     assert "pnmHeader.capture_time" in text
     assert "Measurement Statistics" not in text
@@ -33,12 +33,11 @@ def test_histogram_visual_uses_capture_time_in_header_and_no_measurement_stats_p
 
 def test_updated_visuals_include_optional_capture_time_header_pill() -> None:
     visual_paths = [
-        "visual/PyPNM/SingleCapture/OFDMA/GetCapture-PreEqualization.html",
-        "visual/PyPNM/SingleCapture/OFDM/GetCapture-RxMER.html",
-        "visual/PyPNM/SingleCapture/OFDM/GetCapture-ConstellationDisplay.html",
+        "visual/PyPNM/SingleCapture/Ofdma-PreEq-GetCapture.html",
+        "visual/PyPNM/SingleCapture/Ofdm-RxMER-GetCapture.html",
+        "visual/PyPNM/SingleCapture/Ofdm-ConstellationDisplay-GetCapture.html",
     ]
     for rel_path in visual_paths:
         text = _read(rel_path)
         assert "Capture Time: {{captureTime}}" in text, rel_path
         assert "formatCaptureTime(" in text, rel_path
-
