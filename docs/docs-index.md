@@ -8,6 +8,7 @@ This directory contains user documentation for working with the Postman PyPNMApp
 - `docs/postman-import-and-navigation.md` - Import Postman files, configure globals, and navigate collections.
 - `docs/user-guide.md` - End-user setup and Postman import/use instructions.
 - `docs/tools.md` - Local developer tooling (`sanitize`, `bump_version`, `release`, `git-save`, `git-push`).
+- `docs/visual-workflow.md` - Simple workflow for editing visuals and syncing Postman visualizer scripts.
 - `docs/release.md` - Versioning and release workflow (`VERSION` source of truth).
 - `docs/visual/index.md` - Generated visual examples catalog (from `visual/`).
 - `docs/visual-mkdocs-plan.md` - MkDocs visual catalog source-of-truth plan.

@@ -98,6 +98,11 @@ def run_quality_gates(root: Path) -> None:
         print("[check] sanitize (check mode)")
         run([python_bin, str(sanitize_script), "--check"])
 
+    sync_visualizers_script = root / "tools" / "postman" / "sync_visualizers.py"
+    if sync_visualizers_script.exists():
+        print("[check] postman visualizer sync")
+        run([python_bin, str(sync_visualizers_script), "--check"])
+
     visual_docs_script = root / "tools" / "docs" / "build_visual_docs.py"
     if visual_docs_script.exists():
         print("[check] visual docs generated output")
