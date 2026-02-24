@@ -71,21 +71,6 @@ const template = `
     color: #f3f6ff;
   }
   .device-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-  .meta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  .meta-pill {
-    background: #202938;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 999px;
-    padding: 6px 10px;
-    font-size: 12px;
-    color: #dde7fb;
-  }
-  .meta-pill strong { color: #f7fbff; }
   .chart-wrap {
     position: relative;
     height: 320px;
@@ -165,15 +150,8 @@ const template = `
 </div>
 {{/if}}
 
-<div class="meta-row">
-  <div class="meta-pill"><strong>MacAddress:</strong> <span class="mono">{{macAddress}}</span></div>
-  <div class="meta-pill"><strong>Channels:</strong> {{channelCount}}</div>
-  <div class="meta-pill"><strong>Status:</strong> {{status}}</div>
-  <div class="meta-pill"><strong>Profiles:</strong> {{profileIdsLabel}}</div>
-</div>
-
 <div class="panel">
-  <div class="panel-title">All Channels · Avg MER Aligned by Frequency</div>
+  <div class="panel-title">All Channels ({{channelCount}}) · Avg MER Aligned by Frequency</div>
   <div class="chart-wrap"><canvas id="allAvgChart"></canvas></div>
 </div>
 

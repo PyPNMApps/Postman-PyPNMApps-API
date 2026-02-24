@@ -58,7 +58,10 @@
 - If `system_description` is missing/partial, render `N/A` for missing fields instead of vendor-specific fallback values.
 - JSON responses may contain multiple upstream/downstream channels; each channel must render as its own graph for the selected graph type.
 - For multi-channel visuals with repeated per-channel panels/boxes, default to a 2-column layout (max 2 per row) with a 1-column fallback on narrower widths.
-- Multi-channel views should also include a combined graph at the bottom with all channels lined up by frequency in a single graph.
+- For channel-related multi-channel visuals, place the combined graph at the top and per-channel graphs below it.
+- For channel-related multi-channel visuals, include the channel count in the combined graph title (for example `All Channels (N)`).
+- Do not add a separate `Analysis Summary` block when it only repeats channel count/status; surface channel count in the combined graph title and keep status elsewhere only when needed.
+- Multi-channel combined graphs should line up all channels by frequency in a single graph.
 
 ## Visual Color Rules (Required)
 

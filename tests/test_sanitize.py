@@ -69,6 +69,44 @@ def test_sanitize_json_handles_system_description_sysdescr_and_mac_variants() ->
     assert out["bad_mac_address"] == "00:50:f1:12:03"
 
 
+def test_root_system_description_is_lifted_and_ordered_first() -> None:
+    payload = {
+        "status": 0,
+        "data": {
+            "analysis": [
+                {
+                    "device_details": {
+                        "system_description": {
+                            "VENDOR": "Intel Corporation.",
+                            "MODEL": "Cougar Run",
+                            "HW_REV": "150.11",
+                            "BOOTR": "NONE",
+                            "SW_REV": "7.3.5",
+                        }
+                    }
+                }
+            ]
+        },
+    }
+
+    out = sanitize._normalize_root_system_description(sanitize._sanitize_json(payload))
+    assert list(out.keys())[0] == "system_description"
+    assert out["system_description"] == sanitize.GENERIC_SYSTEM_DESCRIPTION
+    assert out["status"] == 0
+
+
+def test_root_system_description_defaults_for_capture_response_when_missing() -> None:
+    payload = {
+        "mac_address": "00:50:f1:12:03:60",
+        "status": 0,
+        "message": "ok",
+        "data": {"results": []},
+    }
+    out = sanitize._normalize_root_system_description(sanitize._sanitize_json(payload))
+    assert list(out.keys())[0] == "system_description"
+    assert out["system_description"] == sanitize.GENERIC_SYSTEM_DESCRIPTION
+
+
 def test_sanitize_file_invalid_json_returns_false(tmp_path: Path) -> None:
     path = tmp_path / "empty.json"
     path.write_text("", encoding="utf-8")
@@ -156,3 +194,37 @@ def test_cli_check_and_fix_modes(tmp_path: Path) -> None:
 
     rc_check_after = sanitize.main(["--root", str(visual_root), "--check"])
     assert rc_check_after == 0
+
+
+def test_cli_fix_adds_root_system_description_when_nested_only(tmp_path: Path) -> None:
+    visual_root = tmp_path / "visual"
+    visual_root.mkdir()
+    sample = visual_root / "nested-only.json"
+    sample.write_text(
+        json.dumps(
+            {
+                "status": 0,
+                "data": {
+                    "analysis": [
+                        {
+                            "device_details": {
+                                "system_description": {
+                                    "VENDOR": "Something",
+                                    "MODEL": "X",
+                                    "HW_REV": "2.0",
+                                    "BOOTR": "Y",
+                                    "SW_REV": "3.0",
+                                }
+                            }
+                        }
+                    ]
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert sanitize.main(["--root", str(visual_root), "--fix"]) == 0
+    after = json.loads(sample.read_text(encoding="utf-8"))
+    assert list(after.keys())[0] == "system_description"
+    assert after["system_description"] == sanitize.GENERIC_SYSTEM_DESCRIPTION

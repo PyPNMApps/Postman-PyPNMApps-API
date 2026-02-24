@@ -467,6 +467,13 @@ pm.visualizer.set(template, constructVisualizerPayload());
 
 ````json
 {
+    "system_description": {
+        "HW_REV": "1.0",
+        "VENDOR": "LANCity",
+        "BOOTR": "NONE",
+        "SW_REV": "1.0.0",
+        "MODEL": "LCPET-3"
+    },
     "mac_address": "aabbccddeeff",
     "status": 0,
     "message": null,

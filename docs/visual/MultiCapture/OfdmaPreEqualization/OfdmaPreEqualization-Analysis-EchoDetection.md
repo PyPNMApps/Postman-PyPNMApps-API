@@ -15,167 +15,672 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
-// Echo Detection IFFT Visualization - Dark Theme
-// Displays metadata, channel info, time response graph, and echoes table
+var template = `
+<style>
+  body {
+    margin: 0;
+    padding: 16px;
+    background: #141821;
+    color: #e7edf8;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .header-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .page-title {
+    grid-column: 2;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #f3f6ff;
+  }
+  .capture-time {
+    justify-self: end;
+    white-space: nowrap;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.04);
+    color: #e7edf8;
+    font-size: 12px;
+  }
+  .device-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  .device-info-table th, .device-info-table td {
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+    word-break: break-word;
+  }
+  .device-info-table th { background: rgba(255,255,255,0.06); color: #e7edf8; }
+  .device-info-table td { background: rgba(255,255,255,0.02); color: #e7edf8; }
+  .panel {
+    background: #1b2332;
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.22);
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .panel-title {
+    text-align: center;
+    color: #9ec0ff;
+    font-weight: 700;
+    font-size: 16px;
+    margin: 0 0 8px;
+  }
+  .panel-info {
+    text-align: center;
+    font-size: 12px;
+    color: #e7edf8;
+    margin-bottom: 8px;
+  }
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+    justify-content: center;
+  }
+  .chip {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 12px;
+    color: #e7edf8;
+  }
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .results-grid .panel { margin-bottom: 0; }
+  @media (max-width: 980px) {
+    .results-grid { grid-template-columns: 1fr; }
+  }
+  .echo-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  .echo-table th, .echo-table td {
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 6px 8px;
+    text-align: left;
+  }
+  .echo-table th { color: #e7edf8; background: rgba(255,255,255,0.06); }
+  .echo-table td { color: #e7edf8; background: rgba(255,255,255,0.02); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .chart-canvas { width: 100%; display: block; }
+</style>
 
-var template = '\
-<style>\
-    body { font-family: Arial, sans-serif; padding: 20px; background-color: #1a1a2e; color: #eee; }\
-    .card { background-color: #16213e; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }\
-    .card h3 { margin-top: 0; color: #00d9ff; border-bottom: 1px solid #0f3460; padding-bottom: 8px; }\
-    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }\
-    .info-item { padding: 8px; background: #0f3460; border-radius: 4px; }\
-    .info-label { font-weight: bold; color: #00d9ff; font-size: 12px; }\
-    .info-value { color: #fff; margin-top: 4px; }\
-    .chart-container { position: relative; height: 400px; }\
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }\
-    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #0f3460; }\
-    th { background: #0f3460; color: #00d9ff; }\
-    tr:hover { background: #1a1a4e; }\
-    .no-echoes { text-align: center; padding: 20px; color: #888; }\
-</style>\
-\
-<div class="card">\
-    <h3>Analysis Metadata</h3>\
-    <div class="info-grid">\
-        <div class="info-item"><div class="info-label">MAC Address</div><div class="info-value">{{mac_address}}</div></div>\
-        <div class="info-item"><div class="info-label">Status</div><div class="info-value">{{status}}</div></div>\
-        <div class="info-item"><div class="info-label">Analysis Type</div><div class="info-value">{{analysis_type}}</div></div>\
-        <div class="info-item"><div class="info-label">Message</div><div class="info-value">{{message}}</div></div>\
-    </div>\
-</div>\
-\
-<div class="card">\
-    <h3>Channel Information</h3>\
-    <div class="info-grid">\
-        <div class="info-item"><div class="info-label">Channel ID</div><div class="info-value">{{channel.channel_id}}</div></div>\
-        <div class="info-item"><div class="info-label">Cable Type</div><div class="info-value">{{channel.cable_type}}</div></div>\
-        <div class="info-item"><div class="info-label">Velocity Factor</div><div class="info-value">{{channel.velocity_factor}}</div></div>\
-        <div class="info-item"><div class="info-label">Sample Rate</div><div class="info-value">{{channel.sample_rate_mhz}} MHz</div></div>\
-        <div class="info-item"><div class="info-label">Direct Path Amplitude</div><div class="info-value">{{channel.direct_path_amplitude}}</div></div>\
-        <div class="info-item"><div class="info-label">Subcarriers</div><div class="info-value">{{channel.subcarriers}}</div></div>\
-    </div>\
-</div>\
-\
-<div class="card">\
-    <h3>Time Response (Impulse Response)</h3>\
-    <div class="chart-container">\
-        <canvas id="timeResponseChart"></canvas>\
-    </div>\
-</div>\
-\
-<div class="card">\
-    <h3>Detected Echoes</h3>\
-    {{#if hasEchoes}}\
-    <table>\
-        <thead><tr><th>Index</th><th>Time (μs)</th><th>Amplitude</th><th>Distance (ft)</th></tr></thead>\
-        <tbody>\
-        {{#each echoes}}\
-            <tr><td>{{this.index}}</td><td>{{this.time_us}}</td><td>{{this.amplitude}}</td><td>{{this.distance_ft}}</td></tr>\
-        {{/each}}\
-        </tbody>\
-    </table>\
-    {{else}}\
-    <div class="no-echoes">No echoes detected above threshold</div>\
-    {{/if}}\
-</div>\
-\
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>\
-<script>\
-    pm.getData(function(err, value) {\
-        var ctx = document.getElementById("timeResponseChart").getContext("2d");\
-        new Chart(ctx, {\
-            type: "line",\
-            data: {\
-                labels: value.timeLabels,\
-                datasets: [{\
-                    label: "Amplitude (Magnitude)",\
-                    data: value.amplitudes,\
-                    borderColor: "#00d9ff",\
-                    backgroundColor: "rgba(0, 217, 255, 0.1)",\
-                    borderWidth: 2,\
-                    pointRadius: 0,\
-                    fill: true\
-                }]\
-            },\
-            options: {\
-                responsive: true,\
-                maintainAspectRatio: false,\
-                legend: { labels: { fontColor: "#eee" } },\
-                title: { display: true, text: "Impulse Response", fontColor: "#00d9ff" },\
-                scales: {\
-                    xAxes: [{\
-                        display: true,\
-                        scaleLabel: { display: true, labelString: "Time (μs)", fontColor: "#eee" },\
-                        ticks: { fontColor: "#aaa", maxTicksLimit: 10 },\
-                        gridLines: { color: "#333" }\
-                    }],\
-                    yAxes: [{\
-                        display: true,\
-                        scaleLabel: { display: true, labelString: "Amplitude", fontColor: "#eee" },\
-                        ticks: { fontColor: "#aaa" },\
-                        gridLines: { color: "#333" }\
-                    }]\
-                }\
-            }\
-        });\
-    });\
-</script>';
+<div class="header-row">
+  <div></div>
+  <div class="page-title">OFDMA Pre-Equalization Analysis (Echo Detection IFFT)</div>
+  {{#if capture_time}}<div class="capture-time">Capture Time: {{capture_time}}</div>{{/if}}
+</div>
+
+{{#if has_device_info}}
+<table class="device-info-table">
+  <thead>
+    <tr>
+      <th>MacAddress</th>
+      <th>Model</th>
+      <th>Vendor</th>
+      <th>SW Version</th>
+      <th>HW Version</th>
+      <th>Boot ROM</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>{{device_info.macAddress}}</td>
+      <td>{{device_info.model}}</td>
+      <td>{{device_info.vendor}}</td>
+      <td>{{device_info.swVersion}}</td>
+      <td>{{device_info.hwVersion}}</td>
+      <td>{{device_info.bootRom}}</td>
+    </tr>
+  </tbody>
+</table>
+{{/if}}
+
+<div class="panel">
+  <div class="panel-title">All Channels ({{channel_count}}) · IFFT Magnitude Aligned by Delay</div>
+  <div class="panel-info">Master Axis: {{combined.delay_start_us}} - {{combined.delay_end_us}} μs ({{combined.total_points}} points, showing {{combined.display_points}} sampled)</div>
+  <canvas id="chart-all-aligned" class="chart-canvas" height="150"></canvas>
+</div>
+
+<div class="results-grid" id="resultsGrid"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+<script>
+(function waitForChart() {
+  if (typeof Chart === 'undefined') return setTimeout(waitForChart, 50);
+  pm.getData(function (err, value) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    var TUNING = {
+      ALIGNED_CHART_HEIGHT: 240,
+      CHANNEL_CHART_HEIGHT: 220,
+      MAX_POINTS_PER_CHANNEL: 240,
+      MAX_POINTS_ALIGNED: 260,
+      CHANNEL_Y_TICKS: 4,
+      CHANNEL_Y_EXPAND: 1.1
+    };
+
+    var gridColor = 'rgba(255,255,255,0.12)';
+    var tickColor = '#dbe7ff';
+    var labelColor = '#e7edf8';
+    var channelColors = ['#5a6fd8', '#39c28e', '#ff7a7a', '#f4c84b', '#7fd3ff', '#c285ff'];
+    var directColor = '#ffffff';
+    var echoColor = '#c62828';
+
+    var results = Array.isArray(value.results) ? value.results : [];
+    var root = document.getElementById('resultsGrid');
+    if (!root) return;
+
+    function commonLineOptions(yLabel, maxYTicks) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        legend: { display: true, position: 'bottom', labels: { fontColor: labelColor } },
+        tooltips: { mode: 'index', intersect: false },
+        hover: { mode: 'nearest', intersect: false },
+        scales: {
+          xAxes: [{
+            display: true,
+            scaleLabel: { display: true, labelString: 'Delay (μs)', fontColor: labelColor },
+            ticks: { fontColor: tickColor, maxTicksLimit: 10 },
+            gridLines: { color: gridColor }
+          }],
+          yAxes: [{
+            display: true,
+            scaleLabel: { display: true, labelString: yLabel, fontColor: labelColor },
+            ticks: { fontColor: tickColor, maxTicksLimit: maxYTicks || 6 },
+            gridLines: { color: gridColor }
+          }]
+        }
+      };
+    }
+
+    (function renderCombined() {
+      var canvas = document.getElementById('chart-all-aligned');
+      if (!canvas) return;
+      canvas.height = TUNING.ALIGNED_CHART_HEIGHT;
+      var labels = (value.combined && Array.isArray(value.combined.labels)) ? value.combined.labels : [];
+      var datasets = (value.combined && Array.isArray(value.combined.datasets)) ? value.combined.datasets : [];
+      var chartDatasets = datasets.map(function(ds, idx) {
+        return {
+          label: ds.label,
+          data: ds.data,
+          borderColor: channelColors[idx % channelColors.length],
+          backgroundColor: 'rgba(0,0,0,0)',
+          borderWidth: 1,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          lineTension: 0.1,
+          spanGaps: false,
+          fill: false
+        };
+      });
+      new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: { labels: labels, datasets: chartDatasets },
+        options: commonLineOptions('IFFT Magnitude', 6)
+      });
+    })();
+
+    results.forEach(function(ch, idx) {
+      var panel = document.createElement('div');
+      panel.className = 'panel';
+
+      var title = document.createElement('div');
+      title.className = 'panel-title';
+      title.textContent = (ch.title || ('Channel ' + String(idx + 1))) + ' Echo Detection IFFT';
+      panel.appendChild(title);
+
+      var info = document.createElement('div');
+      info.className = 'panel-info';
+      info.textContent = 'Delay Range: ' + ch.delay_start_us + ' - ' + ch.delay_end_us + ' μs (' + ch.total_points + ' points, showing ' + ch.display_points + ' sampled)';
+      panel.appendChild(info);
+
+      var chips = document.createElement('div');
+      chips.className = 'chip-row';
+      chips.innerHTML = '' +
+        '<div class="chip">Echoes: ' + ch.echo_count + '</div>' +
+        '<div class="chip">Direct Bin: ' + ch.direct_path_bin + '</div>' +
+        '<div class="chip">VF: ' + ch.velocity_factor + '</div>' +
+        '<div class="chip">Cable: ' + ch.cable_type + '</div>';
+      panel.appendChild(chips);
+
+      var canvas = document.createElement('canvas');
+      canvas.id = 'chart-' + ch.canvas_id;
+      canvas.className = 'chart-canvas';
+      canvas.height = TUNING.CHANNEL_CHART_HEIGHT;
+      panel.appendChild(canvas);
+
+      if (Array.isArray(ch.echo_rows) && ch.echo_rows.length) {
+        var tbl = document.createElement('table');
+        tbl.className = 'echo-table';
+        tbl.innerHTML = '<thead><tr><th>Echo</th><th>Bin</th><th>Delay (μs)</th><th>Amp</th><th>Distance (ft)</th></tr></thead><tbody></tbody>';
+        var tbody = tbl.querySelector('tbody');
+        ch.echo_rows.forEach(function(r) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td>' + r.name + '</td><td class="mono">' + r.bin + '</td><td>' + r.delay_us + '</td><td>' + r.amplitude + '</td><td>' + r.distance_ft + '</td>';
+          tbody.appendChild(tr);
+        });
+        panel.appendChild(tbl);
+      }
+
+      root.appendChild(panel);
+
+      var yVals = (Array.isArray(ch.magnitude) ? ch.magnitude : []).filter(function(v) { return typeof v === 'number' && isFinite(v); });
+      var yMin, yMax;
+      if (yVals.length) {
+        var localMin = Math.min.apply(null, yVals);
+        var localMax = Math.max.apply(null, yVals);
+        var center = (localMin + localMax) / 2;
+        var half = Math.max((localMax - localMin) / 2, 1e-6);
+        yMin = center - half * TUNING.CHANNEL_Y_EXPAND;
+        yMax = center + half * TUNING.CHANNEL_Y_EXPAND;
+      }
+
+      var directMarker = new Array(ch.magnitude.length).fill(null);
+      if (typeof ch.direct_path_sample_index === 'number' && ch.direct_path_sample_index >= 0 && ch.direct_path_sample_index < directMarker.length) {
+        directMarker[ch.direct_path_sample_index] = ch.magnitude[ch.direct_path_sample_index];
+      }
+      var echoMarkers = new Array(ch.magnitude.length).fill(null);
+      (Array.isArray(ch.echo_sample_indices) ? ch.echo_sample_indices : []).forEach(function(iPos) {
+        if (typeof iPos === 'number' && iPos >= 0 && iPos < echoMarkers.length) echoMarkers[iPos] = ch.magnitude[iPos];
+      });
+
+      new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: ch.labels,
+          datasets: [
+            {
+              label: (ch.title || ('Channel ' + String(idx + 1))) + ' IFFT Magnitude',
+              data: ch.magnitude,
+              borderColor: channelColors[idx % channelColors.length],
+              backgroundColor: 'rgba(0,0,0,0)',
+              borderWidth: 1,
+              pointRadius: 0,
+              pointHoverRadius: 0,
+              lineTension: 0.1,
+              fill: false
+            },
+            {
+              label: 'Direct Path',
+              data: directMarker,
+              borderColor: directColor,
+              backgroundColor: directColor,
+              pointRadius: 3,
+              pointHoverRadius: 4,
+              showLine: false,
+              fill: false
+            },
+            {
+              label: 'Echoes',
+              data: echoMarkers,
+              borderColor: echoColor,
+              backgroundColor: echoColor,
+              pointRadius: 3,
+              pointHoverRadius: 4,
+              showLine: false,
+              fill: false
+            }
+          ]
+        },
+        options: (function() {
+          var opts = commonLineOptions('IFFT Magnitude', TUNING.CHANNEL_Y_TICKS);
+          opts.scales.yAxes[0].ticks.min = yMin;
+          opts.scales.yAxes[0].ticks.max = yMax;
+          opts.scales.yAxes[0].ticks.callback = function(v) {
+            var n = Number(v);
+            if (!isFinite(n)) return v;
+            if (Math.abs(n) >= 1) return n.toFixed(2);
+            if (Math.abs(n) >= 0.1) return n.toFixed(3);
+            if (Math.abs(n) >= 0.01) return n.toFixed(4);
+            return n.toFixed(5);
+          };
+          return opts;
+        })()
+      });
+    });
+  });
+})();
+</script>
+`;
 
 function constructVisualizerPayload() {
-    var response = pm.response.json();
-    var result = response.data && response.data.results && response.data.results[0] ? response.data.results[0] : {};
-    var timeResponse = result.time_response || {};
-    var timeAxis = timeResponse.time_axis_s || [];
-    var complexData = timeResponse.time_response || [];
-    
-    // Limit to first 150 points for clarity
-    var maxPoints = 150;
-    var timeLabels = [];
-    var amplitudes = [];
-    
-    for (var i = 0; i < Math.min(maxPoints, timeAxis.length); i++) {
-        // Convert seconds to microseconds
-        timeLabels.push((timeAxis[i] * 1e6).toFixed(4));
-        // Calculate magnitude: sqrt(real^2 + imag^2)
-        var real = complexData[i] ? complexData[i][0] : 0;
-        var imag = complexData[i] ? complexData[i][1] : 0;
-        amplitudes.push(Math.sqrt(real * real + imag * imag));
-    }
-    
-    // Process echoes
-    var echoes = (result.echoes || []).map(function(echo, idx) {
-        return {
-            index: idx + 1,
-            time_us: echo.time_s ? (echo.time_s * 1e6).toFixed(4) : "N/A",
-            amplitude: echo.amplitude ? echo.amplitude.toFixed(6) : "N/A",
-            distance_ft: echo.distance_ft ? echo.distance_ft.toFixed(2) : "N/A"
-        };
-    });
-    
-    var directPath = result.direct_path || {};
-    
+  var response = pm.response.json() || {};
+  var TUNING = {
+    MAX_POINTS_PER_CHANNEL: 240,
+    MAX_POINTS_ALIGNED: 260
+  };
+
+  function safeText(v) {
+    if (v === undefined || v === null) return 'N/A';
+    var s = String(v).trim();
+    return s ? s : 'N/A';
+  }
+  function toFixedOrNA(v, d) {
+    var n = Number(v);
+    return isFinite(n) ? n.toFixed(d) : 'N/A';
+  }
+  function formatCaptureTime(raw) {
+    var n = Number(raw);
+    if (!isFinite(n)) return null;
+    var d = new Date(n * 1000);
+    if (!isFinite(d.getTime())) return null;
+    function p(x) { return String(x).padStart(2, '0'); }
+    return d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds()) + ' UTC';
+  }
+  function buildDeviceInfo(resp) {
+    var sys = (resp && resp.system_description && typeof resp.system_description === 'object') ? resp.system_description : null;
+    if (!sys) return null;
     return {
-        mac_address: response.mac_address || "N/A",
-        status: response.status === 0 ? "Success" : "Status: " + response.status,
-        message: response.message || "N/A",
-        analysis_type: response.data ? response.data.analysis_type : "N/A",
-        channel: {
-            channel_id: result.channel_id || "N/A",
-            cable_type: result.cable_type || "N/A",
-            velocity_factor: result.velocity_factor || "N/A",
-            sample_rate_mhz: result.sample_rate_hz ? (result.sample_rate_hz / 1e6).toFixed(2) : "N/A",
-            direct_path_amplitude: directPath.amplitude ? directPath.amplitude.toFixed(6) : "N/A",
-            subcarriers: timeResponse.n_fft || "N/A"
-        },
-        timeLabels: timeLabels,
-        amplitudes: amplitudes,
-        echoes: echoes,
-        hasEchoes: echoes.length > 0
+      macAddress: safeText(resp.mac_address).toLowerCase(),
+      model: safeText(sys.MODEL),
+      vendor: safeText(sys.VENDOR),
+      swVersion: safeText(sys.SW_REV),
+      hwVersion: safeText(sys.HW_REV),
+      bootRom: safeText(sys.BOOTR)
     };
+  }
+  function sampleIndicesEnsure(length, maxPoints, required) {
+    var req = Array.isArray(required) ? required : [];
+    var map = Object.create(null);
+    if (!length || length <= 0) return [];
+    if (length <= maxPoints) {
+      var all = [];
+      for (var i = 0; i < length; i++) all.push(i);
+      return all;
+    }
+    var step = Math.ceil(length / maxPoints);
+    for (var j = 0; j < length; j += step) map[String(j)] = true;
+    map[String(length - 1)] = true;
+    for (var r = 0; r < req.length; r++) {
+      var idx = Number(req[r]);
+      if (isFinite(idx) && idx >= 0 && idx < length) map[String(Math.round(idx))] = true;
+    }
+    return Object.keys(map).map(function(k){ return Number(k); }).sort(function(a,b){ return a-b; });
+  }
+  function sampleByIndices(arr, idxs) {
+    var out = [];
+    for (var i = 0; i < idxs.length; i++) out.push(arr[idxs[i]]);
+    return out;
+  }
+  function toDelayUsLabel(sec) {
+    var n = Number(sec);
+    if (!isFinite(n)) return '';
+    return (n * 1e6).toFixed(2);
+  }
+  function complexMagnitude(v) {
+    if (Array.isArray(v) && v.length >= 2) {
+      var re = Number(v[0]), im = Number(v[1]);
+      if (isFinite(re) && isFinite(im)) return Math.sqrt(re * re + im * im);
+      return null;
+    }
+    var n = Number(v);
+    return isFinite(n) ? Math.abs(n) : null;
+  }
+  function uniqSortedNumeric(arr) {
+    var m = Object.create(null);
+    for (var i = 0; i < arr.length; i++) {
+      var n = Number(arr[i]);
+      if (!isFinite(n)) continue;
+      m[String(n)] = true;
+    }
+    return Object.keys(m).map(function(k){ return Number(k); }).sort(function(a,b){ return a-b; });
+  }
+  function alignSeries(masterSec, secArr, valuesArr) {
+    var map = Object.create(null);
+    var n = Math.min(Array.isArray(secArr) ? secArr.length : 0, Array.isArray(valuesArr) ? valuesArr.length : 0);
+    for (var i = 0; i < n; i++) {
+      var t = Number(secArr[i]);
+      var v = Number(valuesArr[i]);
+      if (!isFinite(t)) continue;
+      map[String(t)] = isFinite(v) ? v : null;
+    }
+    var out = new Array(masterSec.length);
+    for (var j = 0; j < masterSec.length; j++) {
+      var key = String(masterSec[j]);
+      out[j] = (key in map) ? map[key] : null;
+    }
+    return out;
+  }
+
+  var raw = (response && response.data && typeof response.data === 'object') ? response.data : {};
+  var results = Array.isArray(raw.results) ? raw.results.slice() : [];
+
+  results.sort(function(a, b) {
+    var af = (a && a.channel_id != null) ? Number(a.channel_id) : Infinity;
+    var bf = (b && b.channel_id != null) ? Number(b.channel_id) : Infinity;
+    if (isFinite(af) && isFinite(bf) && af !== bf) return af - bf;
+    var at = (a && a.time_response && Array.isArray(a.time_response.time_axis_s) && a.time_response.time_axis_s.length) ? Number(a.time_response.time_axis_s[0]) : Infinity;
+    var bt = (b && b.time_response && Array.isArray(b.time_response.time_axis_s) && b.time_response.time_axis_s.length) ? Number(b.time_response.time_axis_s[0]) : Infinity;
+    if (isFinite(at) && isFinite(bt) && at !== bt) return at - bt;
+    return 0;
+  });
+
+  var channelRows = results.map(function(r, idx) {
+    var tr = (r && r.time_response && typeof r.time_response === 'object') ? r.time_response : {};
+    var timeAxis = Array.isArray(tr.time_axis_s) ? tr.time_axis_s : [];
+    var timeResp = Array.isArray(tr.time_response) ? tr.time_response : [];
+    var magnitudesFull = timeResp.map(complexMagnitude);
+    var directPath = (r && r.direct_path && typeof r.direct_path === 'object') ? r.direct_path : {};
+    var echoes = Array.isArray(r && r.echoes) ? r.echoes : [];
+    var requiredIdx = [];
+    if (directPath.bin_index != null) requiredIdx.push(Number(directPath.bin_index));
+    for (var e = 0; e < echoes.length; e++) {
+      if (echoes[e] && echoes[e].bin_index != null) requiredIdx.push(Number(echoes[e].bin_index));
+    }
+    var idxs = sampleIndicesEnsure(timeAxis.length, TUNING.MAX_POINTS_PER_CHANNEL, requiredIdx);
+    var sampledTime = sampleByIndices(timeAxis, idxs);
+    var sampledMag = sampleByIndices(magnitudesFull, idxs);
+    var indexPosMap = Object.create(null);
+    for (var i = 0; i < idxs.length; i++) indexPosMap[String(idxs[i])] = i;
+
+    var echoRows = echoes.map(function(echo, iEcho) {
+      return {
+        name: 'Echo ' + String(iEcho + 1),
+        bin: safeText(echo.bin_index),
+        delay_us: toFixedOrNA((Number(echo.time_s) * 1e6), 3),
+        amplitude: toFixedOrNA(echo.amplitude, 4),
+        distance_ft: toFixedOrNA(echo.distance_ft, 2)
+      };
+    });
+
+    var title = (r && r.channel_id != null) ? ('Channel ' + String(r.channel_id)) : ('Result ' + String(idx + 1));
+    return {
+      title: title,
+      canvas_id: 'ch_' + String(idx + 1),
+      labels: sampledTime.map(toDelayUsLabel),
+      magnitude: sampledMag,
+      delay_start_us: sampledTime.length ? toFixedOrNA(sampledTime[0] * 1e6, 2) : 'N/A',
+      delay_end_us: sampledTime.length ? toFixedOrNA(sampledTime[sampledTime.length - 1] * 1e6, 2) : 'N/A',
+      total_points: timeAxis.length,
+      display_points: sampledTime.length,
+      echo_count: echoes.length,
+      direct_path_bin: safeText(directPath.bin_index),
+      direct_path_sample_index: (directPath.bin_index != null && String(Math.round(directPath.bin_index)) in indexPosMap) ? indexPosMap[String(Math.round(directPath.bin_index))] : null,
+      echo_sample_indices: echoes.map(function(echo){
+        var k = String(Math.round(Number(echo && echo.bin_index)));
+        return (k in indexPosMap) ? indexPosMap[k] : null;
+      }).filter(function(v){ return typeof v === 'number'; }),
+      velocity_factor: toFixedOrNA(r && r.velocity_factor, 2),
+      cable_type: safeText(r && r.cable_type),
+      echo_rows: echoRows,
+      _raw_time_axis: timeAxis,
+      _raw_mag: magnitudesFull
+    };
+  });
+
+  var allTimes = [];
+  for (var c = 0; c < channelRows.length; c++) {
+    var tArr = channelRows[c]._raw_time_axis || [];
+    for (var k = 0; k < tArr.length; k++) allTimes.push(tArr[k]);
+  }
+  var masterSec = uniqSortedNumeric(allTimes);
+  var masterIdxs = sampleIndicesEnsure(masterSec.length, TUNING.MAX_POINTS_ALIGNED, []);
+  var masterSecSampled = sampleByIndices(masterSec, masterIdxs);
+
+  var combined = {
+    labels: masterSecSampled.map(toDelayUsLabel),
+    datasets: channelRows.map(function(ch) {
+      var fullAligned = alignSeries(masterSec, ch._raw_time_axis, ch._raw_mag);
+      return { label: ch.title, data: sampleByIndices(fullAligned, masterIdxs) };
+    }),
+    delay_start_us: masterSecSampled.length ? toFixedOrNA(masterSecSampled[0] * 1e6, 2) : 'N/A',
+    delay_end_us: masterSecSampled.length ? toFixedOrNA(masterSecSampled[masterSecSampled.length - 1] * 1e6, 2) : 'N/A',
+    total_points: masterSec.length,
+    display_points: masterSecSampled.length
+  };
+
+  channelRows = channelRows.map(function(ch) {
+    return {
+      title: ch.title,
+      canvas_id: ch.canvas_id,
+      labels: ch.labels,
+      magnitude: ch.magnitude,
+      delay_start_us: ch.delay_start_us,
+      delay_end_us: ch.delay_end_us,
+      total_points: ch.total_points,
+      display_points: ch.display_points,
+      echo_count: ch.echo_count,
+      direct_path_bin: ch.direct_path_bin,
+      direct_path_sample_index: ch.direct_path_sample_index,
+      echo_sample_indices: ch.echo_sample_indices,
+      velocity_factor: ch.velocity_factor,
+      cable_type: ch.cable_type,
+      echo_rows: ch.echo_rows
+    };
+  });
+
+  var deviceInfo = buildDeviceInfo(response);
+  return {
+    analysis_type: raw.analysis_type || 'N/A',
+    results: channelRows,
+    channel_count: channelRows.length,
+    combined: combined,
+    capture_time: formatCaptureTime(((raw.pnm_header || {}).capture_time)) || formatCaptureTime(((response.pnm_header || {}).capture_time)),
+    has_device_info: !!deviceInfo,
+    device_info: deviceInfo || {
+      macAddress: safeText(response.mac_address).toLowerCase(),
+      model: 'N/A', vendor: 'N/A', swVersion: 'N/A', hwVersion: 'N/A', bootRom: 'N/A'
+    }
+  };
 }
 
 pm.visualizer.set(template, constructVisualizerPayload());
+
+
+(function () {
+  function asObj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : null; }
+  function asList(v) { return Array.isArray(v) ? v : []; }
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+  function val(v) { return v === undefined || v === null || String(v).trim() === '' ? 'N/A' : String(v).trim(); }
+  function sanitizeMac(value) {
+    if (value === undefined || value === null) return 'N/A';
+    var text = String(value).trim();
+    if (!text) return 'N/A';
+    var compact = text.replace(/[^0-9a-f]/gi, '').toLowerCase();
+    if (compact.length !== 12) return text;
+    return compact.match(/.{1,2}/g).join(':');
+  }
+  function pickSys(resp) {
+    var top = asObj(resp && resp.system_description) || asObj(resp && resp.data && resp.data.system_description);
+    if (top) return top;
+    var data = asObj(resp && resp.data) || {};
+    var results = asList(data.results);
+    for (var i = 0; i < results.length; i++) {
+      var r = asObj(results[i]) || {};
+      var dd = asObj(r.device_details) || {};
+      var sys = asObj(dd.system_description) || asObj(dd.sysDescr);
+      if (sys) return sys;
+    }
+    var analysis = asList(data.analysis);
+    for (var j = 0; j < analysis.length; j++) {
+      var a = asObj(analysis[j]) || {};
+      var dd2 = asObj(a.device_details) || {};
+      var sys2 = asObj(dd2.system_description) || asObj(dd2.sysDescr);
+      if (sys2) return sys2;
+    }
+    var keys = Object.keys(data);
+    for (var k = 0; k < keys.length; k++) {
+      var ch = asObj(data[keys[k]]) || {};
+      var dd3 = asObj(ch.device_details) || {};
+      var sys3 = asObj(dd3.system_description) || asObj(dd3.sysDescr);
+      if (sys3) return sys3;
+    }
+    return null;
+  }
+  function inject() {
+    if (document.querySelector('[data-mc-sysdescr-top]')) return;
+    if (document.querySelector('.device-info') || document.body.textContent.indexOf('Device Info') !== -1) return;
+    var resp;
+    try { resp = pm.response.json(); } catch (e) { return; }
+    var sys = pickSys(resp);
+    if (!sys) return;
+    var dark = false;
+    try { dark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); } catch (e) {}
+    var bg = dark ? '#151515' : '#ffffff';
+    var border = dark ? '#2a2a2a' : '#d8dee9';
+    var text = dark ? '#e8e8e8' : '#1f2937';
+    var muted = dark ? '#dbe3ff' : '#334155';
+    var chipBg = dark ? 'rgba(255,255,255,0.03)' : '#f8fafc';
+    var host = document.createElement('div');
+    host.setAttribute('data-mc-sysdescr-top', '1');
+    host.style.background = bg;
+    host.style.border = '1px solid ' + border;
+    host.style.borderRadius = '10px';
+    host.style.padding = '12px';
+    host.style.marginBottom = '14px';
+    host.style.color = text;
+    host.style.fontFamily = 'Arial, sans-serif';
+    host.innerHTML = '' +
+      '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:' + muted + ';margin-bottom:8px;">Device Info (CODING_AGENTS)</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">' +
+      '<div style="padding:6px 9px;border:1px solid ' + border + ';border-radius:999px;background:' + chipBg + ';font-size:12px;">MAC <span style="font-family:monospace;">' + esc(sanitizeMac(resp && resp.mac_address)) + '</span></div>' +
+      '<div style="padding:6px 9px;border:1px solid ' + border + ';border-radius:999px;background:' + chipBg + ';font-size:12px;">Vendor ' + esc(val(sys.VENDOR)) + '</div>' +
+      '<div style="padding:6px 9px;border:1px solid ' + border + ';border-radius:999px;background:' + chipBg + ';font-size:12px;">Model ' + esc(val(sys.MODEL)) + '</div>' +
+      '<div style="padding:6px 9px;border:1px solid ' + border + ';border-radius:999px;background:' + chipBg + ';font-size:12px;">SW <span style="font-family:monospace;">' + esc(val(sys.SW_REV)) + '</span></div>' +
+      '<div style="padding:6px 9px;border:1px solid ' + border + ';border-radius:999px;background:' + chipBg + ';font-size:12px;">HW <span style="font-family:monospace;">' + esc(val(sys.HW_REV)) + '</span></div>' +
+      '<div style="padding:6px 9px;border:1px solid ' + border + ';border-radius:999px;background:' + chipBg + ';font-size:12px;">BOOTR <span style="font-family:monospace;">' + esc(val(sys.BOOTR)) + '</span></div>' +
+      '</div>';
+    var container = document.querySelector('.container');
+    if (container) {
+      container.insertBefore(host, container.firstChild);
+    } else {
+      document.body.insertBefore(host, document.body.firstChild);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inject);
+    setTimeout(inject, 0);
+  } else {
+    inject();
+    setTimeout(inject, 0);
+  }
+})();
 ````
 </details>
 
@@ -184,6 +689,13 @@ pm.visualizer.set(template, constructVisualizerPayload());
 
 ````json
 {
+    "system_description": {
+        "HW_REV": "1.0",
+        "VENDOR": "LANCity",
+        "BOOTR": "NONE",
+        "SW_REV": "1.0.0",
+        "MODEL": "LCPET-3"
+    },
     "mac_address": "aabbccddeeff",
     "status": 0,
     "message": "Analysis ECHO_DETECTION_IFFT completed for group 01c46a0dcd6e4a91",
