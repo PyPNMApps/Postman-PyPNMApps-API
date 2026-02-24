@@ -90,6 +90,7 @@ var template = `
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 10px;
+    justify-content: center;
   }
   .chip {
     background: rgba(255,255,255,0.04);
@@ -157,7 +158,7 @@ var template = `
 {{/if}}
 
 <div class="panel">
-  <div class="panel-title">All Channels Aligned by Delay - IFFT Magnitude</div>
+  <div class="panel-title">All Channels ({{channel_count}}) · IFFT Magnitude Aligned by Delay</div>
   <div class="panel-info">Master Axis: {{combined.delay_start_us}} - {{combined.delay_end_us}} μs ({{combined.total_points}} points, showing {{combined.display_points}} sampled)</div>
   <canvas id="chart-all-aligned" class="chart-canvas" height="150"></canvas>
 </div>
@@ -578,6 +579,7 @@ function constructVisualizerPayload() {
   return {
     analysis_type: raw.analysis_type || 'N/A',
     results: channelRows,
+    channel_count: channelRows.length,
     combined: combined,
     capture_time: formatCaptureTime(((raw.pnm_header || {}).capture_time)) || formatCaptureTime(((response.pnm_header || {}).capture_time)),
     has_device_info: !!deviceInfo,

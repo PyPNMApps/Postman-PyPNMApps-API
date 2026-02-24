@@ -126,7 +126,7 @@ var template = `
 {{/if}}
 
 <div class="chart-container">
-    <div class="chart-title">All Results Aligned By Frequency (Avg/RxMER)</div>
+    <div class="chart-title">All Channels ({{channel_count}}) · Avg Aligned by Frequency</div>
     <div class="chart-info">
         Master Axis: {{master_freq_start}} MHz - {{master_freq_end}} MHz ({{master_total_points}} points, showing {{master_display_points}} sampled)
     </div>
@@ -272,7 +272,7 @@ var template = `
                         {
                             label: 'Min',
                             data: channel.min,
-                            borderColor: '#4bc0c0',
+                            borderColor: '#39c28e',
                             backgroundColor: 'rgba(75, 192, 192, 0.06)',
                             fill: false,
                             pointRadius: 0,
@@ -540,6 +540,7 @@ function constructVisualizerPayload() {
         textColor: textColor,
         isDarkTheme: isDarkTheme,
         channels: channels,
+        channel_count: channels.length,
         aligned: {
             labels: masterLabels,
             datasets: alignedDatasets
@@ -642,4 +643,3 @@ pm.visualizer.set(template, constructVisualizerPayload());
     setTimeout(inject, 0);
   }
 })();
-
