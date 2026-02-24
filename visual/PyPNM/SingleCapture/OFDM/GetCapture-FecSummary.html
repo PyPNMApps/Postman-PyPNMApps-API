@@ -1,20 +1,178 @@
-// Visualization Script
 const template = `
-<div style="font-family: Arial, sans-serif; padding: 20px;">
-    <h2 style="text-align: center; color: #333;">FEC Summary - Codeword Analysis</h2>
-    
+<style>
+  :root {
+    color-scheme: light dark;
+  }
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 16px;
+    background: #0f1220;
+    color: #eaeaea;
+  }
+  .page {
+    display: grid;
+    gap: 16px;
+  }
+  .header {
+    background: #151a2e;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .title {
+    margin: 0 0 10px 0;
+    color: #9fb4ff;
+    text-align: center;
+    font-size: 20px;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .pill {
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.05);
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  .pill b { color: #9fb4ff; }
+  .status-ok { color: #39c28e; }
+  .status-nok { color: #ff6b6b; }
+  .sysdesc {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .sysItem {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .sysItem .k { font-size: 11px; color: rgba(234,234,234,0.8); }
+  .sysItem .v { font-size: 13px; font-weight: 700; color: #eaeaea; margin-top: 2px; }
+  .channelGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .channelCard {
+    background: #151a2e;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .channelHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .channelTitle {
+    margin: 0;
+    color: #9fb4ff;
+    font-size: 15px;
+  }
+  .profileCount {
+    font-size: 12px;
+    color: rgba(234,234,234,0.85);
+  }
+  .profilesGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .profileCard {
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    padding: 10px;
+  }
+  .profileHead {
+    margin: 0 0 8px 0;
+    color: #eaeaea;
+    font-size: 13px;
+    text-align: center;
+  }
+  .chartWrap {
+    min-height: 180px;
+  }
+  .empty {
+    text-align: center;
+    color: rgba(234,234,234,0.8);
+    padding: 18px;
+    border: 1px dashed rgba(255,255,255,0.15);
+    border-radius: 10px;
+  }
+  @media (max-width: 1100px) {
+    .sysdesc { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .profilesGrid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 900px) {
+    .sysdesc { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    body { padding: 10px; }
+    .header, .channelCard { padding: 12px; }
+    .sysdesc { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="page">
+  <div class="header">
+    <h2 class="title">FEC Summary - Codeword Analysis</h2>
+    <div class="meta">
+      <div class="pill"><b>MAC</b> {{mac_address}}</div>
+      <div class="pill"><b>Status</b> <span class="{{statusClass}}">{{statusText}}</span></div>
+      <div class="pill"><b>Channels</b> {{channelCount}}</div>
+      <div class="pill"><b>Profiles</b> {{profileCount}}</div>
+    </div>
+    {{#if message}}
+    <div style="text-align:center; font-size:12px; color: rgba(234,234,234,0.85); margin-bottom: 8px;">{{message}}</div>
+    {{/if}}
+    {{#if system_description}}
+    <div class="sysdesc">
+      <div class="sysItem"><div class="k">VENDOR</div><div class="v">{{system_description.VENDOR}}</div></div>
+      <div class="sysItem"><div class="k">MODEL</div><div class="v">{{system_description.MODEL}}</div></div>
+      <div class="sysItem"><div class="k">HW_REV</div><div class="v">{{system_description.HW_REV}}</div></div>
+      <div class="sysItem"><div class="k">SW_REV</div><div class="v">{{system_description.SW_REV}}</div></div>
+      <div class="sysItem"><div class="k">BOOTR</div><div class="v">{{system_description.BOOTR}}</div></div>
+    </div>
+    {{/if}}
+  </div>
+
+  {{#if channels.length}}
+  <div class="channelGrid">
     {{#each channels}}
-    <div style="margin-bottom: 40px; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
-        <h3 style="color: #2c5aa0;">Channel ID: {{channel_id}}</h3>
-        
+    <div class="channelCard">
+      <div class="channelHead">
+        <h3 class="channelTitle">Channel {{channel_id}}</h3>
+        <div class="profileCount">Profiles: {{profiles.length}}</div>
+      </div>
+      <div class="profilesGrid">
         {{#each profiles}}
-        <div style="margin-bottom: 30px;">
-            <h4 style="color: #555;">Profile {{profile}}</h4>
-            <canvas id="chart-{{../channel_id}}-{{profile}}" height="80"></canvas>
+        <div class="profileCard">
+          <h4 class="profileHead">Profile {{profile}}</h4>
+          <div class="chartWrap">
+            <canvas id="chart-{{../channel_id}}-{{profile}}" height="120"></canvas>
+          </div>
         </div>
         {{/each}}
+      </div>
     </div>
     {{/each}}
+  </div>
+  {{else}}
+  <div class="empty">No FEC summary channels found in the sample JSON.</div>
+  {{/if}}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
@@ -137,8 +295,26 @@ function constructVisualizerPayload() {
             channels.push(channelObj);
         });
     }
-    
-    return { channels: channels };
+
+    const rootSys = responseData.system_description || null;
+    const nestedSys = (responseData.data && Array.isArray(responseData.data.analysis) && responseData.data.analysis.length > 0 &&
+        responseData.data.analysis[0].device_details && responseData.data.analysis[0].device_details.system_description)
+        ? responseData.data.analysis[0].device_details.system_description
+        : null;
+    const system_description = rootSys || nestedSys;
+    const profileCount = channels.reduce(function(sum, ch) { return sum + (Array.isArray(ch.profiles) ? ch.profiles.length : 0); }, 0);
+    const statusVal = (responseData.status !== undefined && responseData.status !== null) ? responseData.status : 'N/A';
+
+    return {
+      channels: channels,
+      mac_address: responseData.mac_address || 'N/A',
+      statusText: statusVal === 0 ? 'OK' : String(statusVal),
+      statusClass: statusVal === 0 ? 'status-ok' : 'status-nok',
+      message: responseData.message || '',
+      channelCount: channels.length,
+      profileCount: profileCount,
+      system_description: system_description
+    };
 }
 
 pm.visualizer.set(template, constructVisualizerPayload());

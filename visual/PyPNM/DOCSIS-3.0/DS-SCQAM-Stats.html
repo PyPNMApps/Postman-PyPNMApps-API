@@ -393,9 +393,12 @@ function constructVisualizerPayload() {
 
     const pwr = (entry.docsIfDownChannelPower !== undefined && entry.docsIfDownChannelPower !== null) ? entry.docsIfDownChannelPower : null;
 
-    // docsIf3SignalQualityExtRxMER is typically tenths of dB (common), your sample looks like 433 => 43.3 dB
+    // RxMER may arrive either as dB (e.g. 43.3) or tenths of dB (e.g. 433).
     const rxMerRaw = entry.docsIf3SignalQualityExtRxMER;
-    const rxmerDb = (typeof rxMerRaw === 'number') ? (rxMerRaw / 10.0) : null;
+    let rxmerDb = null;
+    if (typeof rxMerRaw === 'number' && isFinite(rxMerRaw)) {
+      rxmerDb = rxMerRaw > 100 ? (rxMerRaw / 10.0) : rxMerRaw;
+    }
 
     const corr = (entry.docsIfSigQExtCorrecteds !== undefined && entry.docsIfSigQExtCorrecteds !== null)
       ? entry.docsIfSigQExtCorrecteds

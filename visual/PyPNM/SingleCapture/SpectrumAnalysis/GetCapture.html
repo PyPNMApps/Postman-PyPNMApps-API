@@ -1,100 +1,408 @@
-// Visualization Script
 const template = `
-<div style="background-color: #1e1e1e; padding: 20px; font-family: Arial, sans-serif;">
-    <h2 style="color: #ffffff; text-align: center;">Spectrum Analysis</h2>
-    <canvas id="spectrumChart" width="800" height="400"></canvas>
+<style>
+  body {
+    margin: 0;
+    padding: 16px;
+    background: #0b0b0b;
+    color: #e8e8e8;
+    font-family: Arial, sans-serif;
+  }
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .header {
+    background: #151515;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .title {
+    margin: 0 0 10px 0;
+    text-align: center;
+    color: #f2f2f2;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .message {
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 8px;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+  }
+  .table-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    color: #dbe3ff;
+  }
+  .table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+  }
+  .table th {
+    text-align: left;
+    white-space: nowrap;
+    padding: 9px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.45px;
+    color: #dbe3ff;
+    background: rgba(255,255,255,0.03);
+  }
+  .table td {
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #fff;
+    white-space: nowrap;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .mono {
+    font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .summary-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px;
+  }
+  .summary-k {
+    font-size: 11px;
+    color: rgba(255,255,255,0.75);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .summary-v {
+    margin-top: 4px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #e8e8e8;
+  }
+  .chart-card {
+    background: #151515;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .chart-title {
+    margin: 0 0 8px 0;
+    text-align: center;
+    color: #5a8fd8;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .chart-mode-controls {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    align-items: center;
+    margin: 0 0 8px 0;
+    color: #d6deef;
+    font-size: 12px;
+  }
+  .chart-mode-controls label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .chart-mode-controls input[type="radio"] {
+    accent-color: #5a8fd8;
+    cursor: pointer;
+  }
+  .chart-wrap {
+    height: 430px;
+    background: #1a1a1a;
+    border: 1px solid #303030;
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .chart-wrap canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .empty-state {
+    padding: 24px;
+    text-align: center;
+    color: rgba(255,255,255,0.75);
+    background: #151515;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+  }
+  @media (max-width: 980px) {
+    .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    body { padding: 10px; }
+    .summary-grid { grid-template-columns: 1fr; }
+    .chart-wrap { height: 360px; }
+  }
+</style>
+
+<div class="container">
+  <div class="header">
+    <div class="title">Spectrum Analysis</div>
+    {{#if message}}<div class="message">{{message}}</div>{{/if}}
+
+    <div class="table-wrap">
+      <div class="table-title">Device Info</div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>MacAddress</th>
+            <th>Model</th>
+            <th>Vendor</th>
+            <th>SW Version</th>
+            <th>HW Version</th>
+            <th>Boot ROM</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">{{deviceInfo.macAddress}}</td>
+            <td>{{deviceInfo.MODEL}}</td>
+            <td>{{deviceInfo.VENDOR}}</td>
+            <td class="mono">{{deviceInfo.SW_REV}}</td>
+            <td class="mono">{{deviceInfo.HW_REV}}</td>
+            <td class="mono">{{deviceInfo.BOOTR}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card"><div class="summary-k">Frequency Range</div><div class="summary-v">{{summary.freqRangeMHz}}</div></div>
+      <div class="summary-card"><div class="summary-k">Center</div><div class="summary-v">{{summary.centerMHz}}</div></div>
+      <div class="summary-card"><div class="summary-k">Channel Power</div><div class="summary-v">{{summary.channelPowerDbmv}}</div></div>
+      <div class="summary-card"><div class="summary-k">Window Avg Points</div><div class="summary-v">{{summary.windowAvgPoints}}</div></div>
+    </div>
+  </div>
+
+  {{#if hasData}}
+  <div class="chart-card">
+    <div class="chart-title">Spectrum Magnitude (Actual / Avg)</div>
+    <div class="chart-mode-controls">
+      <label><input type="radio" name="spectrum-mode" value="actual" checked> Actual</label>
+      <label><input type="radio" name="spectrum-mode" value="avg"> Avg</label>
+      <label><input type="radio" name="spectrum-mode" value="both"> Both</label>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="spectrumChart"></canvas>
+    </div>
+  </div>
+  {{else}}
+  <div class="empty-state">No spectrum analysis data available.</div>
+  {{/if}}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
 <script>
-    var ctx = document.getElementById('spectrumChart').getContext('2d');
-    
-    var myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Magnitude',
-                data: [],
-                borderColor: '#4CAF50',
-                backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                borderWidth: 1,
-                pointRadius: 0,
-                fill: true,
-                tension: 0.1
+(function () {
+  function setMode(chart, mode) {
+    if (!chart || !chart.data || !Array.isArray(chart.data.datasets)) return;
+    chart.data.datasets.forEach(function (ds) {
+      if (!ds || !ds._seriesMode) return;
+      if (mode === 'both') ds.hidden = false;
+      else ds.hidden = (ds._seriesMode !== mode);
+    });
+    chart.update(0);
+  }
+
+  pm.getData(function (err, value) {
+    if (err || !value || !value.chart) return;
+    var canvas = document.getElementById('spectrumChart');
+    if (!canvas) return;
+
+    function points(freqsMHz, values) {
+      var out = [];
+      var n = Math.min((freqsMHz || []).length, (values || []).length);
+      for (var i = 0; i < n; i++) {
+        var x = freqsMHz[i];
+        var y = values[i];
+        if (typeof x !== 'number' || !isFinite(x)) continue;
+        if (typeof y !== 'number' || !isFinite(y)) continue;
+        out.push({ x: x, y: y });
+      }
+      return out;
+    }
+
+    var chart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'Actual',
+            data: points(value.chart.frequenciesMHz, value.chart.magnitudes),
+            borderColor: '#4CAF50',
+            backgroundColor: 'rgba(76, 175, 80, 0.08)',
+            borderWidth: 1.4,
+            pointRadius: 0,
+            fill: false,
+            lineTension: 0,
+            _seriesMode: 'actual',
+            hidden: false
+          },
+          {
+            label: 'Avg',
+            data: points(value.chart.frequenciesMHz, value.chart.windowAverageMagnitudes),
+            borderColor: '#FF9800',
+            backgroundColor: 'rgba(255, 152, 0, 0.06)',
+            borderWidth: 1.4,
+            pointRadius: 0,
+            fill: false,
+            lineTension: 0,
+            _seriesMode: 'avg',
+            hidden: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        legend: { display: false },
+        scales: {
+          xAxes: [{
+            type: 'linear',
+            display: true,
+            scaleLabel: {
+              display: true,
+              labelString: 'Frequency (MHz)',
+              fontColor: '#ffffff',
+              fontSize: 13
             },
-            {
-                label: 'Window Average',
-                data: [],
-                borderColor: '#FF9800',
-                backgroundColor: 'rgba(255, 152, 0, 0.1)',
-                borderWidth: 1,
-                pointRadius: 0,
-                fill: false,
-                tension: 0.1
-            }]
+            ticks: {
+              fontColor: '#ffffff',
+              callback: function(value) { return String(Math.round(Number(value))); }
+            },
+            gridLines: { color: 'rgba(255,255,255,0.08)' }
+          }],
+          yAxes: [{
+            display: true,
+            scaleLabel: {
+              display: true,
+              labelString: 'Magnitude (dBmV)',
+              fontColor: '#ffffff',
+              fontSize: 13
+            },
+            ticks: { fontColor: '#ffffff' },
+            gridLines: { color: 'rgba(255,255,255,0.08)' }
+          }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            legend: {
-                display: true,
-                labels: {
-                    fontColor: '#ffffff'
-                }
-            },
-            scales: {
-                xAxes: [{
-                    display: true,
-                    scaleLabel: {
-                        display: true,
-                        labelString: 'Frequency (Hz)',
-                        fontColor: '#ffffff',
-                        fontSize: 14
-                    },
-                    ticks: {
-                        fontColor: '#ffffff',
-                        callback: function(value) {
-                            return (value / 1000000).toFixed(1) + ' MHz';
-                        }
-                    }
-                }],
-                yAxes: [{
-                    display: true,
-                    scaleLabel: {
-                        display: true,
-                        labelString: 'Magnitude (dBmV)',
-                        fontColor: '#ffffff',
-                        fontSize: 14
-                    },
-                    ticks: {
-                        fontColor: '#ffffff'
-                    }
-                }]
+        tooltips: {
+          mode: 'nearest',
+          intersect: false,
+          callbacks: {
+            label: function(tooltipItem, data) {
+              var ds = (data.datasets && data.datasets[tooltipItem.datasetIndex]) || {};
+              var label = ds.label || '';
+              var x = (typeof tooltipItem.xLabel === 'number') ? String(Math.round(tooltipItem.xLabel)) : tooltipItem.xLabel;
+              var y = (typeof tooltipItem.yLabel === 'number') ? Number(tooltipItem.yLabel).toFixed(2) : tooltipItem.yLabel;
+              return label + ': ' + x + ' MHz, ' + y + ' dB';
             }
+          }
         }
+      }
     });
 
-    pm.getData(function (err, value) {
-        if (err) {
-            console.error(err);
-            return;
-        }
-        
-        var analysisData = value.response.data.analysis[0];
-        var signalAnalysis = analysisData.signal_analysis;
-        
-        myChart.data.labels = signalAnalysis.frequencies;
-        myChart.data.datasets[0].data = signalAnalysis.magnitudes;
-        myChart.data.datasets[1].data = signalAnalysis.window_average.magnitudes;
-        myChart.update();
-    });
-
+    var radios = document.querySelectorAll('input[name="spectrum-mode"]');
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].addEventListener('change', function (ev) {
+        if (ev && ev.target && ev.target.checked) setMode(chart, ev.target.value);
+      });
+    }
+  });
+})();
 </script>
 `;
 
+function sanitizeMac(value, fallback) {
+  var fb = (fallback === undefined || fallback === null) ? 'N/A' : fallback;
+  if (value === undefined || value === null) return fb;
+  var text = String(value).trim();
+  if (!text) return fb;
+  var compact = text.replace(/[^0-9a-f]/gi, '').toLowerCase();
+  if (compact.length !== 12) return text;
+  return compact.match(/.{1,2}/g).join(':');
+}
+
+function sanitizeSystemDescription(sys) {
+  var s = (sys && typeof sys === 'object') ? sys : {};
+  function get(k, d) {
+    var v = s[k];
+    return (v !== undefined && v !== null && String(v).trim() !== '') ? String(v).trim() : d;
+  }
+  return {
+    MODEL: get('MODEL', 'LCPET-3'),
+    VENDOR: get('VENDOR', 'LANCity'),
+    SW_REV: get('SW_REV', '1.0.0'),
+    HW_REV: get('HW_REV', '1.0'),
+    BOOTR: get('BOOTR', 'NONE')
+  };
+}
+
 function constructVisualizerPayload() {
-    return { response: pm.response.json() };
+  var response = pm.response.json();
+  var data = (response && response.data) ? response.data : {};
+  var analysis = (Array.isArray(data.analysis) && data.analysis.length) ? data.analysis[0] : null;
+  var sig = (analysis && analysis.signal_analysis) ? analysis.signal_analysis : {};
+  var cap = (analysis && analysis.capture_parameters) ? analysis.capture_parameters : {};
+  var sys = sanitizeSystemDescription((((analysis || {}).device_details) || {}).system_description);
+
+  var freqs = Array.isArray(sig.frequencies) ? sig.frequencies : [];
+  var mags = Array.isArray(sig.magnitudes) ? sig.magnitudes : [];
+  var avgMags = (sig.window_average && Array.isArray(sig.window_average.magnitudes)) ? sig.window_average.magnitudes : [];
+  var freqsMHz = freqs.map(function (f) { return (typeof f === 'number' && isFinite(f)) ? (f / 1000000) : null; });
+
+  function toMHz(vHz, digits) {
+    return (typeof vHz === 'number' && isFinite(vHz)) ? (vHz / 1000000).toFixed(digits) : 'N/A';
+  }
+  function toFixed(v, digits) {
+    return (typeof v === 'number' && isFinite(v)) ? v.toFixed(digits) : 'N/A';
+  }
+
+  var firstHz = (typeof cap.first_segment_center_freq === 'number') ? cap.first_segment_center_freq : NaN;
+  var lastHz = (typeof cap.last_segment_center_freq === 'number') ? cap.last_segment_center_freq : NaN;
+  var centerHz = (isFinite(firstHz) && isFinite(lastHz)) ? ((firstHz + lastHz) / 2) : NaN;
+
+  return {
+    hasData: freqs.length > 0 && (mags.length > 0 || avgMags.length > 0),
+    message: (response && response.message) ? String(response.message) : '',
+    deviceInfo: {
+      macAddress: sanitizeMac((analysis && analysis.mac_address) || response.mac_address, 'N/A'),
+      MODEL: sys.MODEL,
+      VENDOR: sys.VENDOR,
+      SW_REV: sys.SW_REV,
+      HW_REV: sys.HW_REV,
+      BOOTR: sys.BOOTR
+    },
+    summary: {
+      freqRangeMHz: (isFinite(firstHz) ? toMHz(firstHz, 0) : 'N/A') + ' - ' + (isFinite(lastHz) ? toMHz(lastHz, 0) : 'N/A') + ' MHz',
+      centerMHz: isFinite(centerHz) ? (toMHz(centerHz, 0) + ' MHz') : 'N/A',
+      channelPowerDbmv: (sig.channel_power_dbmv !== undefined && sig.channel_power_dbmv !== null) ? (toFixed(Number(sig.channel_power_dbmv), 2) + ' dBmV') : 'N/A',
+      windowAvgPoints: (sig.window_average && sig.window_average.points !== undefined && sig.window_average.points !== null) ? String(sig.window_average.points) : 'N/A'
+    },
+    chart: {
+      frequenciesMHz: freqsMHz,
+      magnitudes: mags,
+      windowAverageMagnitudes: avgMags
+    }
+  };
 }
 
 pm.visualizer.set(template, constructVisualizerPayload());

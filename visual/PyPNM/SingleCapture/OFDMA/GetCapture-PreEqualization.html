@@ -1,18 +1,3 @@
-// Postman Visualizer - OFDMA Pre-EQ (Current vs Last Update) Grouped By Channel
-//
-// Assumptions (based on your JSON):
-// - pm.response.json().data.analysis is an array of per-(channel_id, file_type_version) analysis objects
-// - Each analysis item has:
-//     item.pnm_header.file_type_version  (6 or 7)
-//     item.channel_id
-//     item.mac_address
-//     item.subcarrier_zero_frequency
-//     item.carrier_values.frequency              (Hz[])
-//     item.carrier_values.magnitudes             (dB[])
-//     item.carrier_values.group_delay.magnitude  (us[] or seconds-derived already in your model)
-//     item.signal_statistics.*
-//     item.echo.report.echoes[] (optional)
-
 const template = `
 <style>
   body { font-family: Arial, sans-serif; padding: 20px; background: #1e1e1e; color: #e0e0e0; }
@@ -20,11 +5,17 @@ const template = `
   .header-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-bottom: 30px; }
   h1 { color: #e0e0e0; text-align: center; margin: 0; grid-column: 2; }
   .capture-time { grid-column: 3; justify-self: end; font-size: 12px; color: #d7deec; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 6px 10px; white-space: nowrap; }
-  .channel-section { background: #2d2d2d; padding: 25px; margin: 30px 0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-  .channel-header { background: linear-gradient(135deg, #5a6fd8 0%, #6f4aa6 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
+  .meta-row { display:flex; justify-content:center; flex-wrap:wrap; gap:8px; margin:-14px 0 14px 0; }
+  .meta-pill { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 6px 10px; font-size: 12px; color: #d7deec; }
+  .meta-pill b { color: #9fb4ff; }
+  .status-ok { color: #39c28e; }
+  .status-nok { color: #ff6b6b; }
+  .channels-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items:start; }
+  .channel-section { background: #2d2d2d; padding: 18px; margin: 0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+  .channel-header { background: linear-gradient(135deg, #2f6db3 0%, #24528a 100%); color: white; padding: 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
   .device-info-block { background: #343447; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
-  .channel-title { font-size: 28px; font-weight: bold; margin: 0; }
-  .channel-subtitle { font-size: 15px; margin: 6px 0 0 0; opacity: 0.92; }
+  .channel-title { font-size: 24px; font-weight: bold; margin: 0; text-align: center; }
+  .channel-subtitle { font-size: 13px; margin: 6px 0 0 0; opacity: 0.92; text-align: center; }
   .channel-meta-wrap { margin-top: 0; background: rgba(255,255,255,0.08); border-radius: 10px; overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); }
   .channel-meta-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; padding: 10px 12px; background: rgba(0,0,0,0.18); opacity: 0.95; border-bottom: 1px solid rgba(255,255,255,0.08); }
   .channel-meta-table { width: 100%; border-collapse: collapse; min-width: 680px; }
@@ -57,8 +48,8 @@ const template = `
   .echo-table th { background: #667eea; color: white; padding: 10px; text-align: left; font-size: 13px; }
   .echo-table td { padding: 10px; border-bottom: 1px solid #3d3d3d; font-size: 13px; color: #e0e0e0; }
 
-  .divider { height: 2px; background: linear-gradient(90deg, transparent, #667eea, transparent); margin: 40px 0; }
   .no-data { text-align: center; padding: 40px; color: #b0b0b0; font-size: 18px; }
+  @media (max-width: 980px) { .channels-grid { grid-template-columns: 1fr; } }
 </style>
 
 <div class="container">
@@ -66,40 +57,48 @@ const template = `
 	  <h1>Pre-Equalization Analysis</h1>
     {{#if captureTime}}<div class="capture-time">Capture Time: {{captureTime}}</div>{{/if}}
   </div>
+  <div class="meta-row">
+    <div class="meta-pill"><b>Status</b> <span class="{{statusClass}}">{{statusText}}</span></div>
+    <div class="meta-pill"><b>Channels</b> {{channelCount}}</div>
+  </div>
 
+  {{#if channelCount}}
+  <div class="device-info-block">
+    <div class="channel-meta-wrap">
+      <div class="channel-meta-title">Device Info</div>
+      <table class="channel-meta-table device-info-table">
+        <thead>
+          <tr>
+            <th>MacAddress</th>
+            <th>Model</th>
+            <th>Vendor</th>
+            <th>SW Version</th>
+            <th>HW Version</th>
+            <th>Boot ROM</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{pageDevice.macAddress}}</td>
+            <td>{{pageDevice.deviceInfo.MODEL}}</td>
+            <td>{{pageDevice.deviceInfo.VENDOR}}</td>
+            <td>{{pageDevice.deviceInfo.SW_REV}}</td>
+            <td>{{pageDevice.deviceInfo.HW_REV}}</td>
+            <td>{{pageDevice.deviceInfo.BOOTR}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {{/if}}
+
+  <div class="channels-grid">
   {{#each channels}}
 	    <div class="channel-section">
-	      <div class="device-info-block">
-	        <div class="channel-meta-wrap">
-	          <div class="channel-meta-title">Device Info</div>
-	          <table class="channel-meta-table device-info-table">
-		            <thead>
-		              <tr>
-                  <th>MacAddress</th>
-                  <th>Model</th>
-                  <th>Vendor</th>
-                  <th>SW Version</th>
-                  <th>HW Version</th>
-                  <th>Boot ROM</th>
-		              </tr>
-		            </thead>
-		            <tbody>
-		              <tr>
-		                <td>{{macAddress}}</td>
-		                <td>{{deviceInfo.MODEL}}</td>
-		                <td>{{deviceInfo.VENDOR}}</td>
-		                <td>{{deviceInfo.SW_REV}}</td>
-		                <td>{{deviceInfo.HW_REV}}</td>
-		                <td>{{deviceInfo.BOOTR}}</td>
-		              </tr>
-		            </tbody>
-		          </table>
-	        </div>
-	      </div>
 	      <div class="channel-header">
 	        <div class="channel-info">
 	          <div class="channel-title">Channel {{channelId}}</div>
-	          <div class="channel-subtitle">Subcarrier-0 Frequency: {{subcarrierZeroFreqMHz}} MHz{{#if subcarrierZeroFreqHzLabel}} <span class="mono">({{subcarrierZeroFreqHzLabel}} Hz)</span>{{/if}}</div>
+	          <div class="channel-subtitle">{{subcarrierZeroFreqMHz}} MHz{{#if subcarrierZeroFreqHzLabel}} <span class="mono">({{subcarrierZeroFreqHzLabel}} Hz)</span>{{/if}}</div>
 	        </div>
 	      </div>
 
@@ -174,11 +173,8 @@ const template = `
         <canvas id="groupdelay-{{channelId}}"></canvas>
       </div>
     </div>
-
-    {{#unless @last}}
-      <div class="divider"></div>
-    {{/unless}}
   {{/each}}
+  </div>
 
   {{#unless channels.length}}
     <div class="no-data">No data available to display</div>
@@ -584,7 +580,16 @@ function constructVisualizerPayload() {
     captureTime = formatCaptureTime(analysis[0].pnm_header.capture_time);
   }
 
-  return { channels, captureTime };
+  const pageDevice = channels.length ? { macAddress: channels[0].macAddress, deviceInfo: channels[0].deviceInfo } : { macAddress: 'N/A', deviceInfo: { MODEL:'LCPET-3', VENDOR:'LANCity', SW_REV:'1.0.0', HW_REV:'1.0', BOOTR:'NONE' } };
+  const statusVal = (resp && resp.status !== undefined && resp.status !== null) ? resp.status : 'N/A';
+  return {
+    channels,
+    captureTime,
+    channelCount: channels.length,
+    pageDevice,
+    statusText: statusVal === 0 ? 'OK' : String(statusVal),
+    statusClass: statusVal === 0 ? 'status-ok' : 'status-nok'
+  };
 }
 
 pm.visualizer.set(template, constructVisualizerPayload());

@@ -66,8 +66,13 @@ const template = `
   }
   .grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
+  }
+  @media (max-width: 1100px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
   }
   .card {
     background-color: #151a2e;
@@ -160,7 +165,7 @@ const template = `
 
   <div class="divider"></div>
 
-  <div class="sub"><b>Top Channels By Corrected Codewords</b></div>
+  <div class="sub"><b>Channel Summary</b></div>
   <table>
     <thead>
       <tr>
@@ -172,7 +177,7 @@ const template = `
       </tr>
     </thead>
     <tbody>
-      {{#each topChannels}}
+      {{#each channelRows}}
       <tr>
         <td>{{ch}}</td>
         <td>{{corr}}</td>
@@ -463,9 +468,12 @@ function constructVisualizerPayload() {
     }
   });
 
-  // top channels by corrected CW
-  channelSummaries.sort((a, b) => b.corr - a.corr);
-  const topChannels = channelSummaries.slice(0, 5).map(rw => {
+  const channelRows = channelSummaries.slice().sort((a, b) => {
+    const ai = Number(a.ch);
+    const bi = Number(b.ch);
+    if (Number.isFinite(ai) && Number.isFinite(bi)) return ai - bi;
+    return String(a.ch).localeCompare(String(b.ch));
+  }).map(rw => {
     const ratePct = (rw.total > 0) ? (rw.rate * 100.0) : 0;
     const rateClass = ratePct >= 1.0 ? 'bad' : (ratePct >= 0.1 ? 'warn' : '');
     return {
@@ -493,7 +501,7 @@ function constructVisualizerPayload() {
     channelCount: channels.length,
     profileCount: profileKeySet.size,
     kpi,
-    topChannels,
+    channelRows,
     channels
   };
 }

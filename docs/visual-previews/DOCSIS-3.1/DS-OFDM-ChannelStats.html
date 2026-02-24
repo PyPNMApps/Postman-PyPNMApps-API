@@ -143,6 +143,11 @@
       showError('Unhandled promise rejection', ev && ev.reason);
     });
 
+    if (sampleData && typeof sampleData === 'object' && sampleData.__error__) {
+      app.innerHTML = '<div class="error">Preview unavailable\nInvalid sample JSON fixture\n' + String(sampleData.__error__) + '</div>';
+      return;
+    }
+
     try {
       const fn = new Function(visualSource);
       fn();

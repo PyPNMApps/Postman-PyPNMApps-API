@@ -169,6 +169,11 @@ PREVIEW_HTML_TEMPLATE = """<!doctype html>
       showError('Unhandled promise rejection', ev && ev.reason);
     }});
 
+    if (sampleData && typeof sampleData === 'object' && sampleData.__error__) {{
+      app.innerHTML = '<div class="error">Preview unavailable\\nInvalid sample JSON fixture\\n' + String(sampleData.__error__) + '</div>';
+      return;
+    }}
+
     try {{
       const fn = new Function(visualSource);
       fn();
@@ -348,7 +353,12 @@ def build_example_markdown(
     return "\n".join(lines).rstrip() + "\n"
 
 
-def build_index_markdown(examples: Iterable[VisualExample]) -> str:
+def _github_blob_link_for_path(path: Path, repo_root: Path) -> str:
+    rel = _rel_display(path, repo_root).replace(" ", "%20")
+    return f"https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/{rel}"
+
+
+def build_index_markdown(examples: Iterable[VisualExample], repo_root: Path) -> str:
     grouped: dict[str, list[VisualExample]] = {}
     for ex in examples:
         grouped.setdefault(ex.top_group, []).append(ex)
@@ -365,15 +375,19 @@ def build_index_markdown(examples: Iterable[VisualExample]) -> str:
         anchor = _sanitize_md_anchor(group)
         lines.append(f"## {group}")
         lines.append("")
-        lines.append("| Example | HTML | JSON | Page |")
+        lines.append("| Example | Preview | JSON | Docs |")
         lines.append("| --- | --- | --- | --- |")
         for ex in grouped[group]:
-            html_ok = "yes" if ex.html_path else "no"
-            json_ok = "yes" if ex.json_path else "no"
-            page_rel = Path(*ex.key_rel.parts[1:]).with_suffix(".md") if len(ex.key_rel.parts) > 1 else ex.key_rel.with_suffix(".md")
-            page_link = page_rel.as_posix()
+            page_parts = ex.key_rel.parts[1:] if ex.key_rel.parts and ex.key_rel.parts[0] == "PyPNM" else ex.key_rel.parts
+            page_rel = Path(*page_parts).with_suffix(".md")
+            preview_rel = Path("..") / "visual-previews" / Path(*page_parts)
+            preview_link = preview_rel.with_suffix(".html").as_posix()
+            json_link = _github_blob_link_for_path(ex.json_path, repo_root) if ex.json_path else ""
             example_name = ex.key_rel.name
-            lines.append(f"| `{example_name}` | {html_ok} | {json_ok} | [`open`]({page_link}) |")
+            render_cell = f"[preview]({preview_link})" if ex.html_path else "missing"
+            json_cell = f"[json]({json_link})" if ex.json_path else "missing"
+            details_cell = f"[docs]({page_rel.as_posix()})"
+            lines.append(f"| `{example_name}` | {render_cell} | {json_cell} | {details_cell} |")
         lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
@@ -440,7 +454,7 @@ def main(argv: list[str]) -> int:
             print(f"{'DRIFT' if check_only else 'WRITE'}: {page_path.relative_to(repo_root)}")
 
     index_path = visual_docs_root / "index.md"
-    index_content = build_index_markdown(examples)
+    index_content = build_index_markdown(examples, repo_root=repo_root)
     if _write_if_changed(index_path, index_content, check_only=check_only):
         changed_count += 1
         written_count += 0 if check_only else 1

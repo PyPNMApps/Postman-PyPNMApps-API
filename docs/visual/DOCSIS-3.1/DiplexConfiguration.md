@@ -85,7 +85,7 @@ var template = `
 </style>
 
 <div class="container">
-    <div class="title">📡 Diplexer Frequency Response (9th Order Butterworth)</div>
+    <div class="title">Diplexer Frequency Response (9th Order Butterworth)</div>
     <div class="subtitle">MAC: {{macAddress}} | Diplexer Capability: {{diplexerCap}}</div>
     
     <div class="chart-container">
@@ -125,6 +125,61 @@ var template = `
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
 <script>
+    if (typeof Chart !== 'undefined' && Chart.pluginService && !window.__diplexerCutoffPluginRegistered) {
+        Chart.pluginService.register({
+            afterDatasetsDraw: function(chart) {
+                var markers = chart.config && chart.config.options && chart.config.options.cutoffMarkers;
+                if (!Array.isArray(markers) || !markers.length) return;
+
+                var xScale = chart.scales['x-axis-0'];
+                var yScale = chart.scales['y-axis-0'];
+                if (!xScale || !yScale) return;
+
+                var labels = (chart.data && Array.isArray(chart.data.labels)) ? chart.data.labels : [];
+                var ctx = chart.chart.ctx;
+                var area = chart.chartArea;
+                if (!ctx || !area) return;
+
+                function nearestLabelIndex(target) {
+                    var bestIdx = -1;
+                    var bestDiff = Infinity;
+                    for (var i = 0; i < labels.length; i++) {
+                        var n = Number(labels[i]);
+                        if (!isFinite(n)) continue;
+                        var d = Math.abs(n - target);
+                        if (d < bestDiff) {
+                            bestDiff = d;
+                            bestIdx = i;
+                        }
+                    }
+                    return bestIdx;
+                }
+
+                ctx.save();
+                ctx.setLineDash([6, 4]);
+                ctx.lineWidth = 1.5;
+
+                markers.forEach(function(m) {
+                    var freq = Number(m && m.freqMHz);
+                    if (!isFinite(freq)) return;
+                    var idx = nearestLabelIndex(freq);
+                    if (idx < 0) return;
+                    var x = xScale.getPixelForTick(idx);
+                    if (!isFinite(x)) return;
+
+                    ctx.strokeStyle = (m && m.color) || '#ffffff';
+                    ctx.beginPath();
+                    ctx.moveTo(x, area.top);
+                    ctx.lineTo(x, area.bottom);
+                    ctx.stroke();
+                });
+
+                ctx.restore();
+            }
+        });
+        window.__diplexerCutoffPluginRegistered = true;
+    }
+
     var ctx = document.getElementById("diplexerChart");
     var diplexerChart = new Chart(ctx, {
         type: "line",
@@ -154,6 +209,7 @@ var template = `
             ]
         },
         options: {
+            cutoffMarkers: [],
             legend: { display: false },
             title: {
                 display: false
@@ -198,6 +254,11 @@ var template = `
         diplexerChart.data.labels = value.freqLabels;
         diplexerChart.data.datasets[0].data = value.upstreamData;
         diplexerChart.data.datasets[1].data = value.downstreamData;
+        diplexerChart.options.cutoffMarkers = [
+            { freqMHz: value.bandEdge, color: '#ff6b6b' },
+            { freqMHz: value.dsLower, color: '#4dabf7' },
+            { freqMHz: value.dsUpper, color: '#4dabf7' }
+        ];
         diplexerChart.update();
     });
 </script>
@@ -271,6 +332,20 @@ pm.visualizer.set(template, createPayload());
 <summary>Sample JSON payload</summary>
 
 ````json
-
+{
+    "mac_address": "aa:bb:cc:dd:ee:ff",
+    "status": 0,
+    "message": null,
+    "results": {
+        "diplexer": {
+            "diplexer_capability": 20,
+            "cfg_band_edge": 204000000,
+            "ds_lower_capability": 3,
+            "cfg_ds_lower_band_edge": 258000000,
+            "ds_upper_capability": 2,
+            "cfg_ds_upper_band_edge": 1794000000
+        }
+    }
+}
 ````
 </details>

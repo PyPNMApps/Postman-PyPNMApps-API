@@ -36,8 +36,12 @@ var template = `
   .mono { font-family: Consolas, "Liberation Mono", Menlo, monospace; }
   .meta-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
   .meta-pill { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 6px 10px; font-size: 12px; color: #cfd6e5; }
+  .channel-nav { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .channel-link { display: inline-flex; align-items: center; justify-content: center; padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(90,111,216,0.25); background: rgba(90,111,216,0.10); color: #dbe3ff; text-decoration: none; font-size: 12px; }
+  .channel-link:hover { background: rgba(90,111,216,0.18); border-color: rgba(90,111,216,0.35); }
 
   .channel-block { margin-bottom: 18px; padding: 16px; border-radius: 10px; background: #151515; border: 1px solid #2a2a2a; }
+  .channels-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
   .channel-title { margin: 0 0 10px 0; text-align: center; color: #5a6fd8; font-size: 18px; font-weight: 700; }
   .badge { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: rgba(90,111,216,0.12); border: 1px solid rgba(90,111,216,0.25); color: #dbe3ff; }
   .channel-meta { text-align: center; color: #bfc8dc; font-size: 12px; margin-bottom: 12px; }
@@ -64,6 +68,9 @@ var template = `
   .data-table td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); color: #e0e0e0; white-space: nowrap; }
   .data-table tr:nth-child(even) { background: rgba(255,255,255,0.02); }
   .empty-state { padding: 22px; color: rgba(255,255,255,0.75); text-align: center; background: #151515; border: 1px solid #2a2a2a; border-radius: 10px; }
+  @media (max-width: 980px) {
+    .channels-grid { grid-template-columns: 1fr; }
+  }
 </style>
 
 <div class="container">
@@ -97,6 +104,13 @@ var template = `
       <div class="meta-pill">Channels: {{channelCount}}</div>
       <div class="meta-pill">Total Captures: {{totalCaptures}}</div>
     </div>
+    {{#if channels.length}}
+    <div class="channel-nav">
+      {{#each channels}}
+      <a class="channel-link" href="#channel-{{channelId}}">Channel {{channelId}}</a>
+      {{/each}}
+    </div>
+    {{/if}}
   </div>
 
   {{#unless channels.length}}
@@ -116,15 +130,16 @@ var template = `
     </div>
   {{/if}}
 
+  <div class="channels-grid">
   {{#each channels}}
-    <div class="channel-block">
-      <div class="channel-title">Channel {{channelId}} <span class="badge">captures: {{captureCount}}</span></div>
+    <div class="channel-block" id="channel-{{channelId}}">
+      <div class="channel-title">Channel {{channelId}}</div>
 
       <div class="chart-container">
         <div class="chart-title">Spectrum Magnitude by Capture (dB) · Range {{channelSummary.freqRangeMHz}} MHz · Channel Power {{channelSummary.avgChannelPower}} dBmV</div>
         <div class="chart-mode-controls" data-chart-mode="spectrumChart-ch{{channelId}}">
           <label><input type="radio" name="mode-spect-ch{{channelId}}" value="actual" checked> Actual</label>
-          <label><input type="radio" name="mode-spect-ch{{channelId}}" value="avg"> Moving Avg</label>
+          <label><input type="radio" name="mode-spect-ch{{channelId}}" value="avg"> Avg</label>
         </div>
         <div class="chart-canvas-wrap">
           <canvas id="spectrumChart-ch{{channelId}}" class="chart-canvas"></canvas>
@@ -156,6 +171,7 @@ var template = `
       </div>
     </div>
   {{/each}}
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
@@ -189,11 +205,11 @@ var template = `
     for (var i = 0; i < n; i++) out.push({ x: freqs[i], y: values[i] });
     return out;
   }
-  function commonChartOptions() {
+  function commonChartOptions(showLegend) {
     return {
       responsive: true,
       maintainAspectRatio: false,
-      legend: { display: true, position: 'top', labels: { fontColor: '#ffffff', fontSize: 11 } },
+      legend: { display: !!showLegend, position: 'top', labels: { fontColor: '#ffffff', fontSize: 11 } },
       title: { display: false },
       elements: { point: { radius: 0 }, line: { borderWidth: 1.6 } },
       scales: {
@@ -251,7 +267,7 @@ var template = `
           });
         });
       });
-      var combinedOpts = commonChartOptions();
+      var combinedOpts = commonChartOptions(true);
       combinedOpts.legend.labels.fontSize = 10;
       combinedOpts.legend.labels.boxWidth = 10;
       new Chart(combinedEl.getContext('2d'), { type: 'line', data: { datasets: combinedDatasets }, options: combinedOpts });
@@ -270,9 +286,10 @@ var template = `
         if (!freqs.length || (!mags.length && !avg.length)) return;
         var actualColor = ((ch.captures || []).length === 1) ? '#7e57c2' : palette(idx);
         var avgColor = '#c62828';
+        var shortCaptureLabel = 'Capture ' + String(idx + 1);
 
         if (mags.length) datasets.push({
-          label: cap.captureLabel + ' · Actual',
+          label: shortCaptureLabel + ' · Actual',
           data: buildPoints(freqs, mags),
           borderColor: actualColor,
           backgroundColor: 'transparent',
@@ -284,7 +301,7 @@ var template = `
           hidden: false
         });
         if (avg.length) datasets.push({
-          label: cap.captureLabel + ' · Moving Avg',
+          label: shortCaptureLabel + ' · Avg',
           data: buildPoints(freqs, avg),
           borderColor: avgColor,
           backgroundColor: 'transparent',
@@ -297,7 +314,7 @@ var template = `
         });
       });
 
-      var chChart = new Chart(el.getContext('2d'), { type: 'line', data: { datasets: datasets }, options: commonChartOptions() });
+      var chChart = new Chart(el.getContext('2d'), { type: 'line', data: { datasets: datasets }, options: commonChartOptions(false) });
       bindChartModeControls('spectrumChart-ch' + ch.channelId, chChart);
     });
   });

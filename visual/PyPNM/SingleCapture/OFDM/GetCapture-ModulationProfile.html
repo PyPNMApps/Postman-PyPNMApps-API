@@ -1,7 +1,3 @@
-// Remarks (CODING_AGENTS visual standard)
-// - Device Info renders as a separate top block
-// - Capture Time (when available) is shown next to the title
-// - Chart behavior remains per-channel modulation profile overlays
 const template = `
 <style>
   body { 
@@ -58,7 +54,7 @@ const template = `
   .meta-pill { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 6px 10px; font-size: 12px; color: #cfd6e5; }
   .channels-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
   }
   .channel-section {
@@ -83,13 +79,18 @@ const template = `
     font-weight: bold;
     margin-bottom: 12px;
     padding: 12px;
-    background: linear-gradient(135deg, #5a6fd8 0%, #6f4aa6 100%);
+    background: linear-gradient(135deg, #2f6db3 0%, #24528a 100%);
     border-radius: 8px;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
     text-align: center;
   }
   canvas { 
     max-height: 500px; 
+  }
+  @media (max-width: 980px) {
+    .channels-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 
@@ -131,6 +132,13 @@ const template = `
     </div>
   </div>
   
+  {{#if channelCount}}
+  <div class="combined-section">
+    <div class="channel-header">All Channels ({{channelCount}}) · Modulation Profiles by Frequency</div>
+    <canvas id="chart_combined"></canvas>
+  </div>
+  {{/if}}
+
   <div class="channels-grid">
   {{#each channels}}
   <div class="channel-section">
@@ -139,13 +147,6 @@ const template = `
   </div>
   {{/each}}
   </div>
-
-  {{#if channelCount}}
-  <div class="combined-section">
-    <div class="channel-header">All Channels by Frequency</div>
-    <canvas id="chart_combined"></canvas>
-  </div>
-  {{/if}}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
@@ -156,7 +157,6 @@ pm.getData(function(err, data) {
     return;
   }
 
-  // Define colors for different profiles
   const profileColors = {
     0: { border: '#FF6C37', background: 'rgba(255, 108, 55, 0.1)' },
     1: { border: '#4CAF50', background: 'rgba(76, 175, 80, 0.1)' },
@@ -168,11 +168,9 @@ pm.getData(function(err, data) {
     7: { border: '#8BC34A', background: 'rgba(139, 195, 74, 0.1)' }
   };
 
-  // Create a chart for each channel
   data.channels.forEach(function(channel) {
     var ctx = document.getElementById('chart_' + channel.channelId);
     
-    // Prepare datasets for each profile
     var datasets = channel.profiles.map(function(profile) {
       var color = profileColors[profile.profileId] || profileColors[0];
       return {
@@ -257,7 +255,6 @@ pm.getData(function(err, data) {
     });
   });
 
-  // Combined chart: all channels/profiles aligned on a single frequency axis
   var combinedCanvas = document.getElementById('chart_combined');
   if (combinedCanvas) {
     var combinedDatasets = [];

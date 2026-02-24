@@ -89,8 +89,9 @@ const template = `
 
   .grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
+    align-items: start;
   }
   .card {
     background-color: #151a2e;
@@ -126,6 +127,10 @@ const template = `
     margin-top: 10px;
     font-size: 12px;
   }
+  .tableWrap {
+    width: 100%;
+    overflow-x: auto;
+  }
   th, td {
     border-bottom: 1px solid rgba(255,255,255,0.08);
     padding: 8px 6px;
@@ -133,6 +138,39 @@ const template = `
     white-space: nowrap;
   }
   th { color: #9fb4ff; font-weight: 700; }
+
+  @media (max-width: 1200px) {
+    .strip {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 980px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+    .kpi {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    body {
+      padding: 12px;
+    }
+    .header, .card {
+      padding: 12px;
+    }
+    .kpi {
+      grid-template-columns: 1fr;
+    }
+    .strip {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 
 <div class="header">
@@ -183,36 +221,38 @@ const template = `
   <div class="divider"></div>
 
   <div class="sub"><b>Quick Table</b></div>
-  <table>
-    <thead>
-      <tr>
-        <th>Channel</th>
-        <th>Zero (MHz)</th>
-        <th>Start (MHz)</th>
-        <th>End (MHz)</th>
-        <th>BW (MHz)</th>
-        <th>Tx (dBmV)</th>
-        <th>Pre-EQ</th>
-        <th>Muted</th>
-        <th>Ranging</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each tableRows}}
-      <tr>
-        <td>{{channel}}</td>
-        <td>{{zero}}</td>
-        <td>{{start}}</td>
-        <td>{{end}}</td>
-        <td>{{bw}}</td>
-        <td>{{tx}}</td>
-        <td>{{preeq}}</td>
-        <td>{{muted}}</td>
-        <td>{{ranging}}</td>
-      </tr>
-      {{/each}}
-    </tbody>
-  </table>
+  <div class="tableWrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Channel</th>
+          <th>Zero (MHz)</th>
+          <th>Start (MHz)</th>
+          <th>End (MHz)</th>
+          <th>BW (MHz)</th>
+          <th>Tx (dBmV)</th>
+          <th>Pre-EQ</th>
+          <th>Muted</th>
+          <th>Ranging</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each tableRows}}
+        <tr>
+          <td>{{channel}}</td>
+          <td>{{zero}}</td>
+          <td>{{start}}</td>
+          <td>{{end}}</td>
+          <td>{{bw}}</td>
+          <td>{{tx}}</td>
+          <td>{{preeq}}</td>
+          <td>{{muted}}</td>
+          <td>{{ranging}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <div class="grid">
@@ -607,20 +647,44 @@ pm.visualizer.set(template, constructVisualizerPayload());
     "message": "Pre-check successful: CableModem reachable via ping and SNMP",
     "results": [
         {
-            "index": 83,
+            "index": 81,
+            "channel_id": 42,
+            "entry": {
+                "docsIf31CmUsOfdmaChanChannelId": 42,
+                "docsIf31CmUsOfdmaChanConfigChangeCt": 0,
+                "docsIf31CmUsOfdmaChanSubcarrierZeroFreq": 104800000,
+                "docsIf31CmUsOfdmaChanFirstActiveSubcarrierNum": 74,
+                "docsIf31CmUsOfdmaChanLastActiveSubcarrierNum": 1969,
+                "docsIf31CmUsOfdmaChanNumActiveSubcarriers": 1896,
+                "docsIf31CmUsOfdmaChanSubcarrierSpacing": 50,
+                "docsIf31CmUsOfdmaChanCyclicPrefix": 192,
+                "docsIf31CmUsOfdmaChanRollOffPeriod": 128,
+                "docsIf31CmUsOfdmaChanNumSymbolsPerFrame": 10,
+                "docsIf31CmUsOfdmaChanTxPower": 16.6,
+                "docsIf31CmUsOfdmaChanPreEqEnabled": true,
+                "docsIf31CmStatusOfdmaUsT3Timeouts": 0,
+                "docsIf31CmStatusOfdmaUsT4Timeouts": 0,
+                "docsIf31CmStatusOfdmaUsRangingAborteds": 0,
+                "docsIf31CmStatusOfdmaUsT3Exceededs": 0,
+                "docsIf31CmStatusOfdmaUsIsMuted": false,
+                "docsIf31CmStatusOfdmaUsRangingStatus": "success"
+            }
+        },
+        {
+            "index": 82,
             "channel_id": 41,
             "entry": {
                 "docsIf31CmUsOfdmaChanChannelId": 41,
                 "docsIf31CmUsOfdmaChanConfigChangeCt": 0,
-                "docsIf31CmUsOfdmaChanSubcarrierZeroFreq": 36200000,
-                "docsIf31CmUsOfdmaChanFirstActiveSubcarrierNum": 148,
-                "docsIf31CmUsOfdmaChanLastActiveSubcarrierNum": 1923,
-                "docsIf31CmUsOfdmaChanNumActiveSubcarriers": 1776,
-                "docsIf31CmUsOfdmaChanSubcarrierSpacing": 25,
-                "docsIf31CmUsOfdmaChanCyclicPrefix": 160,
-                "docsIf31CmUsOfdmaChanRollOffPeriod": 64,
-                "docsIf31CmUsOfdmaChanNumSymbolsPerFrame": 12,
-                "docsIf31CmUsOfdmaChanTxPower": 18.4,
+                "docsIf31CmUsOfdmaChanSubcarrierZeroFreq": 22000000,
+                "docsIf31CmUsOfdmaChanFirstActiveSubcarrierNum": 74,
+                "docsIf31CmUsOfdmaChanLastActiveSubcarrierNum": 1249,
+                "docsIf31CmUsOfdmaChanNumActiveSubcarriers": 1176,
+                "docsIf31CmUsOfdmaChanSubcarrierSpacing": 50,
+                "docsIf31CmUsOfdmaChanCyclicPrefix": 192,
+                "docsIf31CmUsOfdmaChanRollOffPeriod": 128,
+                "docsIf31CmUsOfdmaChanNumSymbolsPerFrame": 10,
+                "docsIf31CmUsOfdmaChanTxPower": 16.6,
                 "docsIf31CmUsOfdmaChanPreEqEnabled": true,
                 "docsIf31CmStatusOfdmaUsT3Timeouts": 0,
                 "docsIf31CmStatusOfdmaUsT4Timeouts": 0,
