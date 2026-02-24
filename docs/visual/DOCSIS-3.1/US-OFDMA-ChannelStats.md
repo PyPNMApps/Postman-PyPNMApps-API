@@ -87,6 +87,21 @@ const template = `
     margin: 14px 0;
   }
 
+
+  .deviceInfoCard {
+    background-color: #151a2e;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  }
+  .deviceInfoCard h3 { margin: 0 0 8px 0; font-size: 14px; color: #9fb4ff; }
+  .deviceInfoTable { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .deviceInfoTable th, .deviceInfoTable td { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 8px 6px; text-align: left; white-space: nowrap; }
+  .deviceInfoTable th { color: #9fb4ff; font-weight: 700; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
   .grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -173,6 +188,28 @@ const template = `
   }
 </style>
 
+
+<div class="deviceInfoCard">
+  <h3>Device Info</h3>
+  <table class="deviceInfoTable">
+    <thead>
+      <tr>
+        <th>MacAddress</th><th>Model</th><th>Vendor</th><th>SW Version</th><th>HW Version</th><th>Boot ROM</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="mono">{{deviceInfo.macAddress}}</td>
+        <td>{{deviceInfo.MODEL}}</td>
+        <td>{{deviceInfo.VENDOR}}</td>
+        <td class="mono">{{deviceInfo.SW_REV}}</td>
+        <td class="mono">{{deviceInfo.HW_REV}}</td>
+        <td class="mono">{{deviceInfo.BOOTR}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
 <div class="header">
   <div class="title">US OFDMA Channel Statistics</div>
   <div class="meta">
@@ -255,6 +292,7 @@ const template = `
   </div>
 </div>
 
+
 <div class="grid">
   {{#each channels}}
   <div class="card">
@@ -297,7 +335,8 @@ const template = `
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
 <script>
-pm.getData(function (err, value) {
+
+    pm.getData(function (err, value) {
   if (err) {
     console.error(err);
     return;
@@ -495,8 +534,10 @@ pm.getData(function (err, value) {
 
 function constructVisualizerPayload() {
   const r = pm.response.json();
+  const device = (r.device && typeof r.device === "object") ? r.device : {};
+  const sys = (device.system_description && typeof device.system_description === "object") ? device.system_description : {};
 
-  const mac = r.mac_address || 'N/A';
+  const mac = ((r.device || {}).mac_address) || 'N/A';
   const status = (r.status !== undefined && r.status !== null) ? r.status : 'N/A';
   const statusText = status === 0 ? 'Success' : String(status);
   const message = r.message ? r.message : '';
@@ -620,6 +661,14 @@ function constructVisualizerPayload() {
   };
 
   return {
+    deviceInfo: {
+      macAddress: device.mac_address || "N/A",
+      MODEL: sys.MODEL || "N/A",
+      VENDOR: sys.VENDOR || "N/A",
+      SW_REV: sys.SW_REV || "N/A",
+      HW_REV: sys.HW_REV || "N/A",
+      BOOTR: sys.BOOTR || "N/A"
+    },
     mac,
     statusText,
     message,
@@ -642,9 +691,25 @@ pm.visualizer.set(template, constructVisualizerPayload());
 
 ````json
 {
-    "mac_address": "aa:bb:cc:dd:ee:ff",
+    "system_description": {
+        "HW_REV": "1.0",
+        "VENDOR": "LANCity",
+        "BOOTR": "NONE",
+        "SW_REV": "1.0.0",
+        "MODEL": "LCPET-3"
+    },
     "status": 0,
     "message": "Pre-check successful: CableModem reachable via ping and SNMP",
+    "device": {
+        "mac_address": "aa:bb:cc:dd:ee:ff",
+        "system_description": {
+            "HW_REV": "1.0",
+            "VENDOR": "LANCity",
+            "BOOTR": "NONE",
+            "SW_REV": "1.0.0",
+            "MODEL": "LCPET-3"
+        }
+    },
     "results": [
         {
             "index": 81,

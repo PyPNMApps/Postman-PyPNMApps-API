@@ -55,6 +55,26 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
   const C_MPS = 299792458;
   const DEFAULT_VF = 0.87;
 
+
+
+  function buildDeviceInfoBlock() {
+    const device = (resp.device && typeof resp.device === "object") ? resp.device : {};
+    const sys = (device.system_description && typeof device.system_description === "object") ? device.system_description : {};
+    const v = (x) => esc(safe(x, "N/A"));
+    return `
+      <div class="section" style="padding:12px 14px;">
+        <div class="section-head" style="margin-bottom:8px;">
+          <div class="section-title">Device Info</div>
+        </div>
+        <div style="overflow:auto;border:1px solid rgba(148,163,184,0.18);border-radius:12px;">
+          <table class="tbl" style="min-width:720px;">
+            <thead><tr><th>MacAddress</th><th>Model</th><th>Vendor</th><th>SW Version</th><th>HW Version</th><th>Boot ROM</th></tr></thead>
+            <tbody><tr><td class="mono">${v(device.mac_address)}</td><td>${v(sys.MODEL)}</td><td>${v(sys.VENDOR)}</td><td class="mono">${v(sys.SW_REV)}</td><td class="mono">${v(sys.HW_REV)}</td><td class="mono">${v(sys.BOOTR)}</td></tr></tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
   function getMainTapIndex(usRecord) {
     const mRaw = Number(usRecord?.main_tap_location);
     const nRaw = Number(usRecord?.num_taps);
@@ -391,7 +411,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
       id: cmId,
       kind: "cm",
       label: "CM",
-      sub: safe(resp.mac_address, ""),
+      sub: safe((resp.device && resp.device.mac_address), ""),
       w: 240,
       h: 60,
     });
@@ -1126,13 +1146,15 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
     .topo-sub { fill: rgba(148,163,184,0.95); font-size: 12px; }
   </style>
 
+  ${buildDeviceInfoBlock()}
+
   <div class="top">
     <div class="title">Upstream Pre-EQ · Visualizer</div>
     <div class="sub">Topology + tables + per-channel plots (dynamic)</div>
   </div>
 
   <div class="chips">
-    <div class="chip"><span class="k">MAC</span> <span class="mono">${esc(safe(resp.mac_address, ""))}</span></div>
+    <div class="chip"><span class="k">MAC</span> <span class="mono">${esc(safe((resp.device && resp.device.mac_address), ""))}</span></div>
     <div class="chip ${Number(resp.status) === 0 ? "good" : "bad"}"><span class="k">Status</span> <span class="mono">${esc(
       String(safe(resp.status, ""))
     )}</span></div>
@@ -1166,9 +1188,25 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 
 ````json
 {
-    "mac_address": "aa:bb:cc:dd:ee:ff",
+    "system_description": {
+        "HW_REV": "1.0",
+        "VENDOR": "LANCity",
+        "BOOTR": "NONE",
+        "SW_REV": "1.0.0",
+        "MODEL": "LCPET-3"
+    },
     "status": 0,
     "message": "Successfully retrieved upstream pre-equalization coefficients",
+    "device": {
+        "mac_address": "aa:bb:cc:dd:ee:ff",
+        "system_description": {
+            "HW_REV": "1.0",
+            "VENDOR": "LANCity",
+            "BOOTR": "NONE",
+            "SW_REV": "1.0.0",
+            "MODEL": "LCPET-3"
+        }
+    },
     "results": {
         "4": {
             "main_tap_location": 8,

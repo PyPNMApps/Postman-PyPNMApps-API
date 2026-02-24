@@ -44,6 +44,21 @@ var template = `
     }
     .legend-us { background: #ff6b6b; }
     .legend-ds { background: #4dabf7; }
+
+    .deviceInfoCard {
+        background-color: #151a2e;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    }
+    .deviceInfoCard h3 { margin: 0 0 8px 0; font-size: 14px; color: #9fb4ff; }
+    .deviceInfoTable { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .deviceInfoTable th, .deviceInfoTable td { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 8px 6px; text-align: left; white-space: nowrap; }
+    .deviceInfoTable th { color: #9fb4ff; font-weight: 700; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
     .stats {
         display: flex;
         justify-content: space-around;
@@ -68,10 +83,33 @@ var template = `
 </style>
 
 <div class="container">
+    
+
+    <div class="deviceInfoCard">
+      <h3>Device Info</h3>
+      <table class="deviceInfoTable">
+        <thead>
+          <tr>
+            <th>MacAddress</th><th>Model</th><th>Vendor</th><th>SW Version</th><th>HW Version</th><th>Boot ROM</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">{{deviceInfo.macAddress}}</td>
+            <td>{{deviceInfo.MODEL}}</td>
+            <td>{{deviceInfo.VENDOR}}</td>
+            <td class="mono">{{deviceInfo.SW_REV}}</td>
+            <td class="mono">{{deviceInfo.HW_REV}}</td>
+            <td class="mono">{{deviceInfo.BOOTR}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+        
     <div class="title">Diplexer Frequency Response (9th Order Butterworth)</div>
     <div class="subtitle">MAC: {{macAddress}} | Diplexer Capability: {{diplexerCap}}</div>
-    
-    <div class="chart-container">
+<div class="chart-container">
         <canvas id="diplexerChart" height="90"></canvas>
     </div>
     
@@ -250,6 +288,8 @@ var template = `
 function createPayload() {
     var response = pm.response.json();
     var diplexer = response.results.diplexer;
+    var device = (response.device && typeof response.device === "object") ? response.device : {};
+    var sys = (device.system_description && typeof device.system_description === "object") ? device.system_description : {};
     
     var bandEdge = diplexer.cfg_band_edge / 1000000;
     var dsLower = diplexer.cfg_ds_lower_band_edge / 1000000;
@@ -294,7 +334,8 @@ function createPayload() {
     }
     
     return {
-        macAddress: response.mac_address,
+        macAddress: ((response.device || {}).mac_address) || "N/A",
+        deviceInfo: { macAddress: device.mac_address || "N/A", MODEL: sys.MODEL || "N/A", VENDOR: sys.VENDOR || "N/A", SW_REV: sys.SW_REV || "N/A", HW_REV: sys.HW_REV || "N/A", BOOTR: sys.BOOTR || "N/A" },
         bandEdge: bandEdge,
         dsLower: dsLower,
         dsUpper: dsUpper,

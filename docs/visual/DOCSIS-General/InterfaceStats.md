@@ -203,7 +203,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
   }
 
   function svgTopology(groups) {
-    const mac = payload.mac_address ? String(payload.mac_address) : "unknown";
+    const mac = payload.device && payload.device.mac_address ? String(payload.device.mac_address) : "unknown";
 
     const macLayer = groups.find((g) => g.key === "docsCableMaclayer");
     const ofdmDs = groups.find((g) => g.key === "docsOfdmDownstream");
@@ -460,6 +460,19 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
   <body>
     <h1>PyPNM Interface Statistics</h1>
 
+
+    <div class="card">
+      <h2>Device Info</h2>
+      <div class="meta">
+        <div class="muted">MacAddress</div><div class="mono">{{device.mac_address}}</div>
+        <div class="muted">Model</div><div>{{device.system_description.MODEL}}</div>
+        <div class="muted">Vendor</div><div>{{device.system_description.VENDOR}}</div>
+        <div class="muted">SW Version</div><div class="mono">{{device.system_description.SW_REV}}</div>
+        <div class="muted">HW Version</div><div class="mono">{{device.system_description.HW_REV}}</div>
+        <div class="muted">Boot ROM</div><div class="mono">{{device.system_description.BOOTR}}</div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="meta">
         <div class="muted">mac_address</div><div class="mono">{{mac_address}}</div>
@@ -552,9 +565,19 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 </html>
 `,
     {
-      mac_address: payload.mac_address ?? "",
+      mac_address: ((payload.device || {}).mac_address) ?? "",
       status: String(payload.status ?? ""),
       message: payload.message ?? "",
+      device: {
+        mac_address: ((payload.device || {}).mac_address) ?? "N/A",
+        system_description: {
+          MODEL: ((((payload.device || {}).system_description) || {}).MODEL) ?? "N/A",
+          VENDOR: ((((payload.device || {}).system_description) || {}).VENDOR) ?? "N/A",
+          SW_REV: ((((payload.device || {}).system_description) || {}).SW_REV) ?? "N/A",
+          HW_REV: ((((payload.device || {}).system_description) || {}).HW_REV) ?? "N/A",
+          BOOTR: ((((payload.device || {}).system_description) || {}).BOOTR) ?? "N/A"
+        }
+      },
       diagramSvg,
       groups: renderedGroups.map((g) => {
         const maxBps = maxSpeedBps(g.rows);
@@ -604,9 +627,25 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 
 ````json
 {
-    "mac_address": "aa:bb:cc:dd:ee:ff",
+    "system_description": {
+        "HW_REV": "1.0",
+        "VENDOR": "LANCity",
+        "BOOTR": "NONE",
+        "SW_REV": "1.0.0",
+        "MODEL": "LCPET-3"
+    },
     "status": 0,
     "message": "Interface statistics retrieved successfully",
+    "device": {
+        "mac_address": "aa:bb:cc:dd:ee:ff",
+        "system_description": {
+            "HW_REV": "1.0",
+            "VENDOR": "LANCity",
+            "BOOTR": "NONE",
+            "SW_REV": "1.0.0",
+            "MODEL": "LCPET-3"
+        }
+    },
     "results": {
         "docsCableMaclayer": [
             {

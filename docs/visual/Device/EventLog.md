@@ -73,6 +73,9 @@ const template = `
     font-size: 12px;
     color: rgba(234,234,234,0.85);
   }
+  .deviceInfoTable { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .deviceInfoTable th, .deviceInfoTable td { border-top: 1px solid rgba(255,255,255,0.08); padding: 8px 6px; text-align: left; white-space: nowrap; }
+  .deviceInfoTable th { color: #9fb4ff; font-weight: 700; border-top: none; }
 
   .card {
     background-color: #151a2e;
@@ -186,6 +189,15 @@ const template = `
 
   .nowrap { white-space: nowrap; }
 </style>
+
+
+<div class="card">
+  <h3>Device Info</h3>
+  <table class="deviceInfoTable">
+    <thead><tr><th>MacAddress</th><th>Model</th><th>Vendor</th><th>SW Version</th><th>HW Version</th><th>Boot ROM</th></tr></thead>
+    <tbody><tr><td class="mono">{{deviceInfo.macAddress}}</td><td>{{deviceInfo.MODEL}}</td><td>{{deviceInfo.VENDOR}}</td><td class="mono">{{deviceInfo.SW_REV}}</td><td class="mono">{{deviceInfo.HW_REV}}</td><td class="mono">{{deviceInfo.BOOTR}}</td></tr></tbody>
+  </table>
+</div>
 
 <div class="header">
   <div class="title">DOCSIS Event Log</div>
@@ -346,7 +358,9 @@ function levelClass(level) {
 function constructVisualizerPayload() {
   const r = pm.response.json();
 
-  const mac = normalizeMac(r.mac_address);
+  const device = (r.device && typeof r.device === "object") ? r.device : {};
+  const sys = (device.system_description && typeof device.system_description === "object") ? device.system_description : {};
+  const mac = normalizeMac(device.mac_address);
   const status = (r.status !== undefined && r.status !== null) ? r.status : 'N/A';
   const statusText = status === 0 ? 'Success' : String(status);
   const message = r.message ? String(r.message) : '';
@@ -496,6 +510,14 @@ function constructVisualizerPayload() {
     rawCount,
     uniqCount: rowsNorm.length,
     timeSpan,
+    deviceInfo: {
+      macAddress: mac || 'N/A',
+      MODEL: sys.MODEL || 'N/A',
+      VENDOR: sys.VENDOR || 'N/A',
+      SW_REV: sys.SW_REV || 'N/A',
+      HW_REV: sys.HW_REV || 'N/A',
+      BOOTR: sys.BOOTR || 'N/A'
+    },
     rows: rowsNorm.map((rw) => ({
       firstTime: rw.firstTime,
       lastTime: rw.lastTime,
@@ -533,9 +555,25 @@ pm.visualizer.set(template, constructVisualizerPayload());
 
 ````json
 {
-    "mac_address": "aabbccddeeff",
+    "system_description": {
+        "HW_REV": "1.0",
+        "VENDOR": "LANCity",
+        "BOOTR": "NONE",
+        "SW_REV": "1.0.0",
+        "MODEL": "LCPET-3"
+    },
     "status": 0,
     "message": null,
+    "device": {
+        "mac_address": "aabbccddeeff",
+        "system_description": {
+            "HW_REV": "1.0",
+            "VENDOR": "LANCity",
+            "BOOTR": "NONE",
+            "SW_REV": "1.0.0",
+            "MODEL": "LCPET-3"
+        }
+    },
     "logs": [
         {
             "docsDevEvFirstTime": "2026-02-18T09:31:57",

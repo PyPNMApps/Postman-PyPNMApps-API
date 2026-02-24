@@ -18,6 +18,29 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 // Visualization Script
 // Visualization Script
 var template = `
+<style>body{font-family:Arial,sans-serif;padding:20px;background:#0f1220;color:#eaeaea}.deviceInfoCard{background-color:#151a2e;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.35)}.deviceInfoCard h3{margin:0 0 8px 0;font-size:14px;color:#9fb4ff}.deviceInfoTable{width:100%;border-collapse:collapse;font-size:12px}.deviceInfoTable th,.deviceInfoTable td{border-bottom:1px solid rgba(255,255,255,0.08);padding:8px 6px;text-align:left;white-space:nowrap}.deviceInfoTable th{color:#9fb4ff;font-weight:700}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}</style>
+
+<div class="deviceInfoCard">
+  <h3>Device Info</h3>
+  <table class="deviceInfoTable">
+    <thead>
+      <tr>
+        <th>MacAddress</th><th>Model</th><th>Vendor</th><th>SW Version</th><th>HW Version</th><th>Boot ROM</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="mono">{{deviceInfo.macAddress}}</td>
+        <td>{{deviceInfo.MODEL}}</td>
+        <td>{{deviceInfo.VENDOR}}</td>
+        <td class="mono">{{deviceInfo.SW_REV}}</td>
+        <td class="mono">{{deviceInfo.HW_REV}}</td>
+        <td class="mono">{{deviceInfo.BOOTR}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
 <canvas id="myChart" height="100"></canvas>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script> 
 <script>
@@ -82,7 +105,9 @@ var template = `
 
 function createPayload() {
     var responseData = pm.response.json();
+    var device = (responseData.device && typeof responseData.device === "object") ? responseData.device : {};
     var results = responseData.results || [];
+    var sys = (device.system_description && typeof device.system_description === "object") ? device.system_description : {};
     
     var channelIds = [];
     var totalCodewords = [];
@@ -95,6 +120,14 @@ function createPayload() {
     }
     
     return {
+        deviceInfo: {
+            macAddress: device.mac_address || "N/A",
+            MODEL: sys.MODEL || "N/A",
+            VENDOR: sys.VENDOR || "N/A",
+            SW_REV: sys.SW_REV || "N/A",
+            HW_REV: sys.HW_REV || "N/A",
+            BOOTR: sys.BOOTR || "N/A"
+        },
         channelIds: channelIds,
         totalCodewords: totalCodewords,
         totalErrors: totalErrors
@@ -110,9 +143,25 @@ pm.visualizer.set(template, createPayload());
 
 ````json
 {
-    "mac_address": "aa:bb:cc:dd:ee:ff",
+    "system_description": {
+        "HW_REV": "1.0",
+        "VENDOR": "LANCity",
+        "BOOTR": "NONE",
+        "SW_REV": "1.0.0",
+        "MODEL": "LCPET-3"
+    },
     "status": 0,
     "message": "Successfully retrieved codeword error rate",
+    "device": {
+        "mac_address": "aa:bb:cc:dd:ee:ff",
+        "system_description": {
+            "HW_REV": "1.0",
+            "VENDOR": "LANCity",
+            "BOOTR": "NONE",
+            "SW_REV": "1.0.0",
+            "MODEL": "LCPET-3"
+        }
+    },
     "results": [
         {
             "index": 3,

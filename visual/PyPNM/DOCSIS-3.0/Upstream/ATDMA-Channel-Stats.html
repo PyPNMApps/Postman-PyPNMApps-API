@@ -88,6 +88,26 @@
     return b ? `<span class="pill yes">true</span>` : `<span class="pill no">false</span>`;
   }
 
+
+
+  function buildDeviceInfoBlock() {
+    const device = (resp.device && typeof resp.device === "object") ? resp.device : {};
+    const sys = (device.system_description && typeof device.system_description === "object") ? device.system_description : {};
+    const v = (x) => esc(safe(x, "N/A"));
+    return `
+      <div class="section" style="padding:12px 14px;">
+        <div class="section-head" style="margin-bottom:8px;">
+          <div class="section-title">Device Info</div>
+        </div>
+        <div style="overflow:auto;border:1px solid rgba(148,163,184,0.18);border-radius:12px;">
+          <table class="tbl" style="min-width:720px;">
+            <thead><tr><th>MacAddress</th><th>Model</th><th>Vendor</th><th>SW Version</th><th>HW Version</th><th>Boot ROM</th></tr></thead>
+            <tbody><tr><td class="mono">${v(device.mac_address)}</td><td>${v(sys.MODEL)}</td><td>${v(sys.VENDOR)}</td><td class="mono">${v(sys.SW_REV)}</td><td class="mono">${v(sys.HW_REV)}</td><td class="mono">${v(sys.BOOTR)}</td></tr></tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
   // Absolute Y-axis with padding (prevents min channel looking like "zero")
   const PAD_DB = 1.0;
   const ROUND_STEP_DB = 0.5;
@@ -544,13 +564,15 @@
     }
   </style>
 
+  ${buildDeviceInfoBlock()}
+
   <div class="top">
     <div class="title">Upstream ATDMA Channel Statistics</div>
     <div class="sub">Per-channel cards (EQ excluded) + Tx power bar graph (absolute y-axis) sorted by frequency</div>
   </div>
 
   <div class="chips">
-    <div class="chip"><span class="k">MAC</span> <span class="mono">${esc(safe(resp.mac_address, ""))}</span></div>
+    <div class="chip"><span class="k">MAC</span> <span class="mono">${esc(safe((resp.device && resp.device.mac_address), ""))}</span></div>
     <div class="chip"><span class="k">Status</span> <span class="mono">${esc(String(safe(resp.status, "")))}</span></div>
     <div class="chip"><span class="k">Message</span> <span>${esc(safe(resp.message, ""))}</span></div>
     <div class="chip"><span class="k">Channels</span> <span class="mono">${esc(String(entries.length))}</span></div>
