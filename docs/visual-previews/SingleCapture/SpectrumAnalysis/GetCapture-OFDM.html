@@ -58,15 +58,27 @@
     let visualizerData = sampleData;
     let lastTemplate = null;
 
-    function executeRenderedScripts(root) {
+    async function executeRenderedScripts(root) {
       const scripts = Array.from(root.querySelectorAll("script"));
       for (const oldScript of scripts) {
         const newScript = document.createElement("script");
         for (const attr of oldScript.attributes) {
           newScript.setAttribute(attr.name, attr.value);
         }
+        const parent = oldScript.parentNode;
+        if (!parent) continue;
+
+        if (oldScript.src) {
+          await new Promise((resolve) => {
+            newScript.onload = resolve;
+            newScript.onerror = resolve;
+            parent.replaceChild(newScript, oldScript);
+          });
+          continue;
+        }
+
         newScript.textContent = oldScript.textContent;
-        oldScript.parentNode.replaceChild(newScript, oldScript);
+        parent.replaceChild(newScript, oldScript);
       }
     }
 
@@ -77,10 +89,10 @@
         if (window.Handlebars && typeof template === "string") {
           const compiled = window.Handlebars.compile(template);
           app.innerHTML = compiled(visualizerData);
-          executeRenderedScripts(app);
+          void executeRenderedScripts(app);
         } else if (typeof template === "string") {
           app.innerHTML = template;
-          executeRenderedScripts(app);
+          void executeRenderedScripts(app);
         } else {
           app.textContent = String(template);
         }
