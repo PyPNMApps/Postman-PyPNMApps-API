@@ -108,6 +108,52 @@
     return { minV, maxV };
   }
 
+  function channelTimeRange(ts) {
+    if (!Array.isArray(ts) || !ts.length) return null;
+    var first = null;
+    var last = null;
+    var isOneDimensional = !Array.isArray(ts[0]);
+
+    if (isOneDimensional) {
+      for (var i = 0; i < ts.length; i++) {
+        var n1 = Number(ts[i]);
+        if (!isNum(n1)) continue;
+        if (first === null || n1 < first) first = n1;
+        if (last === null || n1 > last) last = n1;
+      }
+      if (first === null || last === null || last < first) return null;
+      return { first: first, last: last, elapsed: last - first };
+    }
+
+    for (var r = 0; r < ts.length; r++) {
+      var row = Array.isArray(ts[r]) ? ts[r] : [];
+      for (var c = 0; c < row.length; c++) {
+        var n = Number(row[c]);
+        if (!isNum(n)) continue;
+        if (first === null || n < first) first = n;
+        if (last === null || n > last) last = n;
+      }
+    }
+    if (first === null || last === null || last < first) return null;
+    return { first: first, last: last, elapsed: last - first };
+  }
+
+  function formatElapsed(seconds) {
+    if (!isNum(seconds)) return "N/A";
+    if (seconds < 60) return seconds.toFixed(1) + "s";
+    var total = Math.round(seconds);
+    var h = Math.floor(total / 3600);
+    var m = Math.floor((total % 3600) / 60);
+    var s = total % 60;
+    if (h > 0) return String(h) + "h " + String(m).padStart(2, "0") + "m " + String(s).padStart(2, "0") + "s";
+    return String(m) + "m " + String(s).padStart(2, "0") + "s";
+  }
+
+  function formatEpoch(epochSec) {
+    if (!isNum(epochSec)) return "N/A";
+    return String(epochSec);
+  }
+
   // Risk-oriented colormap for RxMER: low MER (bad) = red, high MER (good) = green.
   function colorSequential(v, minV, maxV) {
     if (!isNum(v)) return "rgba(148,163,184,0.18)";
@@ -138,6 +184,7 @@
 
     const bins = Math.min(freq.length, N);
     const { minV, maxV } = matrixRange(values);
+    const timeRange = channelTimeRange(ts);
 
     const widthLimitedRenderBins = Math.max(64, Math.floor(TARGET_GRID_MAX_W / CELL_PX));
     const targetRenderBins = Math.min(MAX_RENDER_BINS, widthLimitedRenderBins);
@@ -224,13 +271,7 @@
       <div class="panel">
         <div class="panel-head">
           <div>
-            <div class="panel-title">Channel ${esc(channelId)} · RxMER Heatmap</div>
-            <div class="meta mono">
-              bins=${esc(String(bins))} · rows=${esc(String(T))} · cell=${esc(String(CELL_PX))}px ·
-              ${binStep > 1 ? `render=${esc(String(renderBins))} (agg×${esc(String(binStep))}) · ` : ""}
-              f=${esc(hzToMHz(fMin))}..${esc(hzToMHz(fMax))} MHz ·
-              rxmer=${esc(minV.toFixed(2))}..${esc(maxV.toFixed(2))} dB
-            </div>
+            <div class="panel-title">Channel ${esc(channelId)} · RxMER Heatmap${timeRange ? ` · Elapsed ${esc(formatElapsed(timeRange.elapsed))}` : ""}</div>
           </div>
         </div>
 
@@ -239,10 +280,6 @@
             <div class="hm-stage">
               <canvas id="${esc(canvasId)}" class="hm-canvas" width="${canvasW}" height="${canvasH}" aria-label="RxMER heatmap dense"></canvas>
             </div>
-          </div>
-
-          <div class="meta">
-            Dense render (no hover, no borders). X=frequency bins, Y=time rows. Use rxmer range above for context.
           </div>
         </div>
       </div>
@@ -320,10 +357,6 @@
         font-size: 12px;
         color: var(--text);
       }
-      .sub { color: var(--muted); font-size: 12px; text-align: center; margin-bottom: 12px; }
-
-      .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-      .chip { background: rgba(148,163,184,0.10); border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; font-size: 12px; }
       .mono { font-family: var(--mono); }
       .meta { color: var(--muted); font-size: 12px; }
       .device-table {
@@ -369,11 +402,14 @@
         align-items: baseline;
         justify-content: space-between;
       }
+      .panel-head > div:first-child {
+        width: 100%;
+      }
 
       .panel-title { font-size: 14px; font-weight: 700; }
+      .panel-head .panel-title { text-align: center; width: 100%; }
 
       .panel-body { padding: 12px 14px 14px 14px; display: grid; gap: 10px; }
-
       .scroll {
         overflow-x: auto;
         padding-bottom: 6px;
@@ -403,8 +439,6 @@
       <div class="title">RxMER Heatmaps</div>
       ${captureTime ? `<div class="capture-time">Capture Time: ${esc(captureTime)}</div>` : ""}
     </div>
-    <div class="sub">Dense · No Hover · ${esc(String(CELL_PX))}×${esc(String(CELL_PX))} px cells</div>
-
     ${deviceInfo ? `
       <table class="device-table">
         <thead>
@@ -429,11 +463,6 @@
         </tbody>
       </table>
     ` : ""}
-
-    <div class="chips">
-      <div class="chip"><span class="meta">Status</span> <span class="mono">${esc(statusLabel)}</span></div>
-      <div class="chip"><span class="meta">Channels</span> <span class="mono">${esc(String(chKeys.length))}</span></div>
-    </div>
 
     <div class="grid">
       ${chKeys.map((k) => buildChannel(k, data[k] || {})).join("")}

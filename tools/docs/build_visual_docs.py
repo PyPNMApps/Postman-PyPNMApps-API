@@ -52,11 +52,6 @@ PREVIEW_HTML_TEMPLATE = """<!doctype html>
       padding: 8px;
       border-radius: 6px;
     }}
-    .note {{
-      margin-bottom: 8px;
-      color: #475569;
-      font-size: 12px;
-    }}
     @media (prefers-color-scheme: dark) {{
       body {{
         background: #0f172a;
@@ -66,15 +61,11 @@ PREVIEW_HTML_TEMPLATE = """<!doctype html>
         background: #111827;
         border-color: #374151;
       }}
-      .note {{
-        color: #cbd5e1;
-      }}
     }}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/handlebars@4.7.8/dist/handlebars.min.js"></script>
 </head>
 <body>
-  <div class="note">Preview uses a lightweight Postman visualizer shim (`pm.response.json`, `pm.getData`, `pm.visualizer.set`).</div>
   <div id="app" class="frame"></div>
   <script>
   (function() {{
@@ -83,6 +74,11 @@ PREVIEW_HTML_TEMPLATE = """<!doctype html>
     const app = document.getElementById("app");
     let visualizerData = sampleData;
     let lastTemplate = null;
+
+    function showError(prefix, err) {{
+      const msg = String(err && err.stack || err);
+      app.innerHTML = '<div class="error">' + prefix + '\\n' + msg + '</div>';
+    }}
 
     async function executeRenderedScripts(root) {{
       const scripts = Array.from(root.querySelectorAll("script"));
@@ -95,9 +91,11 @@ PREVIEW_HTML_TEMPLATE = """<!doctype html>
         if (!parent) continue;
 
         if (oldScript.src) {{
-          await new Promise((resolve) => {{
+          await new Promise((resolve, reject) => {{
             newScript.onload = resolve;
-            newScript.onerror = resolve;
+            newScript.onerror = function() {{
+              reject(new Error('Failed to load script: ' + oldScript.src));
+            }};
             parent.replaceChild(newScript, oldScript);
           }});
           continue;
@@ -112,18 +110,22 @@ PREVIEW_HTML_TEMPLATE = """<!doctype html>
       lastTemplate = template;
       visualizerData = data == null ? sampleData : data;
       try {{
-        if (window.Handlebars && typeof template === "string") {{
+        const looksLikeHandlebars =
+          typeof template === "string" &&
+          template.indexOf("{{") !== -1 &&
+          template.indexOf("}}") !== -1;
+        if (window.Handlebars && looksLikeHandlebars) {{
           const compiled = window.Handlebars.compile(template);
           app.innerHTML = compiled(visualizerData);
-          void executeRenderedScripts(app);
+          void executeRenderedScripts(app).catch((err) => showError('Rendered script execution error', err));
         }} else if (typeof template === "string") {{
           app.innerHTML = template;
-          void executeRenderedScripts(app);
+          void executeRenderedScripts(app).catch((err) => showError('Rendered script execution error', err));
         }} else {{
           app.textContent = String(template);
         }}
       }} catch (err) {{
-        app.innerHTML = '<div class="error">Template render error\\n' + String(err && err.stack || err) + '</div>';
+        showError('Template render error', err);
       }}
     }}
 
@@ -160,6 +162,12 @@ PREVIEW_HTML_TEMPLATE = """<!doctype html>
     }};
 
     window.console = window.console || {{ log(){{}}, warn(){{}}, error(){{}} }};
+    window.addEventListener('error', function(ev) {{
+      if (ev && ev.error) showError('Window error', ev.error);
+    }});
+    window.addEventListener('unhandledrejection', function(ev) {{
+      showError('Unhandled promise rejection', ev && ev.reason);
+    }});
 
     try {{
       const fn = new Function(visualSource);
@@ -168,7 +176,7 @@ PREVIEW_HTML_TEMPLATE = """<!doctype html>
         app.innerHTML = '<div class="error">No visualizer output produced. The script may require unsupported Postman APIs.</div>';
       }}
     }} catch (err) {{
-      app.innerHTML = '<div class="error">Script execution error\\n' + String(err && err.stack || err) + '</div>';
+      showError('Script execution error', err);
     }}
   }})();
   </script>
