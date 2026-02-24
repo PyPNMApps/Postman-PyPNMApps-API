@@ -49,6 +49,12 @@ run_quality_gates() {
     echo "[skip]  sanitize --fix (tools/sanitize.py not found)"
   fi
 
+  if [[ -f "./tools/postman/sync_visualizers.py" ]]; then
+    run_check "postman visualizer sync --fix" "${py_bin}" ./tools/postman/sync_visualizers.py --fix
+  else
+    echo "[skip]  postman visualizer sync --fix (tools/postman/sync_visualizers.py not found)"
+  fi
+
   if [[ -f "./tools/docs/build_visual_docs.py" ]]; then
     run_check "visual docs build" "${py_bin}" ./tools/docs/build_visual_docs.py
   else

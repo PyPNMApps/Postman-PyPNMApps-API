@@ -2,6 +2,10 @@
 
 Project utilities live under `tools/` to keep the repository root clean.
 
+See also:
+
+- `docs/visual-workflow.md` for the recommended visual edit -> Postman sync -> docs workflow
+
 ## Setup
 
 Create the local virtual environment and install dev dependencies:
@@ -60,6 +64,30 @@ Modes:
 - `--check` : read-only, reports findings, exits non-zero when changes would be needed
 - `--fix` : applies changes in-place
 
+## Postman Visualizer Sync Tool
+
+Path:
+
+- `tools/postman/sync_visualizers.py`
+
+Purpose:
+
+- Syncs Postman collection visualizer test scripts from `visual/PyPNM/**/*.html`
+- Treats Postman request paths/names as the source of truth for matching visual HTML paths
+- Detects drift between `visual/` HTML and `postman/collections/PyPNM.postman_collection.json`
+
+Usage:
+
+```bash
+tools/postman/sync_visualizers.py --check
+tools/postman/sync_visualizers.py --fix
+```
+
+Modes:
+
+- `--check` : read-only, exits non-zero if collection visualizer scripts drift from `visual/`
+- `--fix` : updates collection visualizer scripts in place from matched HTML files
+
 ## Version Bump Tool
 
 Path:
@@ -113,4 +141,5 @@ Examples:
 These run local quality checks before commit/push:
 
 - `tools/sanitize.py --check`
+- `tools/postman/sync_visualizers.py --check`
 - `pytest -q`

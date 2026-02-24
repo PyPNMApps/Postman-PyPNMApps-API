@@ -36,6 +36,9 @@ jobs:
       - name: Validate visual sanitization
         run: python tools/sanitize.py --check
 
+      - name: Validate Postman visualizer sync
+        run: python tools/postman/sync_visualizers.py --check
+
       - name: Generate visual docs from visual source of truth
         run: python tools/docs/build_visual_docs.py
 
