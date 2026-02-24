@@ -1,322 +1,525 @@
-// Multi-Analysis Visualization Script - Dark Theme
-// Handles both GROUP_DELAY and MIN_AVG_MAX analysis types dynamically
+// Visualization Script - Multiple Channel Line Charts (Dark Mode) + Aligned "All Channels" Chart
+// - Adds a top chart that aligns all channels on a master frequency axis
+// - Does NOT assume channel_id exists (falls back to stable per-result index label)
+// - Keeps per-channel charts as-is (no dots)
 
-var template = `
+const template = `
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-        background-color: #1a1a2e;
-    }
-    .metadata {
-        background-color: #16213e;
-        padding: 15px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.25);
-    }
-    .metadata h3 {
-        margin-top: 0;
-        color: #e94560;
-    }
-    .metadata-item {
-        margin: 8px 0;
-        color: #eaeaea;
-    }
-    .metadata-label {
-        font-weight: bold;
-        color: #0f9b8e;
-    }
-    .chart-container {
-        background-color: #16213e;
-        padding: 20px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.25);
-    }
-    .chart-title {
-        text-align: center;
-        font-size: 18px;
-        font-weight: bold;
-        margin-bottom: 15px;
-        color: #e94560;
-    }
-    .chart-info {
-        text-align: center;
-        font-size: 12px;
-        color: #eaeaea;
-        margin-bottom: 10px;
-    }
-    .no-data {
-        text-align: center;
-        color: #e94560;
-        padding: 40px;
-        font-size: 16px;
-    }
+  body {
+    margin: 0;
+    padding: 16px;
+    background: #141821;
+    color: #e7edf8;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .header-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .page-title {
+    grid-column: 2;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #f3f6ff;
+  }
+  .capture-time {
+    justify-self: end;
+    white-space: nowrap;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.04);
+    color: #e7edf8;
+    font-size: 12px;
+  }
+  .device-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  .device-info-table th, .device-info-table td {
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+    word-break: break-word;
+  }
+  .device-info-table th { background: rgba(255,255,255,0.06); color: #e7edf8; }
+  .device-info-table td { background: rgba(255,255,255,0.02); color: #e7edf8; }
+  .panel {
+    background: #1b2332;
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.22);
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .panel-title {
+    text-align: center;
+    color: #9ec0ff;
+    font-weight: 700;
+    font-size: 16px;
+    margin: 0 0 8px;
+  }
+  .panel-info {
+    text-align: center;
+    font-size: 12px;
+    color: #e7edf8;
+    margin-bottom: 8px;
+  }
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .results-grid .panel { margin-bottom: 0; }
+  @media (max-width: 980px) {
+    .results-grid { grid-template-columns: 1fr; }
+  }
+  .chart-canvas {
+    width: 100%;
+    display: block;
+  }
 </style>
 
-<div class="metadata">
-    <h3>{{analysis_type}} Analysis</h3>
-    <div class="metadata-item"><span class="metadata-label">MAC Address:</span> {{mac_address}}</div>
-    <div class="metadata-item"><span class="metadata-label">Status:</span> {{status}}</div>
-    <div class="metadata-item"><span class="metadata-label">Message:</span> {{message}}</div>
-    <div class="metadata-item"><span class="metadata-label">Analysis Type:</span> {{analysis_type}}</div>
-    <div class="metadata-item"><span class="metadata-label">Number of Channels:</span> {{num_channels}}</div>
-    {{#if display_unit}}
-    <div class="metadata-item"><span class="metadata-label">Display Unit:</span> {{display_unit}}</div>
-    {{/if}}
+<div class="header-row">
+  <div></div>
+  <div class="page-title">OFDMA Pre-Equalization Analysis (Group Delay)</div>
+  {{#if capture_time}}<div class="capture-time">Capture Time: {{capture_time}}</div>{{/if}}
 </div>
 
-{{#if has_data}}
-<div class="chart-container">
-    <div class="chart-title">{{chart_title}}</div>
-    <div class="chart-info">Showing data for {{num_channels}} channel(s)</div>
-    <canvas id="analysisChart" height="100"></canvas>
-</div>
-{{else}}
-<div class="no-data">No analysis data available in the response.</div>
+{{#if has_device_info}}
+<table class="device-info-table">
+  <thead>
+    <tr>
+      <th>MacAddress</th>
+      <th>Model</th>
+      <th>Vendor</th>
+      <th>SW Version</th>
+      <th>HW Version</th>
+      <th>Boot ROM</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>{{device_info.macAddress}}</td>
+      <td>{{device_info.model}}</td>
+      <td>{{device_info.vendor}}</td>
+      <td>{{device_info.swVersion}}</td>
+      <td>{{device_info.hwVersion}}</td>
+      <td>{{device_info.bootRom}}</td>
+    </tr>
+  </tbody>
+</table>
 {{/if}}
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+<div id="mainContainer">
+  <div id="alignedContainer"></div>
+  <div id="resultsGrid" class="results-grid"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
 <script>
+(function waitForChart() {
+    if (typeof Chart === 'undefined') return setTimeout(waitForChart, 50);
     pm.getData(function (err, value) {
-        if (!value.has_data) return;
-        
-        var ctx = document.getElementById("analysisChart").getContext("2d");
-        
-        var colors = [
-            'rgba(233, 69, 96, 1)',
-            'rgba(15, 155, 142, 1)',
-            'rgba(255, 193, 7, 1)',
-            'rgba(0, 188, 212, 1)',
-            'rgba(156, 39, 176, 1)',
-            'rgba(76, 175, 80, 1)',
-            'rgba(255, 87, 34, 1)',
-            'rgba(63, 81, 181, 1)'
-        ];
-        
-        var datasets = value.datasets.map(function(ds, index) {
-            var color = colors[index % colors.length];
-            return {
-                label: ds.label,
-                data: ds.data,
-                borderColor: color,
-                backgroundColor: 'transparent',
-                borderWidth: 2,
-                pointRadius: 0,
-                pointHoverRadius: 4,
-                fill: false,
-                tension: 0.1
-            };
+        if (err) {
+            console.error('Error getting data:', err);
+            return;
+        }
+
+        const alignedContainer = document.getElementById('alignedContainer');
+        const resultsGrid = document.getElementById('resultsGrid');
+
+        // Check if this is a group-delay analysis
+        if (value.analysis_type !== 'GROUP_DELAY') {
+            resultsGrid.innerHTML =
+                '<p style="color: #ff6b6b; font-size: 16px;">This visualization is only available for GROUP_DELAY analysis type. Current analysis type: ' +
+                (value.analysis_type || 'Unknown') +
+                '</p>';
+            return;
+        }
+
+        const results = (Array.isArray(value.results) ? value.results.slice() : []).sort(function(a, b) {
+            const af = Array.isArray(a && a.frequency) && a.frequency.length ? Number(a.frequency[0]) : Infinity;
+            const bf = Array.isArray(b && b.frequency) && b.frequency.length ? Number(b.frequency[0]) : Infinity;
+            if (isFinite(af) && isFinite(bf) && af !== bf) return af - bf;
+            const al = Array.isArray(a && a.frequency) && a.frequency.length ? Number(a.frequency[a.frequency.length - 1]) : Infinity;
+            const bl = Array.isArray(b && b.frequency) && b.frequency.length ? Number(b.frequency[b.frequency.length - 1]) : Infinity;
+            if (isFinite(al) && isFinite(bl) && al !== bl) return al - bl;
+            return String((a && a.channel_id) || '').localeCompare(String((b && b.channel_id) || ''));
         });
-        
-        var myChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: value.frequency_labels,
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                legend: {
-                    display: true,
-                    labels: {
-                        fontColor: '#eaeaea'
+
+        if (!results || results.length === 0) {
+            resultsGrid.innerHTML = '<p style="color:#cccccc;">No channel data available</p>';
+            return;
+        }
+
+        const gridColor = 'rgba(255,255,255,0.12)';
+        const tickColor = '#cccccc';
+        const labelColor = '#ffffff';
+
+        // Color palette for different channels - consistent mapping by stable label
+        const colorPalette = [
+            'rgb(75, 192, 192)',
+            'rgb(255, 99, 132)',
+            'rgb(54, 162, 235)',
+            'rgb(255, 206, 86)',
+            'rgb(153, 102, 255)',
+            'rgb(255, 159, 64)',
+            'rgb(199, 199, 199)',
+            'rgb(83, 102, 255)'
+        ];
+
+        const toMHz = (hz) => hz / 1000000;
+        const toMHzLabel = (hz) => String(Math.round(Number(hz) / 1000000));
+        const roundNice = (v, step) => Math.round(v / step) * step;
+        const floorNice = (v, step) => Math.floor(v / step) * step;
+        const ceilNice = (v, step) => Math.ceil(v / step) * step;
+        const normalizeGroupDelayUs = (arr) => {
+            if (!Array.isArray(arr)) return [];
+            let maxAbs = 0;
+            for (let i = 0; i < arr.length; i++) {
+                const v = Number(arr[i]);
+                if (!isFinite(v)) continue;
+                const a = Math.abs(v);
+                if (a > maxAbs) maxAbs = a;
+            }
+            // If values look like seconds (e.g. ~1e-7), convert to microseconds for display.
+            const scale = (maxAbs > 0 && maxAbs < 1e-3) ? 1e6 : 1;
+            return arr.map(function(v) {
+                const n = Number(v);
+                return isFinite(n) ? (n * scale) : null;
+            });
+        };
+
+        const safeLabel = (r, idx) => {
+            if (r && r.channel_id !== undefined && r.channel_id !== null && r.channel_id !== '') {
+                return 'Channel ' + String(r.channel_id);
+            }
+            return 'Result ' + String(idx + 1);
+        };
+
+        const rgbaFill = (rgb, a) => rgb.replace('rgb', 'rgba').replace(')', ', ' + a + ')');
+
+        // Build master frequency axis (MHz) across all channels
+        function uniqSortedNumeric(arr) {
+            const m = Object.create(null);
+            for (let i = 0; i < arr.length; i++) {
+                const n = Number(arr[i]);
+                if (!isFinite(n)) continue;
+                m[String(n)] = true;
+            }
+            return Object.keys(m).map(k => Number(k)).sort((a, b) => a - b);
+        }
+
+        function alignSeries(masterMHz, freqHzArr, valuesArr) {
+            const map = Object.create(null);
+            const n = Math.min(Array.isArray(freqHzArr) ? freqHzArr.length : 0, Array.isArray(valuesArr) ? valuesArr.length : 0);
+            for (let i = 0; i < n; i++) {
+                const fMHz = toMHz(Number(freqHzArr[i]));
+                const v = Number(valuesArr[i]);
+                if (!isFinite(fMHz)) continue;
+                map[String(fMHz)] = isFinite(v) ? v : null;
+            }
+            const out = new Array(masterMHz.length);
+            for (let j = 0; j < masterMHz.length; j++) {
+                const key = String(masterMHz[j]);
+                out[j] = (key in map) ? map[key] : null;
+            }
+            return out;
+        }
+
+        // Create top aligned chart container
+        (function renderAlignedAllChannels() {
+            const chartDiv = document.createElement('div');
+            chartDiv.className = 'panel';
+
+            const title = document.createElement('div');
+            title.className = 'panel-title';
+            title.textContent = 'All Channels (' + results.length + ') · Group Delay Aligned by Frequency (μs)';
+
+            const info = document.createElement('div');
+            info.className = 'panel-info';
+
+            const canvas = document.createElement('canvas');
+            canvas.id = 'chart-all-aligned';
+            canvas.height = 140;
+            canvas.className = 'chart-canvas';
+
+            chartDiv.appendChild(title);
+            chartDiv.appendChild(info);
+            chartDiv.appendChild(canvas);
+            alignedContainer.appendChild(chartDiv);
+
+            const allFreqHz = [];
+            for (let i = 0; i < results.length; i++) {
+                const freq = (results[i] && Array.isArray(results[i].frequency)) ? results[i].frequency : [];
+                for (let j = 0; j < freq.length; j++) allFreqHz.push(freq[j]);
+            }
+
+            const masterMHz = uniqSortedNumeric(allFreqHz.map(toMHz));
+
+            const datasets = results.map((r, idx) => {
+                const label = safeLabel(r, idx);
+                const color = colorPalette[idx % colorPalette.length];
+                const freq = (r && Array.isArray(r.frequency)) ? r.frequency : [];
+                const gd = normalizeGroupDelayUs((r && Array.isArray(r.group_delay_us)) ? r.group_delay_us : []);
+                return {
+                    label: label,
+                    data: alignSeries(masterMHz, freq, gd),
+                    borderColor: color,
+                    backgroundColor: rgbaFill(color, 0.08),
+                    borderWidth: 1.5,
+                    fill: false,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    tension: 0.1,
+                    spanGaps: false
+                };
+            });
+
+            const ctx = canvas.getContext('2d');
+            if (masterMHz.length) {
+                info.textContent = 'Master Axis: ' + String(Math.round(masterMHz[0])) + ' - ' + String(Math.round(masterMHz[masterMHz.length - 1])) + ' MHz (' + masterMHz.length + ' points)';
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: masterMHz.map(function(v){ return String(Math.round(v)); }),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: { fontColor: labelColor }
+                    },
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    hover: {
+                        mode: 'nearest',
+                        intersect: false
+                    },
+                    scales: {
+                        xAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Frequency (MHz)',
+                                fontColor: labelColor
+                            },
+                            ticks: {
+                                fontColor: tickColor,
+                                maxRotation: 45,
+                                minRotation: 45,
+                                maxTicksLimit: 12
+                            },
+                            gridLines: { color: gridColor }
+                        }],
+                        yAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Group Delay (μs)',
+                                fontColor: labelColor
+                            },
+                            ticks: {
+                                fontColor: tickColor,
+                                callback: function(value, index) {
+                                    return (index % 2 === 0) ? value : '';
+                                }
+                            },
+                            gridLines: { color: gridColor }
+                        }]
                     }
-                },
-                title: {
-                    display: false
-                },
-                scales: {
-                    xAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Frequency (MHz)',
-                            fontColor: '#0f9b8e'
-                        },
-                        ticks: {
-                            fontColor: '#eaeaea',
-                            maxTicksLimit: 15
-                        },
-                        gridLines: {
-                            color: 'rgba(255,255,255,0.1)'
-                        }
-                    }],
-                    yAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: value.y_axis_label,
-                            fontColor: '#0f9b8e'
-                        },
-                        ticks: {
-                            fontColor: '#eaeaea'
-                        },
-                        gridLines: {
-                            color: 'rgba(255,255,255,0.1)'
-                        }
+                }
+            });
+        })();
+
+        // Per-channel color map (do not assume channel_id; use stable labels)
+        const labelsSorted = results.map((r, idx) => safeLabel(r, idx)).slice().sort();
+        const labelToColor = {};
+        labelsSorted.forEach((lbl, index) => {
+            labelToColor[lbl] = colorPalette[index % colorPalette.length];
+        });
+
+        // Create a chart for each channel
+        results.forEach((channelData, index) => {
+            const label = safeLabel(channelData, index);
+            const chartDiv = document.createElement('div');
+            chartDiv.className = 'panel';
+
+            const titleWrap = document.createElement('div');
+            titleWrap.className = 'panel-title';
+            titleWrap.textContent = label + ' Group Delay';
+
+            const info = document.createElement('div');
+            info.className = 'panel-info';
+
+            const canvas = document.createElement('canvas');
+            canvas.id = 'chart-' + index;
+            canvas.height = 130;
+            canvas.className = 'chart-canvas';
+
+            chartDiv.appendChild(titleWrap);
+            chartDiv.appendChild(info);
+            chartDiv.appendChild(canvas);
+            resultsGrid.appendChild(chartDiv);
+
+            const ctx = canvas.getContext('2d');
+
+            const freq = (channelData && Array.isArray(channelData.frequency)) ? channelData.frequency : [];
+            const gd = normalizeGroupDelayUs((channelData && Array.isArray(channelData.group_delay_us)) ? channelData.group_delay_us : []);
+            const frequencyMHz = freq.map(function(f){ return toMHzLabel(f); });
+            if (freq.length) {
+                info.textContent = 'Frequency Range: ' + toMHzLabel(freq[0]) + ' - ' + toMHzLabel(freq[freq.length - 1]) + ' MHz (' + freq.length + ' points)';
+            }
+
+            const channelColor = labelToColor[label] || colorPalette[index % colorPalette.length];
+            const gdFinite = gd.filter(function(v) { return typeof v === 'number' && isFinite(v); });
+            let yMin;
+            let yMax;
+            if (gdFinite.length) {
+                const localMin = Math.min.apply(null, gdFinite);
+                const localMax = Math.max.apply(null, gdFinite);
+                const center = (localMin + localMax) / 2;
+                const halfRange = Math.max((localMax - localMin) / 2, 1e-6);
+                const expandedHalfRange = halfRange * 1.1;
+                let rawMin = center - expandedHalfRange;
+                let rawMax = center + expandedHalfRange;
+                const span = Math.max(rawMax - rawMin, 1e-6);
+                // Pick a readable tick step and snap bounds to it.
+                let tickStep = span / 4;
+                if (tickStep <= 0.0001) tickStep = 0.0001;
+                else if (tickStep <= 0.0002) tickStep = 0.0002;
+                else if (tickStep <= 0.0005) tickStep = 0.0005;
+                else if (tickStep <= 0.001) tickStep = 0.001;
+                else if (tickStep <= 0.002) tickStep = 0.002;
+                else if (tickStep <= 0.005) tickStep = 0.005;
+                else if (tickStep <= 0.01) tickStep = 0.01;
+                else if (tickStep <= 0.02) tickStep = 0.02;
+                else if (tickStep <= 0.05) tickStep = 0.05;
+                else tickStep = 0.1;
+                yMin = floorNice(rawMin, tickStep);
+                yMax = ceilNice(rawMax, tickStep);
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: frequencyMHz,
+                    datasets: [{
+                        label: label + ' - Group Delay (μs)',
+                        data: gd,
+                        borderColor: channelColor,
+                        backgroundColor: rgbaFill(channelColor, 0.1),
+                        borderWidth: 1,
+                        fill: false,
+                        pointRadius: 0,
+                        pointHoverRadius: 0,
+                        tension: 0.1
                     }]
                 },
-                tooltips: {
-                    mode: 'index',
-                    intersect: false,
-                    backgroundColor: 'rgba(22, 33, 62, 0.9)',
-                    titleFontColor: '#e94560',
-                    bodyFontColor: '#eaeaea',
-                    borderColor: '#0f9b8e',
-                    borderWidth: 1
-                },
-                hover: {
-                    mode: 'nearest',
-                    intersect: true
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    legend: {
+                        display: true,
+                        labels: { fontColor: labelColor }
+                    },
+                    scales: {
+                        xAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Frequency (MHz)',
+                                fontColor: labelColor
+                            },
+                            ticks: { fontColor: tickColor, maxTicksLimit: 10 },
+                            gridLines: { color: gridColor }
+                        }],
+                        yAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Group Delay (μs)',
+                                fontColor: labelColor
+                            },
+                            ticks: {
+                                fontColor: tickColor,
+                                min: yMin,
+                                max: yMax,
+                                maxTicksLimit: 2,
+                                padding: 6,
+                                callback: function(value) {
+                                    var n = Number(value);
+                                    if (!isFinite(n)) return value;
+                                    if (Math.abs(n) >= 1) return n.toFixed(2);
+                                    if (Math.abs(n) >= 0.1) return n.toFixed(3);
+                                    if (Math.abs(n) >= 0.01) return n.toFixed(4);
+                                    return n.toFixed(5);
+                                }
+                            },
+                            gridLines: { color: gridColor }
+                        }]
+                    }
                 }
-            }
+            });
         });
     });
+})();
 </script>
 `;
 
 function constructVisualizerPayload() {
-    var response = pm.response.json();
-    var results = response.data && response.data.results ? response.data.results : [];
-    var hasData = results.length > 0;
-    var analysisType = response.data && response.data.analysis_type ? response.data.analysis_type : 'UNKNOWN';
-    
-    var datasets = [];
-    var masterFrequencies = [];
-    var displayUnit = '';
-    var yAxisLabel = '';
-    var chartTitle = '';
-    
-    if (analysisType === 'GROUP_DELAY') {
-        // Handle Group Delay analysis
-        chartTitle = 'Group Delay vs Frequency';
-        
-        // Determine the best unit based on magnitude
-        var allValues = [];
-        results.forEach(function(result) {
-            if (result.group_delay_us) {
-                allValues = allValues.concat(result.group_delay_us);
-            }
-        });
-        
-        var maxAbsValue = 0;
-        allValues.forEach(function(val) {
-            var absVal = Math.abs(val);
-            if (absVal > maxAbsValue) maxAbsValue = absVal;
-        });
-        
-        // Choose unit: if max value is very small (< 0.001 us), use nanoseconds
-        var multiplier = 1;
-        if (maxAbsValue < 0.001 && maxAbsValue > 0) {
-            displayUnit = 'ns';
-            multiplier = 1000;
-        } else {
-            displayUnit = 'μs';
-        }
-        yAxisLabel = 'Group Delay (' + displayUnit + ')';
-        
-        results.forEach(function(result, index) {
-            var channelLabel = result.channel_id !== undefined ? 
-                'Channel ' + result.channel_id : 
-                'Result ' + (index + 1);
-            
-            var groupDelayData = [];
-            if (result.group_delay_us) {
-                groupDelayData = result.group_delay_us.map(function(val) {
-                    return val * multiplier;
-                });
-            }
-            
-            datasets.push({
-                label: channelLabel,
-                data: groupDelayData
-            });
-            
-            if (result.frequency && result.frequency.length > masterFrequencies.length) {
-                masterFrequencies = result.frequency;
-            }
-        });
-        
-    } else if (analysisType === 'MIN_AVG_MAX') {
-        // Handle Min/Avg/Max analysis
-        chartTitle = 'Min/Avg/Max vs Frequency';
-        yAxisLabel = 'RxMER (dB)';
-        
-        results.forEach(function(result, index) {
-            var channelLabel = result.channel_id !== undefined ? 
-                'Ch ' + result.channel_id : 
-                'Result ' + (index + 1);
-            
-            // Add Min, Avg, Max datasets for each channel
-            if (result.min) {
-                datasets.push({
-                    label: channelLabel + ' Min',
-                    data: result.min
-                });
-            }
-            if (result.avg) {
-                datasets.push({
-                    label: channelLabel + ' Avg',
-                    data: result.avg
-                });
-            }
-            if (result.max) {
-                datasets.push({
-                    label: channelLabel + ' Max',
-                    data: result.max
-                });
-            }
-            
-            if (result.frequency && result.frequency.length > masterFrequencies.length) {
-                masterFrequencies = result.frequency;
-            }
-        });
-        
-    } else {
-        // Unknown analysis type - try to plot whatever data is available
-        chartTitle = analysisType + ' Analysis';
-        yAxisLabel = 'Value';
-        
-        results.forEach(function(result, index) {
-            var channelLabel = result.channel_id !== undefined ? 
-                'Channel ' + result.channel_id : 
-                'Result ' + (index + 1);
-            
-            // Try to find any array data to plot
-            Object.keys(result).forEach(function(key) {
-                if (Array.isArray(result[key]) && key !== 'frequency') {
-                    datasets.push({
-                        label: channelLabel + ' ' + key,
-                        data: result[key]
-                    });
-                }
-            });
-            
-            if (result.frequency && result.frequency.length > masterFrequencies.length) {
-                masterFrequencies = result.frequency;
-            }
-        });
+    const responseData = pm.response.json();
+    function safeText(v) {
+        if (v === undefined || v === null) return 'N/A';
+        const s = String(v).trim();
+        return s ? s : 'N/A';
     }
-    
-    // Convert frequencies to MHz for display
-    var frequencyLabels = masterFrequencies.map(function(freq) {
-        return (freq / 1000000).toFixed(2);
-    });
-    
+    function formatCaptureTime(raw) {
+        const n = Number(raw);
+        if (!isFinite(n)) return null;
+        const d = new Date(n * 1000);
+        if (!isFinite(d.getTime())) return null;
+        const p = (x) => String(x).padStart(2, '0');
+        return d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds()) + ' UTC';
+    }
+    function buildDeviceInfo(resp) {
+        const sys = (resp && resp.system_description && typeof resp.system_description === 'object') ? resp.system_description : null;
+        if (!sys) return null;
+        return {
+            macAddress: safeText(resp.mac_address).toLowerCase(),
+            model: safeText(sys.MODEL),
+            vendor: safeText(sys.VENDOR),
+            swVersion: safeText(sys.SW_REV),
+            hwVersion: safeText(sys.HW_REV),
+            bootRom: safeText(sys.BOOTR)
+        };
+    }
+    const deviceInfo = buildDeviceInfo(responseData);
     return {
-        mac_address: response.mac_address || 'N/A',
-        status: response.status !== undefined ? response.status : 'N/A',
-        message: response.message || 'N/A',
-        analysis_type: analysisType,
-        num_channels: results.length,
-        display_unit: displayUnit,
-        has_data: hasData,
-        datasets: datasets,
-        frequency_labels: frequencyLabels,
-        y_axis_label: yAxisLabel,
-        chart_title: chartTitle
+        analysis_type: responseData && responseData.data ? responseData.data.analysis_type : undefined,
+        results: (responseData && responseData.data && Array.isArray(responseData.data.results)) ? responseData.data.results : [],
+        capture_time: formatCaptureTime((responseData && responseData.data && responseData.data.pnm_header && responseData.data.pnm_header.capture_time) || (responseData && responseData.pnm_header && responseData.pnm_header.capture_time)),
+        has_device_info: !!deviceInfo,
+        device_info: deviceInfo || {
+            macAddress: safeText(responseData && responseData.mac_address).toLowerCase(),
+            model: 'N/A', vendor: 'N/A', swVersion: 'N/A', hwVersion: 'N/A', bootRom: 'N/A'
+        }
     };
 }
 
@@ -411,4 +614,3 @@ pm.visualizer.set(template, constructVisualizerPayload());
     setTimeout(inject, 0);
   }
 })();
-
