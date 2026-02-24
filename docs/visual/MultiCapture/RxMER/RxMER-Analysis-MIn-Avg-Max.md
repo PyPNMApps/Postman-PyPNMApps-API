@@ -99,37 +99,6 @@ const template = `
   }
   .mono { font-family: Consolas, "Liberation Mono", Menlo, monospace; }
 
-  .summary {
-    background: #151515;
-    padding: 14px;
-    border-radius: 10px;
-    margin-bottom: 14px;
-    border: 1px solid #2a2a2a;
-  }
-  .summary-title {
-    margin: 0 0 10px 0;
-    color: #5a6fd8;
-    font-size: 14px;
-    text-align: center;
-    font-weight: 700;
-  }
-  .summary-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .summary-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 10px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
-    font-size: 12px;
-    color: #d6deef;
-  }
   .chart-container {
     background: #202020;
     border: 1px solid #303030;
@@ -160,8 +129,13 @@ const template = `
   }
   .channel-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
+  }
+  @media (max-width: 1100px) {
+    .channel-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 
@@ -201,23 +175,14 @@ const template = `
   </div>
   {{/if}}
 
-  <div class="summary">
-    <div class="summary-title">Analysis Summary</div>
-    <div class="summary-row">
-      <div class="summary-item">MacAddress: <span class="mono">{{macAddress}}</span></div>
-      <div class="summary-item">Channels: {{channelCount}}</div>
-      <div class="summary-item">Status: {{status}}</div>
-    </div>
-  </div>
-
-  <div id="perChannelCharts" class="channel-grid"></div>
-
   <div class="chart-container">
-    <div class="chart-title">All Channels · RxMER (Avg) Aligned by Frequency</div>
+    <div class="chart-title">All Channels ({{channelCount}}) · RxMER (Avg) Aligned by Frequency</div>
     <div class="chart-wrap tall">
       <canvas id="rxmerAllChart" class="chart-canvas"></canvas>
     </div>
   </div>
+
+  <div id="perChannelCharts" class="channel-grid"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
