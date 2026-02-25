@@ -17,7 +17,8 @@ This directory contains user documentation for working with the Postman PyPNMApp
 ## Quick Start
 
 1. Create the local Python virtual environment:
-   - `./install.sh`
+   - `./install.sh` (Windows command examples by default)
+   - `./install.sh --os-linux` (Linux/macOS command examples)
 2. Activate the virtual environment:
    - `source .venv/bin/activate`
 3. Run sanitization checks:

@@ -15,7 +15,7 @@ Use this workflow when updating Postman visualizer HTML in this repo.
 2. Edit the visual HTML (and JSON fixture if needed)
    - `visual/PyPNM/...`
 3. Sync visual HTML into the Postman collection
-   - `tools/postman/sync_visualizers.py --fix`
+   - `tools/postman/sync_visualizers.py --update`
 4. Regenerate visual docs/previews
    - `tools/docs/build_visual_docs.py`
 5. Verify no drift
@@ -27,7 +27,7 @@ Use this workflow when updating Postman visualizer HTML in this repo.
 
 ```bash
 source .venv/bin/activate
-tools/postman/sync_visualizers.py --fix
+tools/postman/sync_visualizers.py --update
 tools/docs/build_visual_docs.py
 mkdocs serve -a 127.0.0.1:8030
 ```

@@ -34,6 +34,9 @@
 - Start new visual work from `visual/templates/Postman-Visualizer-SectionTemplate.md` and build the page section-by-section from that scaffold.
 - Do not manually edit generated visual docs (`docs/visual/`, `docs/visual-previews/`); regenerate from `visual/`.
 - No comments in visual code/templates unless explicitly requested.
+- Required exception: every visual script must begin with a two-line header comment in this format:
+- `// Postman Visualizer: <<Description of Visual >>`
+- `// Last Update: <<Date and Time>>`
 - No emoji in visual UI labels, titles, legends, table headers, axis labels, or status text unless explicitly requested.
 - At the top of each visual HTML file, maintain the visual rules/constraints and indicate that `CODING_AGENTS.md` defines the canonical rules so they are not forgotten.
 - Do not scatter magic numbers through visual HTML/script logic. Put tunable constants in a clearly named `TUNING` section near the top of the visual (for example chart heights, tick limits, sampling caps, render-bin caps, animation timings).

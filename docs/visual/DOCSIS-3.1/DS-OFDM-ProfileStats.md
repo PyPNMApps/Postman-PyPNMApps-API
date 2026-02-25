@@ -15,6 +15,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
+// Postman Visualizer: DOCSIS-3.1/DS-OFDM-ProfileStats
+// Last Update: 2026-02-25 06:01:33 MST
+
 // Postman Visualizer - DOCSIS 3.1 DS OFDM Profile Stats (Dark Mode)
 // Useful visuals (no overlap; separate graphs per channel):
 // 1) Per-channel: Total vs Corrected vs Uncorrectable Codewords by Profile (BAR, grouped)

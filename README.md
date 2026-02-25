@@ -33,6 +33,13 @@ cd Postman-PyPNMApps-API
 ./install.sh
 ```
 
+`install.sh` now prints Windows (PowerShell) command examples by default.
+Use Linux/macOS examples instead:
+
+```bash
+./install.sh --os-linux
+```
+
 Run the local MkDocs site (default local docs port for this repo: `8030`):
 
 ```bash

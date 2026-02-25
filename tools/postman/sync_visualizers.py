@@ -4,6 +4,7 @@ from __future__ import annotations
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
+import difflib
 import json
 import sys
 from dataclasses import dataclass
@@ -67,6 +68,27 @@ def _all_visual_html_paths(root: Path) -> set[str]:
     return {p.relative_to(root).with_suffix("").as_posix() for p in root.rglob("*.html")}
 
 
+def _diff_line_stats(old_lines: list[str], new_lines: list[str]) -> tuple[int, int, int, int]:
+    """
+    Return a compact diff summary:
+    (added_lines, removed_lines, replaced_old_lines, replaced_new_lines)
+    """
+    added = 0
+    removed = 0
+    replaced_old = 0
+    replaced_new = 0
+    matcher = difflib.SequenceMatcher(a=old_lines, b=new_lines)
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "insert":
+            added += (j2 - j1)
+        elif tag == "delete":
+            removed += (i2 - i1)
+        elif tag == "replace":
+            replaced_old += (i2 - i1)
+            replaced_new += (j2 - j1)
+    return added, removed, replaced_old, replaced_new
+
+
 def sync_visualizers(*, root: Path, fix: bool, verbose: bool) -> SyncResult:
     collection_path = root / COLLECTION_PATH
     visual_root = root / VISUAL_ROOT
@@ -105,13 +127,22 @@ def sync_visualizers(*, root: Path, fix: bool, verbose: bool) -> SyncResult:
         old_lines = script.get("exec") or []
         if old_lines != html_lines:
             result.drifted_scripts += 1
+            added, removed, repl_old, repl_new = _diff_line_stats(old_lines, html_lines)
+            summary = (
+                f"{rel} "
+                f"(lines {len(old_lines)} -> {len(html_lines)}; "
+                f"+{added} -{removed}"
+            )
+            if repl_old or repl_new:
+                summary += f"; ~{repl_old}->{repl_new}"
+            summary += ")"
             if fix:
                 script["exec"] = html_lines
                 script.setdefault("type", "text/javascript")
                 result.changed_scripts += 1
-                print(f"CHANGE: {rel}")
+                print(f"CHANGE: {summary}")
             else:
-                print(f"DRIFT: {rel}")
+                print(f"DRIFT: {summary}")
 
     all_visual_html = _all_visual_html_paths(visual_root)
     result.extra_visual_html = len(all_visual_html - mapped_paths)
@@ -129,21 +160,22 @@ def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Sync Postman visualizer test scripts from visual/PyPNM HTML files")
     mode = p.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true", help="Read-only check mode (exit 2 on drift)")
-    mode.add_argument("--fix", action="store_true", help="Update collection visualizer scripts in place")
+    mode.add_argument("--update", action="store_true", help="Update collection visualizer scripts in place")
+    mode.add_argument("--fix", action="store_true", help="Deprecated alias for --update")
     p.add_argument("--verbose", action="store_true", help="Print missing path details")
     return p.parse_args()
 
 
 def main() -> None:
     args = _parse_args()
-    fix = bool(args.fix)
-    check = bool(args.check or not args.fix)
+    update = bool(args.update or args.fix)
+    check = bool(args.check or not update)
 
-    mode_label = "fix" if fix else "check"
+    mode_label = "update" if update else "check"
     root = Path.cwd()
     print(f"Visualizer sync {mode_label}: collection={COLLECTION_PATH} visual_root={VISUAL_ROOT}")
 
-    result = sync_visualizers(root=root, fix=fix, verbose=args.verbose)
+    result = sync_visualizers(root=root, fix=update, verbose=args.verbose)
     print(
         "Visualizer sync "
         f"{mode_label}: visualizer_requests={result.visualizer_requests} "

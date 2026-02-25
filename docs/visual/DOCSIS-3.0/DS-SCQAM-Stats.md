@@ -15,6 +15,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
+// Postman Visualizer: DOCSIS-3.0/DS-SCQAM-Stats
+// Last Update: 2026-02-25 06:01:33 MST
+
 // Postman Visualizer - Downstream SC-QAM Channel Stats (Dark Mode)
 // Useful visuals:
 // 1) RxMER (dB) vs Frequency (MHz)  [line]

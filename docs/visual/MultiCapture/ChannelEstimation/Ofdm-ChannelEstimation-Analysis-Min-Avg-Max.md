@@ -15,6 +15,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
+// Postman Visualizer: MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Min-Avg-Max
+// Last Update: 2026-02-25 06:01:33 MST
+
 // Visualization Script - Dark Mode Always for Multi-Channel Min/Avg/Max Analysis
 // - Dark theme is forced (ignores request body)
 // - Removes point dots (pointRadius = 0)

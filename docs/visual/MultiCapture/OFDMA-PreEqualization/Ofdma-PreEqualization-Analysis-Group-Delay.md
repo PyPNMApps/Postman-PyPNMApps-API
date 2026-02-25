@@ -15,6 +15,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
+// Postman Visualizer: MultiCapture/OFDMA-PreEqualization/Ofdma-PreEqualization-Analysis-Group-Delay
+// Last Update: 2026-02-25 06:01:33 MST
+
 // Visualization Script - Multiple Channel Line Charts (Dark Mode) + Aligned "All Channels" Chart
 // - Adds a top chart that aligns all channels on a master frequency axis
 // - Does NOT assume channel_id exists (falls back to stable per-result index label)

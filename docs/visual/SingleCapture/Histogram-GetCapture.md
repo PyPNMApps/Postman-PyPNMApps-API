@@ -15,6 +15,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
+// Postman Visualizer: SingleCapture/Histogram-GetCapture
+// Last Update: 2026-02-25 06:01:33 MST
+
 // Remarks (CODING_AGENTS visual standard)
 // - Device Info uses a separate top block with standardized labels
 // - Histogram chart remains the primary visualization

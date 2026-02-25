@@ -15,6 +15,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
+// Postman Visualizer: DOCSIS-3.0/Upstream/ATDMA-Channel-PreEqualization
+// Last Update: 2026-02-25 06:01:33 MST
+
 // Postman Visualizer: Upstream Pre-EQ + Topology + Stats + Tap Bars + Freq Response + Group Delay Graphs
 // Paste into Tests tab.
 //
@@ -64,7 +67,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
     return `
       <div class="section" style="padding:12px 14px;">
         <div class="section-head" style="margin-bottom:8px;">
-          <div class="section-title">Device Info</div>
+          <div class="section-title device-info-title">Device Info</div>
         </div>
         <div style="overflow:auto;border:1px solid rgba(148,163,184,0.18);border-radius:12px;">
           <table class="tbl" style="min-width:720px;">
@@ -373,11 +376,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 
   function layoutTopology(nodes) {
     const x0 = 20,
-      x1 = 290,
-      x2 = 620;
+      x1 = 320;
     const y0 = 30;
-    const usGap = 110;
-    const featureGap = 34;
+    const usGap = 124;
 
     const placed = [];
     const cm = nodes.find((n) => n.kind === "cm");
@@ -386,13 +387,6 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
     let y = y0;
     for (const us of nodes.filter((n) => n.kind === "us")) {
       placed.push({ ...us, x: x1, y });
-      const features = nodes.filter((n) => n.parent === us.id);
-
-      let fy = y - 34;
-      for (const f of features) {
-        placed.push({ ...f, x: x2, y: fy });
-        fy += featureGap;
-      }
       y += usGap;
     }
 
@@ -411,7 +405,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
       id: cmId,
       kind: "cm",
       label: "CM",
-      sub: safe((resp.device && resp.device.mac_address), ""),
+      sub: "",
       w: 240,
       h: 60,
     });
@@ -428,46 +422,18 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
         id: usId,
         kind: "us",
         label: `US ${k}`,
-        sub: `taps=${safe(r?.num_taps, taps.length)} · mainTap=${mainIdx === null ? "—" : tapDisp(mainIdx)}`,
-        w: 280,
-        h: 64,
-      });
-
-      nodes.push({
-        id: `f-taps-${k}`,
-        kind: "feat",
-        parent: usId,
-        label: "Tap Cluster",
-        sub: `mainTapRatio(dB)=${fmt(r?.metrics?.main_tap_ratio, 2)}`,
-        w: 320,
-        h: 56,
-      });
-
-      nodes.push({
-        id: `f-fr-${k}`,
-        kind: "feat",
-        parent: usId,
-        label: "Frequency Response",
-        sub: `fft=${safe(r?.metrics?.frequency_response?.fft_size, "—")}`,
-        w: 320,
-        h: 56,
-      });
-
-      nodes.push({
-        id: `f-gd-${k}`,
-        kind: "feat",
-        parent: usId,
-        label: "Group Delay",
-        sub: `mean=${fmt(gdUs.mean, 5)}us · p2p=${fmt(gdUs.p2p, 5)}us`,
-        w: 320,
-        h: 56,
+        sub: "",
+        detail1: "",
+        detail2: "",
+        w: 430,
+        h: 92,
       });
     }
 
     const placed = layoutTopology(nodes);
 
-    const W = 980;
-    const H = Math.max(220, 40 + usIdxKeys.length * 110);
+    const W = 860;
+    const H = Math.max(240, 92 + usIdxKeys.length * 124);
     const defs = `
       <defs>
         <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -491,9 +457,6 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
     const edges = [];
     for (const k of usIdxKeys) {
       edges.push({ from: cmId, to: `us-${k}` });
-      edges.push({ from: `us-${k}`, to: `f-taps-${k}` });
-      edges.push({ from: `us-${k}`, to: `f-fr-${k}` });
-      edges.push({ from: `us-${k}`, to: `f-gd-${k}` });
     }
 
     const edgeSvg = edges
@@ -513,6 +476,8 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
       .map((n) => {
         const title = esc(n.label);
         const sub = esc(n.sub || "");
+        const detail1 = esc(n.detail1 || "");
+        const detail2 = esc(n.detail2 || "");
         const cls =
           n.kind === "cm"
             ? "topo-box topo-cm"
@@ -523,8 +488,10 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
         return `
         <g transform="translate(${n.x},${n.y})" filter="url(#shadow)">
           <rect ${box(n.w, n.h, 14)} class="${cls}"></rect>
-          <text x="14" y="24" class="topo-title">${title}</text>
-          <text x="14" y="44" class="topo-sub mono">${sub}</text>
+          <text x="14" y="28" class="topo-title">${title}</text>
+          ${sub ? `<text x="14" y="52" class="topo-sub mono">${sub}</text>` : ""}
+          ${detail1 ? `<text x="14" y="70" class="topo-sub mono">${detail1}</text>` : ""}
+          ${detail2 ? `<text x="14" y="86" class="topo-sub mono">${detail2}</text>` : ""}
         </g>
       `;
       })
@@ -534,7 +501,6 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
       <div class="topo-wrap">
         <div class="section-head">
           <div class="section-title">Topology</div>
-          <div class="meta">This is a data topology from the JSON payload (CM → US Index → derived views).</div>
         </div>
 
         <svg class="topo-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Topology diagram">
@@ -593,7 +559,6 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
       <div class="section">
         <div class="section-head">
           <div class="section-title">Channel Stats</div>
-          <div class="meta">Row severity is a heuristic based on mainTapRatio(dB) and nonMainEnergy(dB).</div>
         </div>
 
         <div class="table-wrap">
@@ -912,7 +877,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
             </div>
 
             <div class="meta mono">
-              POST-PEAK (red) = strongest tap after MAIN (highest Tap dB among indices &gt; MAIN).
+              Legend: MAIN = yellow · POST-PEAK = red (strongest post-main tap).
             </div>
           </div>
 
@@ -985,6 +950,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
     .section { margin-top: 14px; display: grid; gap: 10px; }
     .section-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; justify-content: space-between; }
     .section-title { font-size: 13px; font-weight: 750; color: var(--accent); letter-spacing: 0.2px; }
+    .device-info-title { font-size: 16px; font-weight: 850; letter-spacing: 0.15px; }
 
     .panel {
       background: linear-gradient(180deg, var(--panel), var(--panel2));
@@ -1136,30 +1102,21 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
       padding: 12px;
       overflow: auto;
     }
-    .topo-svg { width: 980px; height: auto; }
+    .topo-svg { width: 100%; max-width: 860px; height: auto; display: block; }
     .topo-edge { fill: none; stroke: rgba(148,163,184,0.45); stroke-width: 2; }
     .topo-box { stroke: rgba(148,163,184,0.20); stroke-width: 1.2; }
     .topo-cm   { fill: rgba(96,165,250,0.14); }
     .topo-us   { fill: rgba(52,211,153,0.10); }
     .topo-feat { fill: rgba(251,191,36,0.10); }
-    .topo-title { fill: rgba(230,237,243,0.98); font-size: 14px; font-weight: 800; }
-    .topo-sub { fill: rgba(148,163,184,0.95); font-size: 12px; }
+    .topo-title { fill: rgba(230,237,243,0.98); font-size: 15px; font-weight: 820; }
+    .topo-sub { fill: rgba(148,163,184,0.95); font-size: 11px; }
   </style>
 
   ${buildDeviceInfoBlock()}
 
   <div class="top">
-    <div class="title">Upstream Pre-EQ · Visualizer</div>
+    <div class="title">ATDMA Channel PreEqualization</div>
     <div class="sub">Topology + tables + per-channel plots (dynamic)</div>
-  </div>
-
-  <div class="chips">
-    <div class="chip"><span class="k">MAC</span> <span class="mono">${esc(safe((resp.device && resp.device.mac_address), ""))}</span></div>
-    <div class="chip ${Number(resp.status) === 0 ? "good" : "bad"}"><span class="k">Status</span> <span class="mono">${esc(
-      String(safe(resp.status, ""))
-    )}</span></div>
-    <div class="chip"><span class="k">Channels</span> <span class="mono">${esc(String(usIdxKeys.length))}</span></div>
-    <div class="chip"><span class="k">Message</span> <span>${esc(safe(resp.message, ""))}</span></div>
   </div>
 
   ${topoSvg(results)}
@@ -1169,7 +1126,6 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
   <div class="section">
     <div class="section-head">
       <div class="section-title">Per-Channel Detail</div>
-      <div class="meta">Tap bars = taps[].magnitude_power_dB · Freq response = magnitude_power_db_normalized · Group delay = delay_us.</div>
     </div>
 
     <div class="grid">

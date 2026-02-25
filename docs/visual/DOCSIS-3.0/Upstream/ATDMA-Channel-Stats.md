@@ -15,6 +15,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
+// Postman Visualizer: DOCSIS-3.0/Upstream/ATDMA-Channel-Stats
+// Last Update: 2026-02-25 06:01:33 MST
+
 // Postman Visualizer: Upstream ATDMA Channel Stats (Per-Channel Cards)
 // FIX: Bar graph now uses an absolute padded Y-axis (not min/max normalization), so the min channel
 //      does not collapse to a thin line.

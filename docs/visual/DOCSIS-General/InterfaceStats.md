@@ -15,6 +15,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
+// Postman Visualizer: DOCSIS-General/InterfaceStats
+// Last Update: 2026-02-25 06:01:33 MST
+
 // Postman "Tests" tab script
 // Renders: (1) readable tables (zebra + sticky headers + pills) and (2) SVG topology
 // Assumes the response body is the PyPNM JSON you shared.

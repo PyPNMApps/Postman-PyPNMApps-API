@@ -18,6 +18,12 @@ Create and activate the repo virtual environment:
 source .venv/bin/activate
 ```
 
+If you want Linux/macOS command examples from the installer output, use:
+
+```bash
+./install.sh --os-linux
+```
+
 ## Windows (PowerShell) - Default
 
 Formatter wrapper:
@@ -95,6 +101,6 @@ Run formatting before commit when the collection JSON changes:
 1. Format collection:
    - `.\tools\postman\format_collection.ps1 -Fix`
 2. Sync visualizer scripts (if visual HTML changed):
-   - `tools/postman/sync_visualizers.py --fix`
+   - `tools/postman/sync_visualizers.py --update`
 3. Regenerate visual docs (if visual HTML/JSON changed):
    - `tools/docs/build_visual_docs.py`

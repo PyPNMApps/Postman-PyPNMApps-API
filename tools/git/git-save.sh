@@ -50,9 +50,9 @@ run_quality_gates() {
   fi
 
   if [[ -f "./tools/postman/sync_visualizers.py" ]]; then
-    run_check "postman visualizer sync --fix" "${py_bin}" ./tools/postman/sync_visualizers.py --fix
+    run_check "postman visualizer sync --update" "${py_bin}" ./tools/postman/sync_visualizers.py --update
   else
-    echo "[skip]  postman visualizer sync --fix (tools/postman/sync_visualizers.py not found)"
+    echo "[skip]  postman visualizer sync --update (tools/postman/sync_visualizers.py not found)"
   fi
 
   if [[ -f "./tools/docs/build_visual_docs.py" ]]; then

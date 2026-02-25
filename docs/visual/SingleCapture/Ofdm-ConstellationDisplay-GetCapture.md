@@ -15,6 +15,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
+// Postman Visualizer: SingleCapture/Ofdm-ConstellationDisplay-GetCapture
+// Last Update: 2026-02-25 06:01:33 MST
+
 // Postman Visualizer: Constellation Grid (pm.getData-safe; avoids inline huge JSON)
 // Env knobs:
 // - CONST_MAX_POINTS_PER_CH (default 5000)

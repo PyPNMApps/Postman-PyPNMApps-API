@@ -15,6 +15,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
+// Postman Visualizer: DOCSIS-3.1/System-Diplexer
+// Last Update: 2026-02-25 06:01:33 MST
+
 // Visualization Script
 // Visualization Script
 var template = `

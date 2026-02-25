@@ -15,6 +15,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
+// Postman Visualizer: Device/EventLog
+// Last Update: 2026-02-25 06:01:33 MST
+
 // Postman Visualizer - DOCSIS Event Log (Dark Mode)
 // Layout: Table first, then useful stats below.
 // Input JSON shape:

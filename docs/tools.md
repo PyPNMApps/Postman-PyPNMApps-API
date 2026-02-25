@@ -16,6 +16,11 @@ Create the local virtual environment and install dev dependencies:
 source .venv/bin/activate
 ```
 
+Notes:
+
+- `./install.sh` prints Windows (PowerShell) command examples by default
+- use `./install.sh --os-linux` to print Linux/macOS command examples
+
 ## Visual Docs Generator (MkDocs)
 
 Path:
@@ -81,13 +86,13 @@ Usage:
 
 ```bash
 tools/postman/sync_visualizers.py --check
-tools/postman/sync_visualizers.py --fix
+tools/postman/sync_visualizers.py --update
 ```
 
 Modes:
 
 - `--check` : read-only, exits non-zero if collection visualizer scripts drift from `visual/`
-- `--fix` : updates collection visualizer scripts in place from matched HTML files
+- `--update` : updates collection visualizer scripts in place from matched HTML files
 
 ## Postman Collection Formatter
 

@@ -15,6 +15,9 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 <summary>Visualizer HTML/script source</summary>
 
 ````html
+// Postman Visualizer: SingleCapture/Ofdma-PreEq-GetCapture
+// Last Update: 2026-02-25 06:01:33 MST
+
 const template = `
 <style>
   body { font-family: Arial, sans-serif; padding: 20px; background: #1e1e1e; color: #e0e0e0; }
