@@ -10,8 +10,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-COLLECTION_PATH = Path("postman/collections/PyPNM.postman_collection.json")
-VISUAL_ROOT = Path("visual/PyPNM")
+DEFAULT_COLLECTION_PATH = Path("postman/collections/PyPNM.postman_collection.json")
+DEFAULT_VISUAL_ROOT = Path("visual/PyPNM")
 
 
 @dataclass
@@ -68,6 +68,17 @@ def _all_visual_html_paths(root: Path) -> set[str]:
     return {p.relative_to(root).with_suffix("").as_posix() for p in root.rglob("*.html")}
 
 
+def _resolve_visual_html_path(visual_root: Path, rel: str) -> tuple[Path | None, str | None]:
+    direct = visual_root / f"{rel}.html"
+    if direct.exists():
+        return direct, rel
+    # Support common visual-variant pattern, e.g. .../Results/basic.html
+    basic = visual_root / rel / "basic.html"
+    if basic.exists():
+        return basic, f"{rel}/basic"
+    return None, None
+
+
 def _diff_line_stats(old_lines: list[str], new_lines: list[str]) -> tuple[int, int, int, int]:
     """
     Return a compact diff summary:
@@ -89,9 +100,9 @@ def _diff_line_stats(old_lines: list[str], new_lines: list[str]) -> tuple[int, i
     return added, removed, replaced_old, replaced_new
 
 
-def sync_visualizers(*, root: Path, fix: bool, verbose: bool) -> SyncResult:
-    collection_path = root / COLLECTION_PATH
-    visual_root = root / VISUAL_ROOT
+def sync_visualizers(*, root: Path, collection_rel: Path, visual_root_rel: Path, fix: bool, verbose: bool) -> SyncResult:
+    collection_path = root / collection_rel
+    visual_root = root / visual_root_rel
     if not collection_path.exists():
         raise SystemExit(f"ERROR: Collection not found: {collection_path}")
     if not visual_root.exists():
@@ -108,13 +119,14 @@ def sync_visualizers(*, root: Path, fix: bool, verbose: bool) -> SyncResult:
     for parent_parts, req in visualizer_reqs:
         req_name = req.get("name", "")
         rel = "/".join([*parent_parts, req_name])
-        mapped_paths.add(rel)
-        html_path = visual_root / f"{rel}.html"
-        if not html_path.exists():
+        html_path, matched_rel = _resolve_visual_html_path(visual_root, rel)
+        if matched_rel:
+            mapped_paths.add(matched_rel)
+        if html_path is None:
             result.missing_html += 1
             missing.append(rel)
             if verbose:
-                print(f"MISSING: {html_path.relative_to(root)}")
+                print(f"MISSING: {visual_root / (rel + '.html')} (also tried {visual_root / rel / 'basic.html'})")
             continue
 
         result.matched_html += 1
@@ -162,6 +174,16 @@ def _parse_args() -> argparse.Namespace:
     mode.add_argument("--check", action="store_true", help="Read-only check mode (exit 2 on drift)")
     mode.add_argument("--update", action="store_true", help="Update collection visualizer scripts in place")
     mode.add_argument("--fix", action="store_true", help="Deprecated alias for --update")
+    p.add_argument(
+        "--collection",
+        default=str(DEFAULT_COLLECTION_PATH),
+        help=f"Collection JSON path (default: {DEFAULT_COLLECTION_PATH})",
+    )
+    p.add_argument(
+        "--visual-root",
+        default=str(DEFAULT_VISUAL_ROOT),
+        help=f"Visual HTML root path (default: {DEFAULT_VISUAL_ROOT})",
+    )
     p.add_argument("--verbose", action="store_true", help="Print missing path details")
     return p.parse_args()
 
@@ -170,12 +192,20 @@ def main() -> None:
     args = _parse_args()
     update = bool(args.update or args.fix)
     check = bool(args.check or not update)
+    collection_rel = Path(args.collection)
+    visual_root_rel = Path(args.visual_root)
 
     mode_label = "update" if update else "check"
     root = Path.cwd()
-    print(f"Visualizer sync {mode_label}: collection={COLLECTION_PATH} visual_root={VISUAL_ROOT}")
+    print(f"Visualizer sync {mode_label}: collection={collection_rel} visual_root={visual_root_rel}")
 
-    result = sync_visualizers(root=root, fix=update, verbose=args.verbose)
+    result = sync_visualizers(
+        root=root,
+        collection_rel=collection_rel,
+        visual_root_rel=visual_root_rel,
+        fix=update,
+        verbose=args.verbose,
+    )
     print(
         "Visualizer sync "
         f"{mode_label}: visualizer_requests={result.visualizer_requests} "
