@@ -362,50 +362,79 @@ def _github_blob_link_for_path(path: Path, repo_root: Path) -> str:
     return f"https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/{rel}"
 
 
-def build_index_markdown(examples: Iterable[VisualExample], repo_root: Path) -> str:
+def _page_parts_for_example(ex: VisualExample) -> tuple[str, ...]:
+    return ex.key_rel.parts[1:] if ex.key_rel.parts else ex.key_rel.parts
+
+
+def _actual_page_path_for_example(ex: VisualExample, visual_docs_root: Path) -> Path:
+    if ex.source_family == "PyPNM":
+        parts = ex.key_rel.parts[1:]
+    else:
+        parts = ex.key_rel.parts
+    return visual_docs_root.joinpath(*parts).with_suffix(".md")
+
+
+def _actual_preview_path_for_example(ex: VisualExample, preview_root: Path) -> Path:
+    if ex.source_family == "PyPNM":
+        parts = ex.key_rel.parts[1:]
+    else:
+        parts = ex.key_rel.parts
+    return preview_root.joinpath(*parts).with_suffix(".html")
+
+
+def build_visual_landing_markdown(examples: Iterable[VisualExample]) -> str:
+    families = sorted({ex.source_family for ex in examples})
+    lines = [INDEX_HEADER.strip(), ""]
+    lines.append("## Visual Families")
+    lines.append("")
+    lines.append("Choose a visual catalog:")
+    lines.append("")
+    for family in families:
+        lines.append(f"- [{family}]({family}/index.md)")
+    lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def build_family_index_markdown(
+    family: str,
+    examples: Iterable[VisualExample],
+    repo_root: Path,
+    visual_docs_root: Path,
+    preview_root: Path,
+) -> str:
     family_grouped: dict[str, dict[str, list[VisualExample]]] = {}
     for ex in examples:
         family_grouped.setdefault(ex.source_family, {}).setdefault(ex.top_group, []).append(ex)
+    grouped = family_grouped.get(family, {})
+    examples_for_family = [ex for ex in examples if ex.source_family == family]
 
-    lines = [INDEX_HEADER.strip(), ""]
-    lines.append("## Coverage")
+    lines = [f"# {family} Visual Examples", ""]
+    lines.append(f"Visual source root: `visual/{family}`")
     lines.append("")
-    total = sum(len(v) for fam in family_grouped.values() for v in fam.values())
-    lines.append(f"- Total visual examples discovered: `{total}`")
+    lines.append(f"- Total visual examples discovered: `{len(examples_for_family)}`")
     lines.append("- Pairing is based on matching `.html` / `.json` paths under `visual/`")
     lines.append("")
 
-    family_order = ["PyPNM", "PyPNM-CMTS"]
-    all_families = [f for f in family_order if f in family_grouped] + sorted(
-        f for f in family_grouped if f not in family_order
-    )
+    family_index_path = visual_docs_root / family / "index.md"
+    family_index_dir = family_index_path.parent
 
-    for family in all_families:
-        lines.append(f"## {family}")
+    for group in sorted(grouped):
+        lines.append(f"## {group}")
         lines.append("")
-        lines.append(
-            f"Visual source root: `visual/{family}`"
-        )
+        lines.append("| Example | Preview | JSON | Docs |")
+        lines.append("| --- | --- | --- | --- |")
+        for ex in grouped[group]:
+            page_path = _actual_page_path_for_example(ex, visual_docs_root)
+            preview_path = _actual_preview_path_for_example(ex, preview_root)
+            preview_link = os_path_rel(family_index_dir, preview_path)
+            docs_link = os_path_rel(family_index_dir, page_path)
+            json_link = _github_blob_link_for_path(ex.json_path, repo_root) if ex.json_path else ""
+            example_name = "/".join(_page_parts_for_example(ex)) if _page_parts_for_example(ex) else ex.key_rel.as_posix()
+            render_cell = f"[preview]({preview_link})" if ex.html_path else "missing"
+            json_cell = f"[json]({json_link})" if ex.json_path else "missing"
+            details_cell = f"[docs]({docs_link})"
+            lines.append(f"| `{example_name}` | {render_cell} | {json_cell} | {details_cell} |")
         lines.append("")
-        grouped = family_grouped[family]
-        for group in sorted(grouped):
-            lines.append(f"### {group}")
-            lines.append("")
-            lines.append("| Example | Preview | JSON | Docs |")
-            lines.append("| --- | --- | --- | --- |")
-            for ex in grouped[group]:
-                page_parts = ex.key_rel.parts[1:] if ex.key_rel.parts else ex.key_rel.parts
-                page_rel = Path(*page_parts).with_suffix(".md")
-                preview_rel = Path("..") / "visual-previews" / Path(*page_parts)
-                preview_link = preview_rel.with_suffix(".html").as_posix()
-                json_link = _github_blob_link_for_path(ex.json_path, repo_root) if ex.json_path else ""
-                # Endpoint-style example label (full path under family root, not only basename)
-                example_name = "/".join(page_parts) if page_parts else ex.key_rel.as_posix()
-                render_cell = f"[preview]({preview_link})" if ex.html_path else "missing"
-                json_cell = f"[json]({json_link})" if ex.json_path else "missing"
-                details_cell = f"[docs]({page_rel.as_posix()})"
-                lines.append(f"| `{example_name}` | {render_cell} | {json_cell} | {details_cell} |")
-            lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
 
@@ -471,11 +500,26 @@ def main(argv: list[str]) -> int:
             print(f"{'DRIFT' if check_only else 'WRITE'}: {page_path.relative_to(repo_root)}")
 
     index_path = visual_docs_root / "index.md"
-    index_content = build_index_markdown(examples, repo_root=repo_root)
+    index_content = build_visual_landing_markdown(examples)
     if _write_if_changed(index_path, index_content, check_only=check_only):
         changed_count += 1
         written_count += 0 if check_only else 1
         print(f"{'DRIFT' if check_only else 'WRITE'}: {index_path.relative_to(repo_root)}")
+
+    families = sorted({ex.source_family for ex in examples})
+    for family in families:
+        family_index_path = visual_docs_root / family / "index.md"
+        family_index_content = build_family_index_markdown(
+            family=family,
+            examples=examples,
+            repo_root=repo_root,
+            visual_docs_root=visual_docs_root,
+            preview_root=preview_root,
+        )
+        if _write_if_changed(family_index_path, family_index_content, check_only=check_only):
+            changed_count += 1
+            written_count += 0 if check_only else 1
+            print(f"{'DRIFT' if check_only else 'WRITE'}: {family_index_path.relative_to(repo_root)}")
 
     print(
         f"Visual docs build ({'check' if check_only else 'write'}): "
