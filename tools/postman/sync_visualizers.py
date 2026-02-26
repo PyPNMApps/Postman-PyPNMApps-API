@@ -76,6 +76,12 @@ def _resolve_visual_html_path(visual_root: Path, rel: str) -> tuple[Path | None,
     basic = visual_root / rel / "basic.html"
     if basic.exists():
         return basic, f"{rel}/basic"
+    # Support sibling basic variant for request names like .../Results -> .../basic.html
+    if rel.endswith("/Results"):
+        parent_rel = rel.rsplit("/", 1)[0]
+        parent_basic = visual_root / parent_rel / "basic.html"
+        if parent_basic.exists():
+            return parent_basic, f"{parent_rel}/basic"
     return None, None
 
 
