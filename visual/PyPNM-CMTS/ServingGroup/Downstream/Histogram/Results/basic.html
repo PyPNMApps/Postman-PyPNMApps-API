@@ -1,0 +1,429 @@
+// Postman Visualizer: PyPNM-CMTS/ServingGroup/Downstream/Histogram/Results/basic
+// Last Update: 2026-02-26 15:30:00 MST
+
+const response = pm.response.json();
+
+function n(v) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : null;
+}
+
+function fmtDateTime(v) {
+  const x = n(v);
+  if (x == null) return 'N/A';
+  try {
+    return new Date(x * 1000).toISOString().replace('T', ' ').replace('.000Z', ' UTC');
+  } catch (_) {
+    return String(x);
+  }
+}
+
+function fmtInt(v) {
+  const x = n(v);
+  return x == null ? 'N/A' : String(Math.round(x));
+}
+
+function summarizeDistinct(values) {
+  const list = Array.from(values || []).filter((v) => v && v !== 'N/A').sort();
+  if (!list.length) return 'N/A';
+  if (list.length === 1) return list[0];
+  return list[0] + ' +' + (list.length - 1);
+}
+
+function sysDescrSummary(sys) {
+  if (!sys || typeof sys !== 'object') return 'No system_description available';
+  return [
+    'VENDOR=' + (sys.VENDOR || 'N/A'),
+    'MODEL=' + (sys.MODEL || 'N/A'),
+    'SW=' + (sys.SW_REV || 'N/A'),
+    'HW=' + (sys.HW_REV || 'N/A'),
+    'BOOTR=' + (sys.BOOTR || 'N/A')
+  ].join(' | ');
+}
+
+function makeHistogramPoints(hitCounts) {
+  const arr = Array.isArray(hitCounts) ? hitCounts : [];
+  const out = [];
+  for (let i = 0; i < arr.length; i += 1) {
+    const y = n(arr[i]);
+    if (y == null) continue;
+    out.push({ x: i, y });
+  }
+  return out;
+}
+
+function sumList(list) {
+  let s = 0;
+  let c = 0;
+  for (const v of (Array.isArray(list) ? list : [])) {
+    const x = n(v);
+    if (x == null) continue;
+    s += x;
+    c += 1;
+  }
+  return c ? s : null;
+}
+
+function buildPayload(r) {
+  const results = (r && r.results) || {};
+  const capture = results.capture_details || {};
+  const cmts = results.cmts || {};
+  const servingGroups = Array.isArray(results.serving_groups) ? results.serving_groups : [];
+  const sgMap = new Map();
+  let totalModems = 0;
+
+  for (let sgIndex = 0; sgIndex < servingGroups.length; sgIndex += 1) {
+    const sg = servingGroups[sgIndex] || {};
+    const sgId = sg.service_group_id != null ? sg.service_group_id : 'Unknown';
+    const modems = Array.isArray(sg.cable_modems) ? sg.cable_modems : [];
+
+    for (let mIndex = 0; mIndex < modems.length; mIndex += 1) {
+      const modem = modems[mIndex] || {};
+      const hd = modem.histogram_data || {};
+      const an = hd.analysis;
+      if (!an || typeof an !== 'object') continue;
+
+      const hitCounts = Array.isArray(an.hit_counts) ? an.hit_counts : [];
+      if (!hitCounts.length) continue;
+
+      const points = makeHistogramPoints(hitCounts);
+      if (!points.length) continue;
+
+      const mac = String(modem.mac_address || an.mac_address || 'N/A').toUpperCase();
+      const sys = modem.system_description || (an.device_details && an.device_details.system_description) || null;
+      const pnm = an.pnm_header || {};
+      const dwell = sumList(an.dwell_counts);
+      const symmetry = n(an.symmetry);
+
+      let sgRow = sgMap.get(String(sgId));
+      if (!sgRow) {
+        sgRow = {
+          service_group_id: sgId,
+          rows: [],
+          modem_count: 0,
+          models: new Set(),
+          sws: new Set(),
+          combined_chart_id: 'hist-combined-sg-' + sgIndex + '-' + String(sgId).replace(/[^a-zA-Z0-9_-]/g, '_'),
+          combined_toggle_prefix: 'hist-tog-sg-' + sgIndex + '-' + String(sgId).replace(/[^a-zA-Z0-9_-]/g, '_'),
+        };
+        sgMap.set(String(sgId), sgRow);
+      }
+
+      const row = {
+        mac_address: mac,
+        system_model: sys && sys.MODEL ? sys.MODEL : 'LCPET-3',
+        system_sw: sys && sys.SW_REV ? sys.SW_REV : '1.0.0',
+        sysdescr_hover: sysDescrSummary(sys),
+        capture_time: fmtDateTime(pnm.capture_time),
+        symmetry: symmetry == null ? 'N/A' : String(symmetry),
+        dwell_total: fmtInt(dwell),
+        bin_count: String(hitCounts.length),
+        total_hits: fmtInt(sumList(hitCounts)),
+        points,
+        chart_id: 'hist-cm-' + sgIndex + '-' + mIndex,
+        combined_label: (sys && sys.MODEL ? sys.MODEL : 'LCPET-3') + ' · ' + mac,
+      };
+
+      sgRow.rows.push(row);
+      sgRow.modem_count += 1;
+      sgRow.models.add(row.system_model);
+      sgRow.sws.add(row.system_sw);
+      totalModems += 1;
+    }
+  }
+
+  const outServiceGroups = Array.from(sgMap.values()).map((sg, sgIdx) => {
+    sg.rows.sort((a, b) => String(a.mac_address).localeCompare(String(b.mac_address)));
+    sg.model_label = summarizeDistinct(sg.models);
+    sg.sw_label = summarizeDistinct(sg.sws);
+    sg.sg_card_id = 'hist-sg-' + sgIdx;
+    return {
+      service_group_id: sg.service_group_id,
+      modem_count: sg.modem_count,
+      model_label: sg.model_label,
+      sw_label: sg.sw_label,
+      rows: sg.rows,
+      sg_card_id: sg.sg_card_id,
+      combined_chart_id: sg.combined_chart_id,
+      combined_toggle_prefix: sg.combined_toggle_prefix,
+    };
+  }).sort((a, b) => String(a.service_group_id).localeCompare(String(b.service_group_id), undefined, { numeric: true }));
+
+  return {
+    title: 'Serving Group Downstream Histogram Results',
+    cmts_hostname: cmts.cmts_hostname || 'N/A',
+    capture_type: capture.capture_type || 'Histogram',
+    capture_time: fmtDateTime(capture.capture_time_epoch),
+    service_group_count: outServiceGroups.length,
+    modem_count: totalModems,
+    service_groups: outServiceGroups,
+  };
+}
+
+const payload = buildPayload(response);
+const payloadJson = JSON.stringify(payload).replace(/<\//g, '<\\/');
+
+const template = `
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --bg: #0c1530;
+    --panel: #16223b;
+    --panel-2: #22304a;
+    --line: rgba(255,255,255,0.14);
+    --text: #eaf0ff;
+    --muted: #a6b5d6;
+    --accent: #79b0ff;
+    --good: #22c55e;
+    --warn: #eab308;
+    --chip: rgba(255,255,255,0.05);
+    --shadow: rgba(0,0,0,0.22);
+    --grid: rgba(255,255,255,0.08);
+    --axis: #eaf0ff;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f4f7fc;
+      --panel: #ffffff;
+      --panel-2: #eef3fb;
+      --line: rgba(15,23,42,0.10);
+      --text: #132038;
+      --muted: #50617e;
+      --accent: #2563eb;
+      --good: #16a34a;
+      --warn: #ca8a04;
+      --chip: rgba(15,23,42,0.04);
+      --shadow: rgba(15,23,42,0.06);
+      --grid: rgba(15,23,42,0.08);
+      --axis: #132038;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  .page { padding: 16px; }
+  .hero { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 14px; box-shadow: 0 8px 24px var(--shadow); }
+  .hero h1 { margin: 0 0 6px; font-size: 22px; line-height: 1.2; }
+  .hero-sub { color: var(--muted); font-size: 14px; }
+  .kpi-grid { margin-top: 16px; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+  .kpi .label { color: var(--muted); font-size: 13px; }
+  .kpi .value { margin-top: 4px; font-size: 28px; font-weight: 800; line-height: 1; }
+  .sg { margin-top: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .sg-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+  .sg-title { margin: 0; font-size: 18px; font-weight: 800; }
+  .sg-meta { color: var(--muted); font-size: 13px; }
+  .sg-body { background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 14px; overflow: hidden; }
+  .sg-body-sub { margin-top: 0; margin-bottom: 8px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+  .window-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+  .window-label { font-weight: 800; font-size: 14px; }
+  .window-controls { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
+  .window-controls label { display: inline-flex; align-items: center; gap: 6px; }
+  .chart-wrap { background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+  .combined-chart { height: 220px; }
+  .toggle-grid { margin-top: 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 10px; }
+  .trace-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); min-width: 0; }
+  .trace-dot { width: 8px; height: 8px; border-radius: 999px; flex: 0 0 auto; }
+  .trace-toggle span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cm-grid { margin-top: 12px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+  .cm-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-width: 0; }
+  .cm-head { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cm-sub { margin-top: 3px; font-size: 12px; color: var(--muted); }
+  .stats { margin-top: 8px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
+  .stat { background: var(--chip); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+  .stat .label { font-size: 11px; color: var(--muted); }
+  .stat .value { margin-top: 2px; font-size: 12px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+  .cm-chart { margin-top: 10px; height: 200px; }
+  .empty { margin-top: 12px; color: var(--muted); background: var(--panel); border: 1px dashed var(--line); border-radius: 12px; padding: 14px; }
+  @media (max-width: 1100px) { .cm-grid { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+  @media (max-width: 800px) { .kpi-grid { grid-template-columns: 1fr; } .hero h1 { font-size: 20px; } }
+</style>
+<div class="page">
+  <div class="hero">
+    <h1>{{title}}</h1>
+    <div class="hero-sub">CMTS: {{cmts_hostname}} · Capture: {{capture_type}} · Capture Time: {{capture_time}}</div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="label">Service Groups</div><div class="value">{{service_group_count}}</div></div>
+    <div class="kpi"><div class="label">Cable Modems</div><div class="value">{{modem_count}}</div></div>
+  </div>
+
+  {{#if service_groups.length}}
+    {{#each service_groups}}
+      <section class="sg">
+        <div class="sg-head">
+          <h2 class="sg-title">Service Group {{service_group_id}}</h2>
+          <div class="sg-meta">Cable Modems: {{modem_count}}</div>
+        </div>
+        <section class="sg-body" id="{{sg_card_id}}">
+              <div class="sg-body-sub">Model: {{model_label}} · SW: {{sw_label}}</div>
+              <div class="window-head">
+                <div class="window-label">Histogram Bins ({{rows.[0].bin_count}})</div>
+                <div class="window-controls">
+                  <label><input type="checkbox" class="all-toggle" data-chart="{{combined_chart_id}}" checked> All</label>
+                </div>
+              </div>
+              <div class="chart-wrap">
+                <div class="combined-chart"><canvas id="{{combined_chart_id}}"></canvas></div>
+              </div>
+              <div class="toggle-grid" id="{{combined_toggle_prefix}}"></div>
+
+              <div class="cm-grid">
+                {{#each rows}}
+                  <section class="cm-card" title="{{sysdescr_hover}}">
+                    <div class="cm-head">{{system_model}} · {{system_sw}} · {{mac_address}}</div>
+                    <div class="cm-sub">Capture Time: {{capture_time}}</div>
+                    <div class="stats">
+                      <div class="stat"><div class="label">Bins</div><div class="value">{{bin_count}}</div></div>
+                      <div class="stat"><div class="label">Hits</div><div class="value">{{total_hits}}</div></div>
+                      <div class="stat"><div class="label">Dwell</div><div class="value">{{dwell_total}}</div></div>
+                      <div class="stat"><div class="label">Symmetry</div><div class="value">{{symmetry}}</div></div>
+                    </div>
+                    <div class="chart-wrap"><div class="cm-chart"><canvas id="{{chart_id}}"></canvas></div></div>
+                  </section>
+                {{/each}}
+              </div>
+        </section>
+      </section>
+    {{/each}}
+  {{else}}
+    <div class="empty">No histogram results found.</div>
+  {{/if}}
+</div>
+
+<script>
+(function () {
+  const payload = {{{_payload_json}}};
+  const darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const axisColor = darkMode ? '#eaf0ff' : '#132038';
+  const gridColor = darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)';
+  const palette = ['#60a5fa', '#22c55e', '#f59e0b', '#ef4444', '#a78bfa', '#06b6d4', '#f472b6', '#84cc16', '#fb7185', '#14b8a6', '#eab308', '#8b5cf6'];
+
+  function lineConfig(title, datasets) {
+    return {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        parsing: false,
+        interaction: { mode: 'nearest', intersect: false },
+        plugins: {
+          legend: { display: false },
+          title: { display: false, text: title },
+          tooltip: {
+            callbacks: {
+              title: (items) => items && items.length ? ('Bin ' + Math.round(items[0].parsed.x)) : '',
+              label: (ctx) => (ctx.dataset.label || '') + ': ' + Math.round(ctx.parsed.y)
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            title: { display: true, text: 'Bin', color: axisColor },
+            ticks: { color: axisColor, precision: 0 },
+            grid: { color: gridColor }
+          },
+          y: {
+            title: { display: true, text: 'Hits', color: axisColor },
+            ticks: { color: axisColor },
+            grid: { color: gridColor }
+          }
+        }
+      }
+    };
+  }
+
+  function makeDataset(label, points, color) {
+    return {
+      data: points,
+      borderColor: color,
+      backgroundColor: color,
+      pointRadius: 0,
+      pointHoverRadius: 2,
+      borderWidth: 1.3,
+      tension: 0,
+      fill: false
+    };
+  }
+
+  function renderCmChart(id, row) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    return new Chart(el.getContext('2d'), lineConfig('Histogram', [makeDataset(row.mac_address, row.points || [], '#60a5fa')]));
+  }
+
+  function renderCombined(group) {
+    const canvas = document.getElementById(group.combined_chart_id);
+    if (!canvas) return null;
+    const datasets = group.rows.map((row, i) => makeDataset(row.combined_label, row.points || [], palette[i % palette.length]));
+    const chart = new Chart(canvas.getContext('2d'), lineConfig('Service Group ' + group.service_group_id + ' Histogram', datasets));
+
+    const toggleHost = document.getElementById(group.combined_toggle_prefix);
+    const allToggle = document.querySelector('input.all-toggle[data-chart="' + group.combined_chart_id + '"]');
+    const traceBoxes = [];
+
+    function refreshAllState() {
+      if (!allToggle) return;
+      const checkedCount = traceBoxes.filter((x) => x.checked).length;
+      allToggle.indeterminate = checkedCount > 0 && checkedCount < traceBoxes.length;
+      allToggle.checked = checkedCount === traceBoxes.length;
+    }
+
+    if (toggleHost) {
+      group.rows.forEach((row, i) => {
+        const wrap = document.createElement('label');
+        wrap.className = 'trace-toggle';
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.checked = true;
+        box.dataset.datasetIndex = String(i);
+        const dot = document.createElement('span');
+        dot.className = 'trace-dot';
+        dot.style.backgroundColor = palette[i % palette.length];
+        const txt = document.createElement('span');
+        txt.textContent = row.mac_address;
+        box.addEventListener('change', function () {
+          const idx = Number(this.dataset.datasetIndex);
+          if (!Number.isFinite(idx)) return;
+          chart.setDatasetVisibility(idx, this.checked);
+          chart.update('none');
+          refreshAllState();
+        });
+        wrap.appendChild(box);
+        wrap.appendChild(dot);
+        wrap.appendChild(txt);
+        toggleHost.appendChild(wrap);
+        traceBoxes.push(box);
+      });
+    }
+
+    if (allToggle) {
+      allToggle.addEventListener('change', function () {
+        const on = !!this.checked;
+        traceBoxes.forEach((box, idx) => {
+          box.checked = on;
+          chart.setDatasetVisibility(idx, on);
+        });
+        this.indeterminate = false;
+        chart.update('none');
+      });
+      refreshAllState();
+    }
+
+    return chart;
+  }
+
+  const groups = Array.isArray(payload.service_groups) ? payload.service_groups : [];
+  for (const sg of groups) {
+    renderCombined(sg);
+    for (const row of (Array.isArray(sg.rows) ? sg.rows : [])) renderCmChart(row.chart_id, row);
+  }
+})();
+</script>
+`;
+
+pm.visualizer.set(template, Object.assign({}, payload, { _payload_json: payloadJson }));
