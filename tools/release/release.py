@@ -100,8 +100,23 @@ def run_quality_gates(root: Path) -> None:
 
     sync_visualizers_script = root / "tools" / "postman" / "sync_visualizers.py"
     if sync_visualizers_script.exists():
-        print("[check] postman visualizer sync")
-        run([python_bin, str(sync_visualizers_script), "--check"])
+        print("[update] postman visualizer sync (PyPNM)")
+        run([python_bin, str(sync_visualizers_script), "--update"])
+        cmts_collection = root / "postman" / "collections" / "PyPNM-CMTS.postman_collection.json"
+        cmts_visual_root = root / "visual" / "PyPNM-CMTS"
+        if cmts_collection.exists() and cmts_visual_root.exists():
+            print("[update] postman visualizer sync (PyPNM-CMTS)")
+            run(
+                [
+                    python_bin,
+                    str(sync_visualizers_script),
+                    "--update",
+                    "--collection",
+                    str(cmts_collection.relative_to(root)),
+                    "--visual-root",
+                    str(cmts_visual_root.relative_to(root)),
+                ]
+            )
 
     visual_docs_script = root / "tools" / "docs" / "build_visual_docs.py"
     if visual_docs_script.exists():
