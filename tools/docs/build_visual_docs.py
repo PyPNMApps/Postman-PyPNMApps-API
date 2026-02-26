@@ -221,6 +221,10 @@ class VisualExample:
         return self.key_rel.parts[1] if len(self.key_rel.parts) > 1 else self.key_rel.parts[0]
 
     @property
+    def source_family(self) -> str:
+        return self.key_rel.parts[0] if self.key_rel.parts else "visual"
+
+    @property
     def has_json_sample(self) -> bool:
         return self.json_path is not None
 
@@ -359,36 +363,49 @@ def _github_blob_link_for_path(path: Path, repo_root: Path) -> str:
 
 
 def build_index_markdown(examples: Iterable[VisualExample], repo_root: Path) -> str:
-    grouped: dict[str, list[VisualExample]] = {}
+    family_grouped: dict[str, dict[str, list[VisualExample]]] = {}
     for ex in examples:
-        grouped.setdefault(ex.top_group, []).append(ex)
+        family_grouped.setdefault(ex.source_family, {}).setdefault(ex.top_group, []).append(ex)
 
     lines = [INDEX_HEADER.strip(), ""]
     lines.append("## Coverage")
     lines.append("")
-    total = sum(len(v) for v in grouped.values())
+    total = sum(len(v) for fam in family_grouped.values() for v in fam.values())
     lines.append(f"- Total visual examples discovered: `{total}`")
     lines.append("- Pairing is based on matching `.html` / `.json` paths under `visual/`")
     lines.append("")
 
-    for group in sorted(grouped):
-        anchor = _sanitize_md_anchor(group)
-        lines.append(f"## {group}")
+    family_order = ["PyPNM", "PyPNM-CMTS"]
+    all_families = [f for f in family_order if f in family_grouped] + sorted(
+        f for f in family_grouped if f not in family_order
+    )
+
+    for family in all_families:
+        lines.append(f"## {family}")
         lines.append("")
-        lines.append("| Example | Preview | JSON | Docs |")
-        lines.append("| --- | --- | --- | --- |")
-        for ex in grouped[group]:
-            page_parts = ex.key_rel.parts[1:] if ex.key_rel.parts and ex.key_rel.parts[0] == "PyPNM" else ex.key_rel.parts
-            page_rel = Path(*page_parts).with_suffix(".md")
-            preview_rel = Path("..") / "visual-previews" / Path(*page_parts)
-            preview_link = preview_rel.with_suffix(".html").as_posix()
-            json_link = _github_blob_link_for_path(ex.json_path, repo_root) if ex.json_path else ""
-            example_name = ex.key_rel.name
-            render_cell = f"[preview]({preview_link})" if ex.html_path else "missing"
-            json_cell = f"[json]({json_link})" if ex.json_path else "missing"
-            details_cell = f"[docs]({page_rel.as_posix()})"
-            lines.append(f"| `{example_name}` | {render_cell} | {json_cell} | {details_cell} |")
+        lines.append(
+            f"Visual source root: `visual/{family}`"
+        )
         lines.append("")
+        grouped = family_grouped[family]
+        for group in sorted(grouped):
+            lines.append(f"### {group}")
+            lines.append("")
+            lines.append("| Example | Preview | JSON | Docs |")
+            lines.append("| --- | --- | --- | --- |")
+            for ex in grouped[group]:
+                page_parts = ex.key_rel.parts[1:] if ex.key_rel.parts else ex.key_rel.parts
+                page_rel = Path(*page_parts).with_suffix(".md")
+                preview_rel = Path("..") / "visual-previews" / Path(*page_parts)
+                preview_link = preview_rel.with_suffix(".html").as_posix()
+                json_link = _github_blob_link_for_path(ex.json_path, repo_root) if ex.json_path else ""
+                # Endpoint-style example label (full path under family root, not only basename)
+                example_name = "/".join(page_parts) if page_parts else ex.key_rel.as_posix()
+                render_cell = f"[preview]({preview_link})" if ex.html_path else "missing"
+                json_cell = f"[json]({json_link})" if ex.json_path else "missing"
+                details_cell = f"[docs]({page_rel.as_posix()})"
+                lines.append(f"| `{example_name}` | {render_cell} | {json_cell} | {details_cell} |")
+            lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
 
