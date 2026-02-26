@@ -1,0 +1,409 @@
+// Postman Visualizer: PyPNM-CMTS/ServingGroup/Downstream/ModulationProfile/basic
+// Last Update: 2026-02-26 13:34:26 MST
+
+const response = pm.response.json();
+
+function n(v) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : null;
+}
+
+function fmtDateTime(v) {
+  const x = n(v);
+  if (x == null) return 'N/A';
+  try {
+    return new Date(x * 1000).toISOString().replace('T', ' ').replace('.000Z', ' UTC');
+  } catch (_) {
+    return String(x);
+  }
+}
+
+function fmtInt(v) {
+  const x = n(v);
+  return x == null ? 'N/A' : String(Math.round(x));
+}
+
+function fmtn(v, d) {
+  const x = n(v);
+  if (x == null) return 'N/A';
+  return x.toFixed(d == null ? 2 : d);
+}
+
+function summarizeDistinct(values) {
+  const list = Array.from(values || []).filter((v) => v && v !== 'N/A').sort();
+  if (!list.length) return 'N/A';
+  if (list.length === 1) return list[0];
+  return list[0] + ' +' + (list.length - 1);
+}
+
+function sysDescrSummary(sys) {
+  if (!sys || typeof sys !== 'object') return null;
+  const vendor = sys.VENDOR || 'N/A';
+  const model = sys.MODEL || 'N/A';
+  const sw = sys.SW_REV || 'N/A';
+  const hw = sys.HW_REV || 'N/A';
+  const bootr = sys.BOOTR || 'N/A';
+  return 'VENDOR=' + vendor + ' | MODEL=' + model + ' | SW=' + sw + ' | HW=' + hw + ' | BOOTR=' + bootr;
+}
+
+function computeStats(values) {
+  let min = null, max = null, sum = 0, count = 0;
+  for (const raw of values || []) {
+    const x = n(raw);
+    if (x == null) continue;
+    if (min == null || x < min) min = x;
+    if (max == null || x > max) max = x;
+    sum += x; count += 1;
+  }
+  return { min, max, avg: count ? (sum / count) : null, count };
+}
+
+function qamLabel(raw) {
+  const s = String(raw || 'unknown');
+  const m = s.match(/qam_(\d+)/i);
+  return m ? ('QAM ' + m[1]) : s;
+}
+
+function makePoints(freqList, merList) {
+  const lim = Math.min(Array.isArray(freqList) ? freqList.length : 0, Array.isArray(merList) ? merList.length : 0);
+  const pts = [];
+  for (let i = 0; i < lim; i += 1) {
+    const f = n(freqList[i]);
+    const y = n(merList[i]);
+    if (f == null || y == null) continue;
+    pts.push({ x: f / 1e6, y });
+  }
+  return pts;
+}
+
+function modulationCounts(list) {
+  const counts = new Map();
+  for (const v of (Array.isArray(list) ? list : [])) {
+    const key = qamLabel(v);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))
+    .map(([label, count]) => ({ label, count }));
+}
+
+function choosePrimaryProfile(profileRows) {
+  const arr = Array.isArray(profileRows) ? profileRows : [];
+  return arr.find((p) => String(p.profile_id) === '0')
+    || arr.find((p) => String(p.profile_id) === '255')
+    || arr[0]
+    || null;
+}
+
+function buildPayload(r) {
+  const results = (r && r.results) || {};
+  const capture = results.capture_details || {};
+  const cmts = results.cmts || {};
+  const servingGroups = Array.isArray(results.serving_groups) ? results.serving_groups : [];
+  const legacyChannels = Array.isArray(results.channels) ? results.channels : [];
+  const channelEntries = [];
+
+  if (servingGroups.length) {
+    for (const sg of servingGroups) {
+      const sgId = sg && sg.service_group_id != null ? sg.service_group_id : 'Unknown';
+      for (const ch of (Array.isArray(sg && sg.channels) ? sg.channels : [])) {
+        channelEntries.push({ service_group_id: sgId, channel: ch || {} });
+      }
+    }
+  } else {
+    for (const ch of legacyChannels) {
+      channelEntries.push({ service_group_id: (ch && ch.service_group_id) ?? 'Unknown', channel: ch || {} });
+    }
+  }
+
+  const sgMap = new Map();
+  let totalModems = 0;
+
+  for (let chIndex = 0; chIndex < channelEntries.length; chIndex += 1) {
+    const entry = channelEntries[chIndex] || {};
+    const ch = entry.channel || {};
+    const cableModems = Array.isArray(ch.cable_modems) ? ch.cable_modems : [];
+
+    for (let mIndex = 0; mIndex < cableModems.length; mIndex += 1) {
+      const modem = cableModems[mIndex] || {};
+      const mp = modem.modulation_profile_data || {};
+      const analysis = mp.analysis;
+      if (!analysis || typeof analysis !== 'object') continue;
+      const profiles = Array.isArray(analysis.profiles) ? analysis.profiles : [];
+      if (!profiles.length) continue;
+
+      const sys = modem.system_description || (analysis.device_details && analysis.device_details.system_description) || null;
+      const mac = String(modem.mac_address || analysis.mac_address || 'N/A').toUpperCase();
+      const sgId = entry.service_group_id ?? ch.service_group_id ?? 'Unknown';
+      const chanId = analysis.channel_id ?? ch.channel_id ?? ('Unknown-' + (chIndex + 1));
+      const pHeader = analysis.pnm_header || {};
+
+      const profileRows = [];
+      for (let pIdx = 0; pIdx < profiles.length; pIdx += 1) {
+        const p = profiles[pIdx] || {};
+        const cv = p.carrier_values || {};
+        const freq = Array.isArray(cv.frequency) ? cv.frequency : [];
+        const shannon = Array.isArray(cv.shannon_min_mer) ? cv.shannon_min_mer : [];
+        const mods = Array.isArray(cv.modulation) ? cv.modulation : [];
+        const points = makePoints(freq, shannon);
+        if (!points.length) continue;
+        const stats = computeStats(shannon);
+        const counts = modulationCounts(mods);
+        profileRows.push({
+          profile_id: p.profile_id,
+          points,
+          modulation_counts: counts,
+          top_modulation: counts.length ? counts.slice().sort((a,b)=>b.count-a.count)[0].label : 'N/A',
+          mer_min: stats.min,
+          mer_avg: stats.avg,
+          mer_max: stats.max,
+          chart_id: 'mod-prof-' + chIndex + '-' + mIndex + '-' + pIdx,
+        });
+      }
+      if (!profileRows.length) continue;
+
+      const primary = choosePrimaryProfile(profileRows);
+      const totalModemProfiles = profileRows.length;
+      const startMHz = primary.points[0].x;
+      const endMHz = primary.points[primary.points.length - 1].x;
+      const captureTs = n(pHeader.capture_time) || null;
+
+      totalModems += 1;
+      const row = {
+        channel_id: chanId,
+        service_group_id: sgId,
+        mac_address: mac,
+        system_model: sys && sys.MODEL ? sys.MODEL : 'LCPET-3',
+        system_sw: sys && sys.SW_REV ? sys.SW_REV : '1.0.0',
+        sysdescr_hover: sysDescrSummary(sys) || 'No system_description available',
+        profile_count: totalModemProfiles,
+        profiles_label: profileRows.map((p) => String(p.profile_id)).join(', '),
+        capture_time: fmtDateTime(captureTs),
+        range_label: fmtInt(startMHz) + ' - ' + fmtInt(endMHz) + ' MHz',
+        primary_profile: primary.profile_id,
+        primary_top_mod: primary.top_modulation,
+        mer_min: fmtn(primary.mer_min, 2),
+        mer_avg: fmtn(primary.mer_avg, 2),
+        mer_max: fmtn(primary.mer_max, 2),
+        combined_label: (sys && sys.MODEL ? sys.MODEL : 'LCPET-3') + ' · ' + mac,
+        combined_chart_id: 'mod-combined-' + chIndex + '-' + mIndex,
+        profile_rows: profileRows,
+      };
+
+      let sg = sgMap.get(String(sgId));
+      if (!sg) {
+        sg = { service_group_id: sgId, channels: new Map() };
+        sgMap.set(String(sgId), sg);
+      }
+      let cg = sg.channels.get(String(chanId));
+      if (!cg) {
+        cg = { channel_id: chanId, modem_count: 0, rows: [] };
+        sg.channels.set(String(chanId), cg);
+      }
+      cg.modem_count += 1;
+      cg.rows.push(row);
+    }
+  }
+
+  const outServiceGroups = Array.from(sgMap.values()).map((sg, sgIdx) => {
+    const channels = Array.from(sg.channels.values()).map((cg, chIdx) => {
+      cg.rows.sort((a,b)=>String(a.mac_address).localeCompare(String(b.mac_address)));
+      const profileSet = new Set();
+      cg.rows.forEach((row)=> (row.profile_rows||[]).forEach((p)=> profileSet.add(String(p.profile_id))));
+      cg.channel_profiles = Array.from(profileSet).sort((a,b)=>Number(a)-Number(b));
+      cg.default_profile = cg.channel_profiles.includes('0') ? '0' : (cg.channel_profiles[0] || '');
+      cg.combined_chart_id = 'sg-' + sgIdx + '-ch-' + chIdx + '-combined';
+      cg.combined_title = 'Channel ' + cg.channel_id + ' · Shannon Min MER by Frequency';
+      return cg;
+    }).sort((a,b)=>String(a.channel_id).localeCompare(String(b.channel_id), undefined, {numeric:true}));
+    return { service_group_id: sg.service_group_id, channel_count: channels.length, modem_count: channels.reduce((acc,c)=>acc+c.modem_count,0), channels };
+  }).sort((a,b)=>String(a.service_group_id).localeCompare(String(b.service_group_id), undefined, {numeric:true}));
+
+  return {
+    title: 'Serving Group Downstream ModulationProfile Results',
+    message: (r && r.message) || '',
+    capture_type: capture.capture_type || 'N/A',
+    capture_time: fmtDateTime(capture.capture_time_epoch),
+    cmts_hostname: cmts.cmts_hostname || 'N/A',
+    service_group_count: outServiceGroups.length,
+    channel_count: outServiceGroups.reduce((acc,sg)=>acc + sg.channel_count, 0),
+    modem_count: totalModems,
+    service_groups_json: JSON.stringify(outServiceGroups),
+  };
+}
+
+const payload = buildPayload(response);
+
+const template = `
+<style>
+  :root{color-scheme:light dark;--bg:#0b1222;--panel:rgba(255,255,255,.04);--panel2:rgba(255,255,255,.05);--line:rgba(148,163,184,.25);--text:#e5e7eb;--muted:#94a3b8;--blue:#3b82f6;--green:#16a34a;--red:#ef4444;--amber:#f59e0b}
+  @media (prefers-color-scheme: light){:root{--bg:#f8fafc;--panel:#fff;--panel2:#f1f5f9;--line:#dbe2ea;--text:#111827;--muted:#475569;--blue:#2563eb;--green:#15803d;--red:#dc2626;--amber:#d97706}}
+  *{box-sizing:border-box}
+  body{margin:0;padding:18px;color:var(--text);background:radial-gradient(circle at top left, rgba(59,130,246,.14), transparent 45%), var(--bg);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}
+  .wrap{max-width:1600px;margin:0 auto;display:grid;gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .title{margin:0;font-size:22px;font-weight:800}.sub{margin-top:6px;color:var(--muted);font-size:13px}
+  .kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+  .kpi{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}.label{color:var(--muted);font-size:12px}.val{margin-top:3px;font-weight:700}
+  .channels-wrap{display:grid;gap:14px}
+  .channel-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:12px;min-width:0;overflow:hidden}
+  .sg-channel-grid{display:grid;grid-template-columns:1fr;gap:12px}
+  .channel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .channel-title{margin:0;font-size:18px;font-weight:800}.channel-meta{color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+  .trace-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .trace-toggle{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:rgba(255,255,255,.02);font-size:12px;min-width:0}
+  .trace-toggle.all{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.35)} .trace-toggle span{overflow-wrap:anywhere}
+  .trace-select,.cm-select{border:1px solid var(--line);background:color-mix(in srgb, var(--bg) 70%, black 30%);color:var(--text);border-radius:8px;padding:6px 8px;font-size:12px;min-width:140px;max-width:100%;outline:none}
+  .trace-select option,.cm-select option{background:#0f172a;color:#e5e7eb}
+  .chart-box{height:300px;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--panel2);min-width:0}
+  .chart-box.small{height:240px}.chart-box canvas{display:block;width:100%!important;max-width:100%}
+  .cm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;min-width:0}
+  .cm-card{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:10px;display:grid;gap:8px}
+  .cm-head{text-align:center}
+  .cm-title{margin:0;font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cm-sub{margin-top:3px;font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+  .cm-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+  .cm-stat{border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center}
+  .slabel{color:var(--muted);font-size:11px}.sval{font-weight:700;font-size:12px;margin-top:2px}
+  .cm-control-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .cm-chart-note{font-size:11px;color:var(--muted);text-align:center}
+  .empty{color:var(--muted);text-align:center;padding:16px;border:1px dashed var(--line);border-radius:10px}
+  @media (max-width:1280px){.trace-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:980px){.trace-grid,.cm-grid{grid-template-columns:1fr}}
+</style>
+<div class="wrap">
+  <div class="card">
+    <h1 class="title">{{title}}</h1>
+    <div class="sub">CMTS: {{cmts_hostname}} · Capture: {{capture_type}} · Capture Time: {{capture_time}}</div>
+    {{#if message}}<div class="sub">{{message}}</div>{{/if}}
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="label">Service Groups</div><div class="val">{{service_group_count}}</div></div>
+    <div class="kpi"><div class="label">Channels</div><div class="val">{{channel_count}}</div></div>
+    <div class="kpi"><div class="label">Cable Modems</div><div class="val">{{modem_count}}</div></div>
+  </div>
+  <div id="channelsRoot" class="channels-wrap"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function(){
+  const serviceGroups = {{{service_groups_json}}};
+  const root = document.getElementById('channelsRoot');
+  if (!root || !Array.isArray(serviceGroups)) return;
+  const palette=['#3b82f6','#16a34a','#ef4444','#f59e0b','#06b6d4','#a855f7','#eab308','#f97316','#22c55e','#ec4899','#0ea5e9','#84cc16'];
+  const darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const axisText = darkMode ? '#ffffff' : '#111827';
+  const gridColor = darkMode ? 'rgba(255,255,255,0.10)' : 'rgba(15,23,42,0.10)';
+
+  function createLineChart(canvas,datasets,titleText,xTitle,yTitle){
+    if(!canvas||!window.Chart||!datasets||!datasets.length) return null;
+    return new Chart(canvas,{type:'line',data:{datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:false},plugins:{legend:{display:false},title:titleText?{display:true,text:titleText,color:axisText}:{display:false},tooltip:{callbacks:{title:(items)=>items.length?(String(Math.round(items[0].parsed.x))+' MHz'):'' ,label:(ctx)=>(String(ctx.dataset.label)+': '+ctx.parsed.y.toFixed(2))}}},scales:{x:{type:'linear',title:{display:true,text:xTitle,color:axisText},ticks:{callback:(v)=>String(Math.round(v)),color:axisText},grid:{color:gridColor}},y:{title:{display:true,text:yTitle,color:axisText},ticks:{color:axisText},grid:{color:gridColor}}}}});
+  }
+
+  function setVisibleYRange(chart){
+    if(!chart || !chart.data || !Array.isArray(chart.data.datasets)) return;
+    let min=null,max=null;
+    chart.data.datasets.forEach((ds)=>{
+      if(!ds||ds.hidden) return;
+      (Array.isArray(ds.data)?ds.data:[]).forEach((pt)=>{ const y=Number(pt&&pt.y); if(!Number.isFinite(y)) return; if(min==null||y<min) min=y; if(max==null||y>max) max=y; });
+    });
+    const yScale = chart.options && chart.options.scales && chart.options.scales.y; if(!yScale) return;
+    if(min==null||max==null){ yScale.min=undefined; yScale.max=undefined; return; }
+    const range = Math.max(0.5, max-min); const pad = Math.max(0.25, range*0.12);
+    yScale.min = min - pad; yScale.max = max + pad;
+  }
+
+  function getRowProfile(row, profileId){ return (row.profile_rows||[]).find((p)=>String(p.profile_id)===String(profileId)); }
+
+  serviceGroups.forEach((sg)=>{
+    const sgCard=document.createElement('section'); sgCard.className='channel-card';
+    const sgHead=document.createElement('div'); sgHead.className='channel-head';
+    sgHead.innerHTML='<h2 class="channel-title">Service Group '+sg.service_group_id+'</h2><div class="channel-meta">Channels: '+sg.channel_count+' · Cable Modems: '+sg.modem_count+'</div>';
+    const sgGrid=document.createElement('div'); sgGrid.className='sg-channel-grid'; sgCard.appendChild(sgHead); sgCard.appendChild(sgGrid); root.appendChild(sgCard);
+
+    (sg.channels||[]).forEach((ch)=>{
+      const chCard=document.createElement('section'); chCard.className='channel-card';
+      const chHead=document.createElement('div'); chHead.className='channel-head';
+      chHead.innerHTML='<h3 class="channel-title">Channel '+ch.channel_id+'</h3><div class="channel-meta">Cable Modems: '+ch.modem_count+'</div>';
+      chCard.appendChild(chHead);
+
+      const combinedWrap=document.createElement('div'); combinedWrap.className='channel-card'; combinedWrap.style.padding='10px';
+      const combinedHead=document.createElement('div'); combinedHead.className='channel-head';
+      const left=document.createElement('div'); left.style.display='flex'; left.style.flexWrap='wrap'; left.style.gap='8px'; left.style.alignItems='center';
+      const title=document.createElement('div'); title.className='channel-meta'; title.style.fontSize='14px'; title.style.fontWeight='700'; title.style.color='var(--text)'; title.textContent=ch.combined_title;
+      left.appendChild(title);
+      const profileSelect=document.createElement('select'); profileSelect.className='trace-select';
+      (ch.channel_profiles||[]).forEach((p)=>{ const opt=document.createElement('option'); opt.value=String(p); opt.textContent='Profile '+p; profileSelect.appendChild(opt); });
+      if (ch.default_profile) profileSelect.value = String(ch.default_profile);
+      left.appendChild(profileSelect);
+      const combinedMeta=document.createElement('div'); combinedMeta.className='channel-meta'; combinedMeta.textContent='Trace: Shannon Min MER';
+      combinedHead.appendChild(left); combinedHead.appendChild(combinedMeta); combinedWrap.appendChild(combinedHead);
+      const combinedBox=document.createElement('div'); combinedBox.className='chart-box'; const combinedCanvas=document.createElement('canvas'); combinedCanvas.id=ch.combined_chart_id; combinedBox.appendChild(combinedCanvas); combinedWrap.appendChild(combinedBox);
+      const traceGrid=document.createElement('div'); traceGrid.className='trace-grid'; combinedWrap.appendChild(traceGrid); chCard.appendChild(combinedWrap);
+
+      const cmGrid=document.createElement('div'); cmGrid.className='cm-grid'; chCard.appendChild(cmGrid); sgGrid.appendChild(chCard);
+
+      function buildCombinedDatasets(profileId){
+        return (ch.rows||[]).map((row,idx)=>{ const p=getRowProfile(row, profileId) || (row.profile_rows||[])[0]; return { label: row.combined_label, data: (p&&p.points)||[], parsing:false, pointRadius:0, borderWidth:1.2, tension:0, borderColor:palette[idx%palette.length] }; });
+      }
+      const combinedChart=createLineChart(combinedCanvas, buildCombinedDatasets(ch.default_profile), null, 'MHz', 'Shannon Min MER (dB)');
+      combinedMeta.textContent='Trace: Shannon Min MER · Profile ' + (ch.default_profile || 'N/A');
+
+      const allLabel=document.createElement('label'); allLabel.className='trace-toggle all'; const allCb=document.createElement('input'); allCb.type='checkbox'; allCb.checked=true; const allTxt=document.createElement('span'); allTxt.textContent='All'; allLabel.appendChild(allCb); allLabel.appendChild(allTxt); left.appendChild(allLabel);
+      const rowToggleCheckboxes=[];
+      (ch.rows||[]).forEach((row,idx)=>{
+        const tLabel=document.createElement('label'); tLabel.className='trace-toggle'; const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=true; const txt=document.createElement('span'); txt.textContent=(row.system_model||'N/A')+' · '+(row.system_sw||'N/A')+' · '+row.mac_address;
+        cb.addEventListener('change',()=>{ if(combinedChart&&combinedChart.data&&combinedChart.data.datasets&&combinedChart.data.datasets[idx]){ combinedChart.data.datasets[idx].hidden=!cb.checked; combinedChart.update('none'); } allCb.checked=rowToggleCheckboxes.every((x)=>x.checked); allCb.indeterminate=!allCb.checked&&rowToggleCheckboxes.some((x)=>x.checked); });
+        tLabel.appendChild(cb); tLabel.appendChild(txt); traceGrid.appendChild(tLabel); rowToggleCheckboxes.push(cb);
+      });
+      allCb.addEventListener('change',()=>{ rowToggleCheckboxes.forEach((cb,i)=>{ cb.checked=allCb.checked; if(combinedChart&&combinedChart.data&&combinedChart.data.datasets&&combinedChart.data.datasets[i]) combinedChart.data.datasets[i].hidden=!allCb.checked; }); allCb.indeterminate=false; if(combinedChart) combinedChart.update('none'); });
+      profileSelect.addEventListener('change',()=>{
+        const pid = profileSelect.value;
+        if (combinedChart && combinedChart.data && Array.isArray(combinedChart.data.datasets)) {
+          combinedChart.data.datasets.forEach((ds,i)=>{ const row=(ch.rows||[])[i]; const p=getRowProfile(row,pid) || (row&&row.profile_rows&&row.profile_rows[0]); ds.data=(p&&p.points)||[]; });
+          combinedMeta.textContent='Trace: Shannon Min MER · Profile ' + pid;
+          combinedChart.update('none');
+        }
+      });
+
+      (ch.rows||[]).forEach((row,idx)=>{
+        const cmCard=document.createElement('div'); cmCard.className='cm-card'; cmCard.title=row.sysdescr_hover || 'No system_description available';
+        cmCard.innerHTML='<div class="cm-head"><h4 class="cm-title">'+(row.system_model||'N/A')+' · '+(row.system_sw||'N/A')+' · '+row.mac_address+'</h4><div class="cm-sub">Capture Time: '+row.capture_time+' · '+row.range_label+' · Profiles: '+row.profiles_label+'</div></div>'+ 
+          '<div class="cm-stats">'+
+          '<div class="cm-stat"><div class="slabel">Profile</div><div class="sval js-prof-val">'+row.primary_profile+'</div></div>'+
+          '<div class="cm-stat"><div class="slabel">Top Mod</div><div class="sval js-mod-val">'+row.primary_top_mod+'</div></div>'+
+          '<div class="cm-stat"><div class="slabel">MER Avg</div><div class="sval js-avg-val">'+row.mer_avg+'</div></div>'+
+          '<div class="cm-stat"><div class="slabel">MER Max</div><div class="sval js-max-val">'+row.mer_max+'</div></div>'+
+          '</div>';
+        const cmControl=document.createElement('div'); cmControl.className='cm-control-row';
+        const note=document.createElement('div'); note.className='cm-chart-note'; note.textContent='Shannon Min MER by Profile';
+        const cmSelect=document.createElement('select'); cmSelect.className='cm-select';
+        (row.profile_rows||[]).forEach((p)=>{ const opt=document.createElement('option'); opt.value=String(p.profile_id); opt.textContent='Profile '+p.profile_id; cmSelect.appendChild(opt); });
+        const sel0=(row.profile_rows||[]).find((p)=>String(p.profile_id)==='0') || (row.profile_rows||[]).find((p)=>String(p.profile_id)===String(row.primary_profile)) || (row.profile_rows||[])[0];
+        if (sel0) cmSelect.value = String(sel0.profile_id);
+        cmControl.appendChild(note); cmControl.appendChild(cmSelect); cmCard.appendChild(cmControl);
+        const cmChartBox=document.createElement('div'); cmChartBox.className='chart-box small'; const cmCanvas=document.createElement('canvas'); cmCanvas.id=row.combined_chart_id; cmChartBox.appendChild(cmCanvas); cmCard.appendChild(cmChartBox);
+        cmGrid.appendChild(cmCard);
+
+        function datasetFor(profile){ return [{ label:'Shannon Min MER', data:(profile&&profile.points)||[], parsing:false, pointRadius:0, borderWidth:1.3, tension:0, borderColor:'#3b82f6' }]; }
+        const cmChart=createLineChart(cmCanvas, datasetFor(sel0), null, 'MHz', 'Shannon Min MER (dB)');
+        const profValEl=cmCard.querySelector('.js-prof-val'); const modValEl=cmCard.querySelector('.js-mod-val'); const avgValEl=cmCard.querySelector('.js-avg-val'); const maxValEl=cmCard.querySelector('.js-max-val');
+        function updateCard(profile){
+          if(!profile) return;
+          if (profValEl) profValEl.textContent=String(profile.profile_id);
+          if (modValEl) modValEl.textContent=profile.top_modulation || 'N/A';
+          if (avgValEl) avgValEl.textContent=(profile.mer_avg==null?'N/A':Number(profile.mer_avg).toFixed(2));
+          if (maxValEl) maxValEl.textContent=(profile.mer_max==null?'N/A':Number(profile.mer_max).toFixed(2));
+          if (cmChart && cmChart.data && cmChart.data.datasets && cmChart.data.datasets[0]) { cmChart.data.datasets[0].data = profile.points || []; cmChart.update('none'); }
+        }
+        cmSelect.addEventListener('change',()=>{ const p=(row.profile_rows||[]).find((x)=>String(x.profile_id)===String(cmSelect.value)); updateCard(p); });
+        updateCard(sel0);
+      });
+    });
+  });
+
+  if (!serviceGroups.length) { const empty=document.createElement('div'); empty.className='empty'; empty.textContent='No modulation profile results found in sample JSON.'; root.appendChild(empty); }
+})();
+</script>
+`;
+
+pm.visualizer.set(template, payload);
