@@ -11,7 +11,7 @@ tools/docs/build_visual_docs.py
 
 ## Coverage
 
-- Total visual examples discovered: `31`
+- Total visual examples discovered: `32`
 - Pairing is based on matching `.html` / `.json` paths under `visual/`
 
 ## DOCSIS-3.0
@@ -57,6 +57,12 @@ tools/docs/build_visual_docs.py
 | `Ofdm-RxMER-Analysis-Heat-Map` | [preview](../visual-previews/MultiCapture/RxMER/Ofdm-RxMER-Analysis-Heat-Map.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM/MultiCapture/RxMER/Ofdm-RxMER-Analysis-Heat-Map.json) | [docs](MultiCapture/RxMER/Ofdm-RxMER-Analysis-Heat-Map.md) |
 | `Ofdm-RxMER-Analysis-Min-Avg-Max` | [preview](../visual-previews/MultiCapture/RxMER/Ofdm-RxMER-Analysis-Min-Avg-Max.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM/MultiCapture/RxMER/Ofdm-RxMER-Analysis-Min-Avg-Max.json) | [docs](MultiCapture/RxMER/Ofdm-RxMER-Analysis-Min-Avg-Max.md) |
 | `Ofdm-RxMER-Analysis-Profile-Performance-1` | [preview](../visual-previews/MultiCapture/RxMER/Ofdm-RxMER-Analysis-Profile-Performance-1.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM/MultiCapture/RxMER/Ofdm-RxMER-Analysis-Profile-Performance-1.json) | [docs](MultiCapture/RxMER/Ofdm-RxMER-Analysis-Profile-Performance-1.md) |
+
+## ServingGroup
+
+| Example | Preview | JSON | Docs |
+| --- | --- | --- | --- |
+| `basic` | [preview](../visual-previews/PyPNM-CMTS/ServingGroup/Downstream/RxMER/Results/basic.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM-CMTS/ServingGroup/Downstream/RxMER/Results/basic.json) | [docs](PyPNM-CMTS/ServingGroup/Downstream/RxMER/Results/basic.md) |
 
 ## SingleCapture
 
