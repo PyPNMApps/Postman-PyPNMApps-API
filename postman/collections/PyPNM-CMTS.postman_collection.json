@@ -4280,7 +4280,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n  \"pnm_capture_operation_id\": \"{{ofdma_preeq_cmts_operation_id}}\"\n}",
+                          "raw": "{\r\n  \"operation\": {\r\n    \"pnm_capture_operation_id\": \"{{ofdma_preeq_cmts_operation_id}}\"\r\n  },\r\n  \"selection\": {\r\n    \"serving_group_ids\": [],\r\n    \"channel_ids\": [],\r\n    \"mac_addresses\": []\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\"\r\n  },\r\n  \"output\": {\r\n    \"type\": \"json\"\r\n  }\r\n}\r\n",
                           "options": {
                             "raw": {
                               "language": "json"
