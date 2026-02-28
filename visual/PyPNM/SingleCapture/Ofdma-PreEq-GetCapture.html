@@ -1,5 +1,5 @@
 // Postman Visualizer: SingleCapture/Ofdma-PreEq-GetCapture
-// Last Update: 2026-02-25 06:01:33 MST
+// Last Update: 2026-02-28 11:31:00 MST
 
 const template = `
 <style>
@@ -13,6 +13,8 @@ const template = `
   .meta-pill b { color: #9fb4ff; }
   .status-ok { color: #39c28e; }
   .status-nok { color: #ff6b6b; }
+  .status-unknown { color: #d7deec; }
+  .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
   .channels-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items:start; }
   .channel-section { background: #2d2d2d; padding: 18px; margin: 0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
   .channel-header { background: linear-gradient(135deg, #2f6db3 0%, #24528a 100%); color: white; padding: 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
@@ -167,7 +169,12 @@ const template = `
       </div>
 
       <div class="chart-container">
-        <div class="chart-title">Magnitude Response (Overlay: Current vs Last Update)</div>
+        <div class="chart-title">Estimated Frequency Response</div>
+        <canvas id="chanest-{{channelId}}"></canvas>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-title">Pre-EQ Magnitude Response</div>
         <canvas id="magnitude-{{channelId}}"></canvas>
       </div>
 
@@ -270,6 +277,17 @@ pm.getData(function(err, data) {
     return { borderColor: '#b0b0b0', backgroundColor: 'rgba(176, 176, 176, 0.06)' };
   }
 
+  function chanEstStyle(version) {
+    // Deterministic styling for channel estimate overlays.
+    if (String(version) === '6') {
+      return { borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.05)' };
+    }
+    if (String(version) === '7') {
+      return { borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.05)' };
+    }
+    return { borderColor: '#c084fc', backgroundColor: 'rgba(192, 132, 252, 0.05)' };
+  }
+
   function pnnVersionLabel(version) {
     if (String(version) === '6') return 'Upstream Pre-Equalizer Coefficients';
     if (String(version) === '7') return 'Upstream Pre-Equalizer Coefficients (Last Update)';
@@ -278,8 +296,9 @@ pm.getData(function(err, data) {
 
   data.channels.forEach(channel => {
     const magCanvas = document.getElementById('magnitude-' + channel.channelId);
+    const estCanvas = document.getElementById('chanest-' + channel.channelId);
     const gdCanvas  = document.getElementById('groupdelay-' + channel.channelId);
-    if (!magCanvas || !gdCanvas) return;
+    if (!magCanvas || !estCanvas || !gdCanvas) return;
 
     const series = Array.isArray(channel.series) ? channel.series.slice(0) : [];
     if (!series.length) return;
@@ -287,18 +306,47 @@ pm.getData(function(err, data) {
     const labels = buildMasterLabels(series);
     if (!labels.length) return;
 
-    const magDatasets = series.map(s => {
-      const st = seriesStyle(s.version);
-      return {
+    const magDatasets = [];
+    const estDatasets = [];
+    series.forEach(s => {
+      const magSt = seriesStyle(s.version);
+      magDatasets.push({
         label: pnnVersionLabel(s.version),
         data: buildAlignedDatasetValues(labels, s.frequencies, s.magnitudes),
-        borderColor: st.borderColor,
-        backgroundColor: st.backgroundColor,
+        borderColor: magSt.borderColor,
+        backgroundColor: magSt.backgroundColor,
         borderWidth: 2,
         pointRadius: 0,
-        fill: true
-      };
+        fill: false
+      });
     });
+
+    const primarySeries = series.find(s => String(s.version) !== '7') || series[0];
+    if (primarySeries) {
+      const primaryMagStyle = seriesStyle(primarySeries.version);
+      estDatasets.push({
+        label: 'Pre-EQ Magnitude',
+        data: buildAlignedDatasetValues(labels, primarySeries.frequencies, primarySeries.magnitudes),
+        borderColor: primaryMagStyle.borderColor,
+        backgroundColor: primaryMagStyle.backgroundColor,
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false
+      });
+
+      if (Array.isArray(primarySeries.chanEstimates) && primarySeries.chanEstimates.length) {
+        const primaryEstStyle = chanEstStyle(primarySeries.version);
+        estDatasets.push({
+          label: 'Estimated Frequency Response',
+          data: buildAlignedDatasetValues(labels, primarySeries.frequencies, primarySeries.chanEstimates),
+          borderColor: primaryEstStyle.borderColor,
+          backgroundColor: primaryEstStyle.backgroundColor,
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        });
+      }
+    }
 
     const gdDatasets = series.map(s => {
       const st = seriesStyle(s.version);
@@ -322,11 +370,28 @@ pm.getData(function(err, data) {
           ...darkModeOptions.scales,
           yAxes: [{
             ...darkModeOptions.scales.yAxes[0],
-            scaleLabel: { display: true, fontColor: '#e0e0e0', labelString: 'Magnitude (dB)' }
+            scaleLabel: { display: true, fontColor: '#e0e0e0', labelString: 'Pre-EQ Magnitude (dB)' }
           }]
         }
       }
     });
+
+    if (estDatasets.length) {
+      new Chart(estCanvas, {
+        type: 'line',
+        data: { labels: labels, datasets: estDatasets },
+        options: {
+          ...darkModeOptions,
+          scales: {
+            ...darkModeOptions.scales,
+            yAxes: [{
+              ...darkModeOptions.scales.yAxes[0],
+              scaleLabel: { display: true, fontColor: '#e0e0e0', labelString: 'Estimated Frequency Response (dB)' }
+            }]
+          }
+        }
+      });
+    }
 
     new Chart(gdCanvas, {
       type: 'line',
@@ -348,7 +413,22 @@ pm.getData(function(err, data) {
 `;
 
 function constructVisualizerPayload() {
-  const resp = pm.response.json();
+  let resp = {};
+  try {
+    resp = pm.response.json();
+  } catch (e) {
+    return {
+      channels: [],
+      captureTime: null,
+      channelCount: 0,
+      pageDevice: {
+        macAddress: 'N/A',
+        deviceInfo: { MODEL: 'LCPET-3', VENDOR: 'LANCity', SW_REV: '1.0.0', HW_REV: '1.0', BOOTR: 'NONE' }
+      },
+      statusText: 'N/A',
+      statusClass: 'status-unknown'
+    };
+  }
 
   const analysis = (resp && resp.data && Array.isArray(resp.data.analysis)) ? resp.data.analysis : [];
   if (!analysis.length) return { channels: [] };
@@ -426,48 +506,16 @@ function constructVisualizerPayload() {
     return out;
   }
 
-  function toSystemDescriptionRows(value) {
-    if (!value) return [];
-    if (typeof value === 'string') {
-      return isPresent(value) ? [{ k: 'sysDescr', v: value.trim() }] : [];
-    }
-    if (typeof value !== 'object') {
-      return [{ k: 'sysDescr', v: String(value) }];
-    }
-
-    const preferredOrder = ['MODEL', 'VENDOR', 'SW_REV', 'HW_REV', 'BOOTR'];
-    const seen = new Set();
-    const rows = [];
-
-    preferredOrder.forEach(key => {
-      if (!Object.prototype.hasOwnProperty.call(value, key)) return;
-      const v = value[key];
-      if (!isPresent(v)) return;
-      rows.push({ k: key, v: String(v).trim() });
-      seen.add(key);
-    });
-
-    Object.keys(value).sort().forEach(key => {
-      if (seen.has(key)) return;
-      const v = value[key];
-      if (!isPresent(v)) return;
-      rows.push({ k: key, v: String(v).trim() });
-    });
-
-    return rows;
-  }
-
   analysis.forEach(item => {
     const channelId = item.channel_id;
     if (channelId === undefined || channelId === null) return;
 
 	    const sanitizedMac = sanitizeMac(item.mac_address, 'N/A');
-	    const subcarrierZeroFreq = item.subcarrier_zero_frequency ?? 'N/A';
+	    const subcarrierZeroFreq = (item.subcarrier_zero_frequency !== undefined && item.subcarrier_zero_frequency !== null)
+	      ? item.subcarrier_zero_frequency
+	      : 'N/A';
 	    const subcarrierZeroFreqMHz = toMHzFixedOrNA(item.subcarrier_zero_frequency, 3);
 	    const deviceInfo = toDeviceInfoRecord(
-	      item.device_details && item.device_details.system_description
-	    );
-	    const systemDescriptionRows = toSystemDescriptionRows(
 	      item.device_details && item.device_details.system_description
 	    );
 
@@ -481,7 +529,6 @@ function constructVisualizerPayload() {
 	          ? String(item.subcarrier_zero_frequency)
 	          : '',
 	        deviceInfo: deviceInfo,
-	        systemDescriptionRows: systemDescriptionRows,
 	        series: []
 	      });
 	    }
@@ -497,10 +544,6 @@ function constructVisualizerPayload() {
 	      channelRecord.subcarrierZeroFreqHzLabel = (typeof item.subcarrier_zero_frequency === 'number' && isFinite(item.subcarrier_zero_frequency))
 	        ? String(item.subcarrier_zero_frequency)
 	        : '';
-	    }
-	    if ((!Array.isArray(channelRecord.systemDescriptionRows) || channelRecord.systemDescriptionRows.length === 0)
-	      && Array.isArray(systemDescriptionRows) && systemDescriptionRows.length) {
-	      channelRecord.systemDescriptionRows = systemDescriptionRows;
 	    }
 	    if (channelRecord.deviceInfo) {
 	      ['MODEL', 'VENDOR', 'SW_REV', 'HW_REV', 'BOOTR'].forEach(key => {
@@ -527,6 +570,12 @@ function constructVisualizerPayload() {
       ? item.carrier_values.magnitudes
       : [];
 
+    const chanEstimates = item.carrier_values && Array.isArray(item.carrier_values.chan_est)
+      ? item.carrier_values.chan_est
+      : (item.carrier_values && Array.isArray(item.carrier_values.channel_estimate_magnitude_db)
+        ? item.carrier_values.channel_estimate_magnitude_db
+        : []);
+
     const groupDelays = item.carrier_values
       && item.carrier_values.group_delay
       && Array.isArray(item.carrier_values.group_delay.magnitude)
@@ -551,6 +600,7 @@ function constructVisualizerPayload() {
 	      versionLabel: pnnVersionLabel(ver),
 	      frequencies: frequencies,
       magnitudes: magnitudes,
+      chanEstimates: chanEstimates,
       groupDelays: groupDelays,
       stats: {
         mean: toFixedOrNA(stats.mean, 3),
@@ -576,22 +626,32 @@ function constructVisualizerPayload() {
     return ch;
   });
 
-  channels.sort((a, b) => Number(a.channelId) - Number(b.channelId));
+  channels.sort((a, b) => {
+    const an = Number(a.channelId);
+    const bn = Number(b.channelId);
+    if (isFinite(an) && isFinite(bn)) return an - bn;
+    if (isFinite(an)) return -1;
+    if (isFinite(bn)) return 1;
+    return String(a.channelId).localeCompare(String(b.channelId));
+  });
 
   var captureTime = null;
-  if (analysis.length && analysis[0] && analysis[0].pnm_header) {
-    captureTime = formatCaptureTime(analysis[0].pnm_header.capture_time);
+  for (var i = 0; i < analysis.length; i++) {
+    if (!analysis[i] || !analysis[i].pnm_header) continue;
+    captureTime = formatCaptureTime(analysis[i].pnm_header.capture_time);
+    if (captureTime) break;
   }
 
   const pageDevice = channels.length ? { macAddress: channels[0].macAddress, deviceInfo: channels[0].deviceInfo } : { macAddress: 'N/A', deviceInfo: { MODEL:'LCPET-3', VENDOR:'LANCity', SW_REV:'1.0.0', HW_REV:'1.0', BOOTR:'NONE' } };
   const statusVal = (resp && resp.status !== undefined && resp.status !== null) ? resp.status : 'N/A';
+  const statusClass = statusVal === 0 ? 'status-ok' : (statusVal === 'N/A' ? 'status-unknown' : 'status-nok');
   return {
     channels,
     captureTime,
     channelCount: channels.length,
     pageDevice,
     statusText: statusVal === 0 ? 'OK' : String(statusVal),
-    statusClass: statusVal === 0 ? 'status-ok' : 'status-nok'
+    statusClass: statusClass
   };
 }
 

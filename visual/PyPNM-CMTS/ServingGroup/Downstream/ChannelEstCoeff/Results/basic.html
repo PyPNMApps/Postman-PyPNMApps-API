@@ -301,9 +301,12 @@ const template = `
   const root = document.getElementById('channelsRoot');
   if (!root || !Array.isArray(serviceGroups)) return;
   const palette=['#3b82f6','#16a34a','#ef4444','#f59e0b','#06b6d4','#a855f7','#eab308','#f97316','#22c55e','#ec4899'];
+  const darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const axisText = darkMode ? '#eaf0ff' : '#132038';
+  const gridColor = darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)';
   function createLineChart(canvas,datasets,titleText,xTitle,yTitle){
     if(!canvas||!window.Chart||!datasets||!datasets.length) return null;
-    return new Chart(canvas,{type:'line',data:{datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:false},plugins:{legend:{display:false},title:titleText?{display:true,text:titleText}:{display:false},tooltip:{callbacks:{title:(items)=>items.length?(xTitle==='MHz'?(String(Math.round(items[0].parsed.x))+' MHz'):('Index '+items[0].parsed.x)):'' ,label:(ctx)=>(String(ctx.dataset.label)+': '+ctx.parsed.y.toFixed(2))}}},scales:{x:{type:'linear',title:{display:true,text:xTitle},ticks:{callback:(v)=>xTitle==='MHz'?String(Math.round(v)):String(v)}},y:{title:{display:true,text:yTitle}}}}});
+    return new Chart(canvas,{type:'line',data:{datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:false},plugins:{legend:{display:false},title:titleText?{display:true,text:titleText,color:axisText}:{display:false},tooltip:{callbacks:{title:(items)=>items.length?(xTitle==='MHz'?(String(Math.round(items[0].parsed.x))+' MHz'):('Index '+items[0].parsed.x)):'' ,label:(ctx)=>(String(ctx.dataset.label)+': '+ctx.parsed.y.toFixed(2))}}},scales:{x:{type:'linear',title:{display:true,text:xTitle,color:axisText},ticks:{callback:(v)=>xTitle==='MHz'?String(Math.round(v)):String(v),color:axisText},grid:{color:gridColor}},y:{title:{display:true,text:yTitle,color:axisText},ticks:{color:axisText},grid:{color:gridColor}}}}});
   }
   serviceGroups.forEach((sg)=>{
     const sgCard=document.createElement('section'); sgCard.className='channel-card';

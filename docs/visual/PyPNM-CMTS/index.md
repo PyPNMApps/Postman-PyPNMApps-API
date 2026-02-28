@@ -2,7 +2,7 @@
 
 Visual source root: `visual/PyPNM-CMTS`
 
-- Total visual examples discovered: `6`
+- Total visual examples discovered: `7`
 - Pairing is based on matching `.html` / `.json` paths under `visual/`
 
 ## ServingGroup
@@ -15,3 +15,4 @@ Visual source root: `visual/PyPNM-CMTS`
 | `ServingGroup/Downstream/Histogram/Results/basic` | [preview](../../visual-previews/PyPNM-CMTS/ServingGroup/Downstream/Histogram/Results/basic.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM-CMTS/ServingGroup/Downstream/Histogram/Results/basic.json) | [docs](ServingGroup/Downstream/Histogram/Results/basic.md) |
 | `ServingGroup/Downstream/ModulationProfile/basic` | [preview](../../visual-previews/PyPNM-CMTS/ServingGroup/Downstream/ModulationProfile/basic.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM-CMTS/ServingGroup/Downstream/ModulationProfile/basic.json) | [docs](ServingGroup/Downstream/ModulationProfile/basic.md) |
 | `ServingGroup/Downstream/RxMER/Results/basic` | [preview](../../visual-previews/PyPNM-CMTS/ServingGroup/Downstream/RxMER/Results/basic.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM-CMTS/ServingGroup/Downstream/RxMER/Results/basic.json) | [docs](ServingGroup/Downstream/RxMER/Results/basic.md) |
+| `ServingGroup/Upstream/OFDMA/PreEqualization/Results/basic` | [preview](../../visual-previews/PyPNM-CMTS/ServingGroup/Upstream/OFDMA/PreEqualization/Results/basic.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM-CMTS/ServingGroup/Upstream/OFDMA/PreEqualization/Results/basic.json) | [docs](ServingGroup/Upstream/OFDMA/PreEqualization/Results/basic.md) |

@@ -359,6 +359,9 @@ const template = `
   if (!root || !Array.isArray(serviceGroups)) return;
 
   const palette = ['#3b82f6', '#16a34a', '#ef4444', '#f59e0b', '#06b6d4', '#a855f7', '#eab308', '#f97316', '#22c55e', '#ec4899'];
+  const darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const axisText = darkMode ? '#eaf0ff' : '#132038';
+  const gridColor = darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)';
 
   function createLineChart(canvas, datasets, titleText) {
     if (!canvas || !window.Chart || !datasets || !datasets.length) return;
@@ -371,7 +374,7 @@ const template = `
         interaction: { mode: 'nearest', intersect: false },
         plugins: {
           legend: { display: false },
-          title: titleText ? { display: true, text: titleText } : { display: false },
+          title: titleText ? { display: true, text: titleText, color: axisText } : { display: false },
           tooltip: {
             callbacks: {
               title: (items) => items.length ? (String(Math.round(items[0].parsed.x)) + ' MHz') : '',
@@ -382,11 +385,14 @@ const template = `
         scales: {
           x: {
             type: 'linear',
-            title: { display: true, text: 'MHz' },
-            ticks: { callback: (v) => String(Math.round(v)) }
+            title: { display: true, text: 'MHz', color: axisText },
+            ticks: { callback: (v) => String(Math.round(v)), color: axisText },
+            grid: { color: gridColor }
           },
           y: {
-            title: { display: true, text: 'RxMER (dB)' }
+            title: { display: true, text: 'RxMER (dB)', color: axisText },
+            ticks: { color: axisText },
+            grid: { color: gridColor }
           }
         }
       }
