@@ -20,6 +20,10 @@
 
 ## Commit Message Suggestions (Required)
 
+- If request via chat request starts with commit-msg, then preface command ./tools/git/git-save.sh with commit-msg "<commit-msg>"
+- One line summary (max 50 characters)
+- One line Summary start: Feature: , Bugfix: , Docs: , Refactor: , Test:
+- Detailed description lines (max 72 characters per line); every line after the first must start with `-`
 - When the user asks for a commit message, provide plain text for direct paste into the terminal or UI text box.
 - Do not wrap commit message suggestions in quotes (`"`), backticks (`` ` ``), or code fences unless the user explicitly asks for that format.
 - Prefer detailed commit messages that describe the current change set clearly.
