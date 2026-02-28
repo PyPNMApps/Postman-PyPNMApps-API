@@ -16,7 +16,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 
 ````html
 // Postman Visualizer: PyPNM-CMTS/ServingGroup/Upstream/OFDMA/PreEqualization/Results/basic
-// Last Update: 2026-02-26 01:04:54 MST
+// Last Update: 2026-02-28 12:04:00 MST
 
 const response = pm.response.json();
 
@@ -91,127 +91,6 @@ function normalizeGroupDelay(gd) {
   return out;
 }
 
-function normalizeScatterPoints(complexValues, complexDimension) {
-  const arr = Array.isArray(complexValues) ? complexValues : [];
-  if (!arr.length) return [];
-
-  const dim = n(complexDimension);
-  const out = [];
-
-  if (Number.isFinite(dim) && dim >= 2) {
-    const step = Math.round(dim);
-    for (let i = 0; i + 1 < arr.length; i += step) {
-      const xi = n(arr[i]);
-      const yi = n(arr[i + 1]);
-      if (xi == null || yi == null) continue;
-      out.push({ x: xi, y: yi });
-    }
-  } else if (Array.isArray(arr[0])) {
-    for (const pair of arr) {
-      if (!Array.isArray(pair) || pair.length < 2) continue;
-      const xi = n(pair[0]);
-      const yi = n(pair[1]);
-      if (xi == null || yi == null) continue;
-      out.push({ x: xi, y: yi });
-    }
-  } else {
-    for (let i = 0; i + 1 < arr.length; i += 2) {
-      const xi = n(arr[i]);
-      const yi = n(arr[i + 1]);
-      if (xi == null || yi == null) continue;
-      out.push({ x: xi, y: yi });
-    }
-  }
-
-  if (out.length > 8192) {
-    const stride = Math.ceil(out.length / 8192);
-    const sampled = [];
-    for (let i = 0; i < out.length; i += stride) sampled.push(out[i]);
-    return sampled;
-  }
-  return out;
-}
-
-function normalizeComplexCoefficients(complexValues, complexDimension) {
-  const arr = Array.isArray(complexValues) ? complexValues : [];
-  if (!arr.length) return [];
-  const out = [];
-  const dim = n(complexDimension);
-
-  if (Number.isFinite(dim) && dim >= 2) {
-    const step = Math.round(dim);
-    for (let i = 0; i + 1 < arr.length; i += step) {
-      const re = n(arr[i]);
-      const im = n(arr[i + 1]);
-      if (re == null || im == null) continue;
-      out.push({ re, im });
-    }
-  } else if (Array.isArray(arr[0])) {
-    for (const pair of arr) {
-      if (!Array.isArray(pair) || pair.length < 2) continue;
-      const re = n(pair[0]);
-      const im = n(pair[1]);
-      if (re == null || im == null) continue;
-      out.push({ re, im });
-    }
-  } else {
-    for (let i = 0; i + 1 < arr.length; i += 2) {
-      const re = n(arr[i]);
-      const im = n(arr[i + 1]);
-      if (re == null || im == null) continue;
-      out.push({ re, im });
-    }
-  }
-
-  return out;
-}
-
-function toDbLinear(mag, floorDb) {
-  const floorLinear = Math.pow(10, floorDb / 20);
-  const clipped = Math.max(mag, floorLinear);
-  return 20 * Math.log10(clipped);
-}
-
-function buildOfdmaAnalyzerSeries(analysis, carrierValues, floorDb = -120, epsilon = 1e-12) {
-  const cv = carrierValues || {};
-  const coeffs = normalizeComplexCoefficients(cv.complex, cv.complex_dimension);
-  if (!coeffs.length) return { preeq_db_points: [], channel_db_points: [] };
-
-  const freqList = Array.isArray(cv.frequency) ? cv.frequency : [];
-  const spacingHz = n(analysis && analysis.subcarrier_spacing);
-  const firstIdx = n(analysis && analysis.first_active_subcarrier_index);
-  const zeroHz = n(analysis && analysis.subcarrier_zero_frequency);
-  const canBuildAxis = spacingHz != null && firstIdx != null && zeroHz != null;
-  const startHz = canBuildAxis ? (zeroHz + (firstIdx * spacingHz)) : null;
-
-  const preeqDb = [];
-  const chEstDb = [];
-
-  for (let i = 0; i < coeffs.length; i += 1) {
-    let fHz = n(freqList[i]);
-    if (fHz == null && startHz != null && spacingHz != null) {
-      fHz = startHz + (i * spacingHz);
-    }
-    if (fHz == null) continue;
-
-    const re = coeffs[i].re;
-    const im = coeffs[i].im;
-    const magSq = (re * re) + (im * im);
-    const mag = Math.sqrt(magSq);
-    const preDb = toDbLinear(mag, floorDb);
-
-    let chDb = floorDb;
-    if (magSq >= epsilon) {
-      chDb = -preDb;
-    }
-
-    preeqDb.push({ x: fHz / 1e6, y: preDb });
-    chEstDb.push({ x: fHz / 1e6, y: chDb });
-  }
-
-  return { preeq_db_points: preeqDb, channel_db_points: chEstDb };
-}
-
 function buildPayload(r) {
   const results = (r && r.results) || {};
   const capture = results.capture_details || {};
@@ -275,8 +154,6 @@ function buildPayload(r) {
       const endMHz = points[points.length - 1].x;
       const stats = computeStats(points.map((p) => p.y));
       const gd = normalizeGroupDelay(cv.group_delay);
-      const scatterPoints = normalizeScatterPoints(cv.complex, cv.complex_dimension);
-      const analyzerSeries = buildOfdmaAnalyzerSeries(analysis, cv);
       const gdStats = gd.length ? computeStats(gd) : null;
       const spacingHz = n(analysis.subcarrier_spacing) || 0;
       const windowKey = [Math.round(startMHz*1000)/1000, Math.round(endMHz*1000)/1000, Math.round(spacingHz), points.length].join('|');
@@ -299,15 +176,10 @@ function buildPayload(r) {
         mag_max: fmtn(stats.max, 2),
         range_label: fmtInt(startMHz) + ' - ' + fmtInt(endMHz) + ' MHz',
         window_label: 'Bandwidth (' + fmtInt(startMHz) + ' - ' + fmtInt(endMHz) + ' MHz)',
-        chart_id: 'pre-mag-' + chIndex + '-' + mIndex,
+        chart_id: 'ce-mag-' + chIndex + '-' + mIndex,
         points,
-        gd_chart_id: 'pre-gd-' + chIndex + '-' + mIndex,
+        gd_chart_id: 'ce-gd-' + chIndex + '-' + mIndex,
         gd_points: gd.length ? gd.map((v, i) => ({ x: i, y: v })) : [],
-        scatter_chart_id: 'pre-scatter-' + chIndex + '-' + mIndex,
-        scatter_points: scatterPoints,
-        analyzer_chart_id: 'pre-analyzer-' + chIndex + '-' + mIndex,
-        preeq_db_points: analyzerSeries.preeq_db_points,
-        channel_db_points: analyzerSeries.channel_db_points,
         gd_avg: gdStats ? fmtn(gdStats.avg, 4) : 'N/A',
         gd_p2p: gdStats && gdStats.min != null && gdStats.max != null ? fmtn(gdStats.max - gdStats.min, 4) : 'N/A',
         echo_count: echoes.length,
@@ -453,23 +325,6 @@ const template = `
     if(!canvas||!window.Chart||!datasets||!datasets.length) return null;
     return new Chart(canvas,{type:'line',data:{datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:false},plugins:{legend:{display:false},title:titleText?{display:true,text:titleText,color:axisText}:{display:false},tooltip:{callbacks:{title:(items)=>items.length?(xTitle==='MHz'?(String(Math.round(items[0].parsed.x))+' MHz'):('Index '+items[0].parsed.x)):'' ,label:(ctx)=>(String(ctx.dataset.label)+': '+ctx.parsed.y.toFixed(2))}}},scales:{x:{type:'linear',title:{display:true,text:xTitle,color:axisText},ticks:{callback:(v)=>xTitle==='MHz'?String(Math.round(v)):String(v),color:axisText},grid:{color:gridColor}},y:{title:{display:true,text:yTitle,color:axisText},ticks:{color:axisText},grid:{color:gridColor}}}}});
   }
-  function createScatterChart(canvas, points, titleText){
-    if(!canvas||!window.Chart||!Array.isArray(points)||!points.length) return null;
-    return new Chart(canvas,{
-      type:'scatter',
-      data:{datasets:[{label:'Scatter',data:points,parsing:false,showLine:false,pointRadius:1.2,pointHoverRadius:1.8,backgroundColor:'#3b82f6',borderColor:'#3b82f6'}]},
-      options:{
-        responsive:true,
-        maintainAspectRatio:false,
-        animation:false,
-        plugins:{legend:{display:false},title:titleText?{display:true,text:titleText}:{display:false}},
-        scales:{
-          x:{type:'linear',title:{display:true,text:'I',color:axisText},ticks:{display:false,color:axisText},grid:{display:false,color:gridColor}},
-          y:{type:'linear',title:{display:true,text:'Q',color:axisText},ticks:{display:false,color:axisText},grid:{display:false,color:gridColor}}
-        }
-      }
-    });
-  }
   serviceGroups.forEach((sg)=>{
     const sgCard=document.createElement('section'); sgCard.className='channel-card';
     const sgHead=document.createElement('div'); sgHead.className='channel-head';
@@ -506,14 +361,6 @@ const template = `
           } else {
             const gdEmpty=document.createElement('div'); gdEmpty.className='chart-box small'; gdEmpty.style.display='grid'; gdEmpty.style.placeItems='center'; gdEmpty.style.color='var(--muted)'; gdEmpty.textContent='No Group Delay'; card.appendChild(gdEmpty);
           }
-          if ((row.preeq_db_points && row.preeq_db_points.length) || (row.channel_db_points && row.channel_db_points.length)) {
-            const anLabel=document.createElement('div'); anLabel.className='chart-label'; anLabel.textContent='PreEq Analyzer';
-            card.appendChild(anLabel);
-            const anBox=document.createElement('div'); anBox.className='chart-box small';
-            const anCanvas=document.createElement('canvas'); anCanvas.id=row.analyzer_chart_id;
-            anBox.appendChild(anCanvas);
-            card.appendChild(anBox);
-          }
           grid.appendChild(card);
         });
         wCard.appendChild(grid);
@@ -534,31 +381,6 @@ const template = `
           if (row && row.gd_points && row.gd_points.length) {
             const gd=document.getElementById(row.gd_chart_id);
             createLineChart(gd,[{label:'GD',data:row.gd_points,parsing:false,pointRadius:0,borderWidth:1.4,tension:0,borderColor:palette[i%palette.length]}],null,'Index','Group Delay');
-          }
-          if (row && row.scatter_points && row.scatter_points.length) {
-            const card = cv ? cv.closest('.cm-card') : null;
-            if (card) {
-              const scLabel=document.createElement('div'); scLabel.className='chart-label'; scLabel.textContent='Scatter';
-              card.appendChild(scLabel);
-              const scBox=document.createElement('div'); scBox.className='chart-box small';
-              const scCanvas=document.createElement('canvas'); scCanvas.id=row.scatter_chart_id;
-              scBox.appendChild(scCanvas);
-              card.appendChild(scBox);
-              createScatterChart(scCanvas, row.scatter_points, null);
-            }
-          }
-          if (row && (row.preeq_db_points || row.channel_db_points)) {
-            const anCanvas = document.getElementById(row.analyzer_chart_id);
-            if (anCanvas) {
-              const ds = [];
-              if (Array.isArray(row.preeq_db_points) && row.preeq_db_points.length) {
-                ds.push({ label: 'Applied Pre-EQ (dB)', data: row.preeq_db_points, parsing:false, pointRadius:0, borderWidth:1.5, tension:0, borderColor:'#2563eb' });
-              }
-              if (Array.isArray(row.channel_db_points) && row.channel_db_points.length) {
-                ds.push({ label: 'Estimated Channel (dB)', data: row.channel_db_points, parsing:false, pointRadius:0, borderWidth:1.5, tension:0, borderColor:'#ef4444' });
-              }
-              if (ds.length) createLineChart(anCanvas, ds, null, 'MHz', 'dB');
-            }
           }
         });
       });
