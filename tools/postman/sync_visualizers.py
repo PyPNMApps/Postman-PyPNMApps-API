@@ -140,6 +140,9 @@ def sync_visualizers(*, root: Path, collection_rel: Path, visual_root_rel: Path,
     for parent_parts, req in visualizer_reqs:
         req_name = req.get("name", "")
         rel = _extract_visualizer_header_rel(req) or "/".join([*parent_parts, req_name])
+        root_prefix = f"{visual_root.name}/"
+        if rel.startswith(root_prefix):
+            rel = rel[len(root_prefix) :]
         html_path, matched_rel = _resolve_visual_html_path(visual_root, rel)
         if matched_rel:
             mapped_paths.add(matched_rel)
