@@ -158,7 +158,7 @@ function buildPayload(r) {
         mag_avg: fmtn(stats.avg, 2),
         mag_max: fmtn(stats.max, 2),
         range_label: fmtInt(startMHz) + ' - ' + fmtInt(endMHz) + ' MHz',
-        window_label: 'Bandwidth (' + fmtInt(startMHz) + ' - ' + fmtInt(endMHz) + ' MHz)',
+        window_label: 'ChannelEstCoeff ChannelWidth (' + fmtInt(startMHz) + ' - ' + fmtInt(endMHz) + ' MHz)',
         chart_id: 'ce-mag-' + chIndex + '-' + mIndex,
         points,
         gd_chart_id: 'ce-gd-' + chIndex + '-' + mIndex,

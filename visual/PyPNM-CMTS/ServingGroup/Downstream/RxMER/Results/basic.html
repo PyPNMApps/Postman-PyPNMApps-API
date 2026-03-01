@@ -158,7 +158,7 @@ function buildPayload(r) {
         mer_avg: fmtn(stats.avg, 2),
         mer_max: fmtn(stats.max, 2),
         range_label: `${Math.round(startMHz)} - ${Math.round(endMHz)} MHz`,
-        window_label: `Bandwidth (${Math.round(startMHz)} - ${Math.round(endMHz)} MHz)`,
+        window_label: `RxMER ChannelWidth (${Math.round(startMHz)} - ${Math.round(endMHz)} MHz)`,
         chart_id: `cm-rxmer-${chIndex}-${mIndex}`,
         points,
       };

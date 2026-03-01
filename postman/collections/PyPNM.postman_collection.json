@@ -5434,7 +5434,7 @@
                   "            <div class=\"info-value\">{{centerFreq}} MHz</div>",
                   "        </div>",
                   "        <div class=\"info-item\">",
-                  "            <div class=\"info-label\">Bandwidth</div>",
+                  "            <div class=\"info-label\">ChannelWidth</div>",
                   "            <div class=\"info-value\">{{bandwidth}} MHz</div>",
                   "        </div>",
                   "        <div class=\"info-item\">",

@@ -183,7 +183,7 @@ function buildPayload(r) {
         stats_peak_to_peak: fmtn(rawStats.peak_to_peak, 3),
         stats_crest_factor: fmtn(rawStats.crest_factor, 3),
         range_label: fmtInt(startMHz) + ' - ' + fmtInt(endMHz) + ' MHz',
-        window_label: 'Estimated Frequency Response (' + fmtInt(startMHz) + ' - ' + fmtInt(endMHz) + ' MHz)',
+        window_label: 'PreEqualization ChannelWidth (' + fmtInt(startMHz) + ' - ' + fmtInt(endMHz) + ' MHz)',
         chart_id: 'ce-mag-' + chIndex + '-' + mIndex,
         points: preeqPoints,
         est_chart_id: 'ce-est-' + chIndex + '-' + mIndex,
