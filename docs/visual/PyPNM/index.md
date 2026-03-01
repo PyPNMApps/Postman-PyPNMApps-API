@@ -2,7 +2,7 @@
 
 Visual source root: `visual/PyPNM`
 
-- Total visual examples discovered: `31`
+- Total visual examples discovered: `32`
 - Pairing is based on matching `.html` / `.json` paths under `visual/`
 
 ## DOCSIS-3.0
@@ -41,6 +41,7 @@ Visual source root: `visual/PyPNM`
 | --- | --- | --- | --- |
 | `MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Echo-Detection-IFFT` | [preview](../../visual-previews/MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Echo-Detection-IFFT.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM/MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Echo-Detection-IFFT.json) | [docs](../MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Echo-Detection-IFFT.md) |
 | `MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Group-Delay` | [preview](../../visual-previews/MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Group-Delay.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM/MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Group-Delay.json) | [docs](../MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Group-Delay.md) |
+| `MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-LTE-Detection-Phase-Slope` | [preview](../../visual-previews/MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-LTE-Detection-Phase-Slope.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM/MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-LTE-Detection-Phase-Slope.json) | [docs](../MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-LTE-Detection-Phase-Slope.md) |
 | `MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Min-Avg-Max` | [preview](../../visual-previews/MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Min-Avg-Max.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM/MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Min-Avg-Max.json) | [docs](../MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-Min-Avg-Max.md) |
 | `MultiCapture/OFDMA-PreEqualization/Ofdma-PreEqualization-Analysis-Echo-Dectection-IFFT` | [preview](../../visual-previews/MultiCapture/OFDMA-PreEqualization/Ofdma-PreEqualization-Analysis-Echo-Dectection-IFFT.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM/MultiCapture/OFDMA-PreEqualization/Ofdma-PreEqualization-Analysis-Echo-Dectection-IFFT.json) | [docs](../MultiCapture/OFDMA-PreEqualization/Ofdma-PreEqualization-Analysis-Echo-Dectection-IFFT.md) |
 | `MultiCapture/OFDMA-PreEqualization/Ofdma-PreEqualization-Analysis-Group-Delay` | [preview](../../visual-previews/MultiCapture/OFDMA-PreEqualization/Ofdma-PreEqualization-Analysis-Group-Delay.html) | [json](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/visual/PyPNM/MultiCapture/OFDMA-PreEqualization/Ofdma-PreEqualization-Analysis-Group-Delay.json) | [docs](../MultiCapture/OFDMA-PreEqualization/Ofdma-PreEqualization-Analysis-Group-Delay.md) |

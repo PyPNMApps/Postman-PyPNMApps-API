@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyPNM / MultiCapture / ChannelEstimation / Ofdm-ChannelEstimation-Analysis-LTE-Detection-Phase-Slope</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 12px;
+      background: #f8fafc;
+      color: #111827;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .frame {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .error {
+      white-space: pre-wrap;
+      color: #fecaca;
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      padding: 8px;
+      border-radius: 6px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #0f172a;
+        color: #e5e7eb;
+      }
+      .frame {
+        background: #111827;
+        border-color: #374151;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/handlebars@4.7.8/dist/handlebars.min.js"></script>
+</head>
+<body>
+  <div id="app" class="frame"></div>
+  <script>
+  (function() {
+    const sampleData = {"system_description": {"HW_REV": "1.0", "VENDOR": "LANCity", "BOOTR": "NONE", "SW_REV": "1.0.0", "MODEL": "LCPET-3"}, "status": 0, "mac_address": "aa:bb:cc:dd:ee:ff", "message": "Analysis LTE_DETECTION_PHASE_SLOPE completed", "data": {"analysis_type": "LTE_DETECTION_PHASE_SLOPE", "results": [{"channel_id": 193, "anomalies": [1.2e-09, 1.8e-09, 1.1e-09], "threshold": 1e-09, "bin_widths": [1000000, 500000, 100000]}, {"channel_id": 194, "anomalies": [9.8e-10], "threshold": 1e-09, "bin_widths": [1000000, 500000, 100000]}]}};
+    const visualSource = "// Postman Visualizer: MultiCapture/ChannelEstimation/Ofdm-ChannelEstimation-Analysis-LTE-Detection-Phase-Slope\n// Last Update: 2026-03-01 14:10:00 MST\n\nconst template = `\n<style>\n  body { background:#0b0b0b; color:#e8e8e8; font-family:Arial,sans-serif; margin:0; padding:16px; }\n  .container { max-width: 1500px; margin: 0 auto; }\n  .header-row { display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; gap:8px; margin-bottom:12px; }\n  .page-title { grid-column:2; text-align:center; margin:0; color:#f2f2f2; font-size:22px; font-weight:700; }\n  .capture-time { grid-column:3; justify-self:end; font-size:12px; color:#d7deec; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:999px; padding:6px 10px; white-space:nowrap; }\n\n  .device-info { background:#151515; padding:14px; margin-bottom:14px; border-radius:10px; border:1px solid #2a2a2a; }\n  .table-wrap { overflow-x:auto; border:1px solid rgba(255,255,255,0.08); border-radius:10px; }\n  .table-title { font-size:11px; text-transform:uppercase; letter-spacing:.7px; padding:10px 12px; background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.08); color:#dbe3ff; }\n  .table { width:100%; min-width:720px; border-collapse:collapse; }\n  .table th { text-align:left; white-space:nowrap; padding:9px 12px; font-size:11px; text-transform:uppercase; letter-spacing:.45px; color:#dbe3ff; background:rgba(255,255,255,0.03); }\n  .table td { padding:10px 12px; font-size:12px; color:#fff; white-space:nowrap; border-top:1px solid rgba(255,255,255,0.08); }\n  .mono { font-family:Consolas,\"Liberation Mono\",Menlo,monospace; }\n\n  .chart-container { background:#202020; border:1px solid #303030; border-radius:10px; padding:14px; margin-bottom:14px; }\n  .chart-title { margin:0 0 10px 0; color:#5a6fd8; text-align:center; font-size:14px; font-weight:700; }\n  .chart-wrap { position:relative; height:320px; }\n  .chart-canvas { display:block; width:100% !important; height:100% !important; box-sizing:border-box; background:#1a1a1a; border:1px solid #4d4d4d; border-radius:6px; }\n\n  .summary-table { width:100%; border-collapse:collapse; margin-top:10px; }\n  .summary-table th, .summary-table td { border:1px solid rgba(255,255,255,0.08); padding:8px 10px; font-size:12px; }\n  .summary-table th { background:rgba(255,255,255,0.03); color:#dbe3ff; }\n  .chip { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid rgba(255,255,255,0.15); }\n  .chip-high { color:#ff8f8f; border-color:rgba(255,107,107,0.45); background:rgba(255,107,107,0.08); }\n  .chip-low { color:#9be8c7; border-color:rgba(57,194,142,0.45); background:rgba(57,194,142,0.08); }\n</style>\n\n<div class=\"container\">\n  <div class=\"header-row\">\n    <div class=\"page-title\">OFDM Channel Estimation LTE Detection (Phase Slope)</div>\n    {{#if captureTime}}<div class=\"capture-time\">Capture Time: {{captureTime}}</div>{{/if}}\n  </div>\n\n  {{#if showDeviceInfo}}\n  <div class=\"device-info\">\n    <div class=\"table-wrap\">\n      <div class=\"table-title\">Device Info</div>\n      <table class=\"table\">\n        <thead><tr><th>MacAddress</th><th>Model</th><th>Vendor</th><th>SW Version</th><th>HW Version</th><th>Boot ROM</th></tr></thead>\n        <tbody><tr><td class=\"mono\">{{deviceInfo.macAddress}}</td><td>{{deviceInfo.MODEL}}</td><td>{{deviceInfo.VENDOR}}</td><td class=\"mono\">{{deviceInfo.SW_REV}}</td><td class=\"mono\">{{deviceInfo.HW_REV}}</td><td class=\"mono\">{{deviceInfo.BOOTR}}</td></tr></tbody>\n      </table>\n    </div>\n  </div>\n  {{/if}}\n\n  <div class=\"chart-container\">\n    <div class=\"chart-title\">Anomaly Count By Channel</div>\n    <div class=\"chart-wrap\"><canvas id=\"anomalyCountChart\" class=\"chart-canvas\"></canvas></div>\n  </div>\n\n  <div class=\"chart-container\">\n    <div class=\"chart-title\">Per-Channel Threshold And Bin-Width Summary</div>\n    <table class=\"summary-table\">\n      <thead>\n        <tr><th>Channel</th><th>Anomaly Count</th><th>Threshold</th><th>Bin Widths (Hz)</th><th>Severity</th></tr>\n      </thead>\n      <tbody>\n      {{#each rows}}\n        <tr>\n          <td>{{channelId}}</td>\n          <td>{{anomalyCount}}</td>\n          <td>{{threshold}}</td>\n          <td class=\"mono\">{{binWidths}}</td>\n          <td>{{{severityHtml}}}</td>\n        </tr>\n      {{/each}}\n      </tbody>\n    </table>\n  </div>\n</div>\n\n<script src=\"https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js\"><\/script>\n<script>\npm.getData(function (err, value) {\n  if (err || !value) return;\n\n  const textColor = '#e0e0e0';\n  const gridColor = 'rgba(255,255,255,0.1)';\n  const labels = (value.rows || []).map(r => String(r.channelId));\n  const counts = (value.rows || []).map(r => Number(r.anomalyCount) || 0);\n\n  const ctx = document.getElementById('anomalyCountChart');\n  if (!ctx) return;\n\n  new Chart(ctx.getContext('2d'), {\n    type: 'bar',\n    data: {\n      labels,\n      datasets: [{\n        label: 'Anomaly Count',\n        data: counts,\n        backgroundColor: 'rgba(90,111,216,0.45)',\n        borderColor: '#5a6fd8',\n        borderWidth: 1\n      }]\n    },\n    options: {\n      responsive: true,\n      maintainAspectRatio: false,\n      plugins: { legend: { labels: { color: textColor } } },\n      scales: {\n        x: { ticks: { color: textColor }, grid: { color: gridColor }, title: { display: true, text: 'Channel', color: textColor } },\n        y: { ticks: { color: textColor, precision: 0 }, grid: { color: gridColor }, title: { display: true, text: 'Anomaly Count', color: textColor } }\n      }\n    }\n  });\n});\n<\/script>\n`;\n\nfunction sanitizeMac(value, fallback) {\n  var fb = (fallback === undefined || fallback === null) ? 'N/A' : fallback;\n  if (value === undefined || value === null) return fb;\n  var text = String(value).trim();\n  if (!text) return fb;\n  var compact = text.replace(/[^0-9a-f]/gi, '').toLowerCase();\n  if (compact.length !== 12) return text;\n  return compact.match(/.{1,2}/g).join(':');\n}\n\nfunction sanitizeSystemDescription(_sys) {\n  var sys = (_sys && typeof _sys === 'object') ? _sys : {};\n  function present(v) { return v !== undefined && v !== null && String(v).trim() !== ''; }\n  return {\n    MODEL: present(sys.MODEL) ? String(sys.MODEL).trim() : 'LCPET-3',\n    VENDOR: present(sys.VENDOR) ? String(sys.VENDOR).trim() : 'LANCity',\n    SW_REV: present(sys.SW_REV) ? String(sys.SW_REV).trim() : '1.0.0',\n    HW_REV: present(sys.HW_REV) ? String(sys.HW_REV).trim() : '1.0',\n    BOOTR: present(sys.BOOTR) ? String(sys.BOOTR).trim() : 'NONE'\n  };\n}\n\nfunction formatCaptureTime(raw) {\n  if (raw === undefined || raw === null || raw === '') return null;\n  if (typeof raw === 'number' && isFinite(raw)) {\n    var ms = raw > 1e12 ? raw : raw * 1000;\n    var d = new Date(ms);\n    if (isNaN(d.getTime())) return null;\n    return d.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';\n  }\n  return String(raw);\n}\n\nfunction constructVisualizerPayload() {\n  const response = pm.response.json();\n  const rawData = (response && response.data && typeof response.data === 'object') ? response.data : {};\n  const results = Array.isArray(rawData.results) ? rawData.results : [];\n\n  const rows = results.map((r, idx) => {\n    const anomalies = Array.isArray(r.anomalies) ? r.anomalies : [];\n    const threshold = (typeof r.threshold === 'number' && isFinite(r.threshold)) ? r.threshold : null;\n    const binWidths = Array.isArray(r.bin_widths) ? r.bin_widths : [];\n    const anomalyCount = anomalies.filter(v => typeof v === 'number' && isFinite(v)).length;\n    const severityHigh = anomalyCount > 5;\n    return {\n      channelId: (r.channel_id !== undefined && r.channel_id !== null) ? r.channel_id : (idx + 1),\n      anomalyCount: anomalyCount,\n      threshold: threshold === null ? 'N/A' : threshold.toExponential(3),\n      binWidths: binWidths.length ? binWidths.join(', ') : 'N/A',\n      severityHtml: severityHigh\n        ? '<span class=\"chip chip-high\">High</span>'\n        : '<span class=\"chip chip-low\">Low</span>'\n    };\n  }).sort((a, b) => Number(a.channelId) - Number(b.channelId));\n\n  const deviceInfo = sanitizeSystemDescription(response.system_description || {});\n  return {\n    rows,\n    captureTime: formatCaptureTime(((rawData.pnm_header || {}).capture_time) || response.capture_time),\n    showDeviceInfo: true,\n    deviceInfo: {\n      macAddress: sanitizeMac(response.mac_address, 'N/A'),\n      MODEL: deviceInfo.MODEL,\n      VENDOR: deviceInfo.VENDOR,\n      SW_REV: deviceInfo.SW_REV,\n      HW_REV: deviceInfo.HW_REV,\n      BOOTR: deviceInfo.BOOTR\n    }\n  };\n}\n\npm.visualizer.set(template, constructVisualizerPayload());\n";
+    const app = document.getElementById("app");
+    let visualizerData = sampleData;
+    let lastTemplate = null;
+
+    function showError(prefix, err) {
+      const msg = String(err && err.stack || err);
+      app.innerHTML = '<div class="error">' + prefix + '\n' + msg + '</div>';
+    }
+
+    async function executeRenderedScripts(root) {
+      const scripts = Array.from(root.querySelectorAll("script"));
+      for (const oldScript of scripts) {
+        const newScript = document.createElement("script");
+        for (const attr of oldScript.attributes) {
+          newScript.setAttribute(attr.name, attr.value);
+        }
+        const parent = oldScript.parentNode;
+        if (!parent) continue;
+
+        if (oldScript.src) {
+          await new Promise((resolve, reject) => {
+            newScript.onload = resolve;
+            newScript.onerror = function() {
+              reject(new Error('Failed to load script: ' + oldScript.src));
+            };
+            parent.replaceChild(newScript, oldScript);
+          });
+          continue;
+        }
+
+        newScript.textContent = oldScript.textContent;
+        parent.replaceChild(newScript, oldScript);
+      }
+    }
+
+    function renderTemplate(template, data) {
+      lastTemplate = template;
+      visualizerData = data == null ? sampleData : data;
+      try {
+        const looksLikeHandlebars =
+          typeof template === "string" &&
+          template.indexOf("{") !== -1 &&
+          template.indexOf("}") !== -1;
+        if (window.Handlebars && looksLikeHandlebars) {
+          const compiled = window.Handlebars.compile(template);
+          app.innerHTML = compiled(visualizerData);
+          void executeRenderedScripts(app).catch((err) => showError('Rendered script execution error', err));
+        } else if (typeof template === "string") {
+          app.innerHTML = template;
+          void executeRenderedScripts(app).catch((err) => showError('Rendered script execution error', err));
+        } else {
+          app.textContent = String(template);
+        }
+      } catch (err) {
+        showError('Template render error', err);
+      }
+    }
+
+    function makeKVStore() {
+      const store = Object.create(null);
+      return {
+        get: function(key) { return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : undefined; },
+        set: function(key, value) { store[key] = value; return value; },
+        unset: function(key) { delete store[key]; }
+      };
+    }
+
+    window.pm = {
+      response: {
+        json: function() { return sampleData; },
+        text: function() { return JSON.stringify(sampleData); }
+      },
+      request: {
+        body: {
+          raw: "{}"
+        }
+      },
+      environment: makeKVStore(),
+      globals: makeKVStore(),
+      variables: makeKVStore(),
+      getData: function(cb) {
+        if (typeof cb === "function") cb(null, visualizerData);
+      },
+      visualizer: {
+        set: function(template, data) {
+          renderTemplate(template, data);
+        }
+      }
+    };
+
+    window.console = window.console || { log(){}, warn(){}, error(){} };
+    window.addEventListener('error', function(ev) {
+      if (ev && ev.error) showError('Window error', ev.error);
+    });
+    window.addEventListener('unhandledrejection', function(ev) {
+      showError('Unhandled promise rejection', ev && ev.reason);
+    });
+
+    if (sampleData && typeof sampleData === 'object' && sampleData.__error__) {
+      app.innerHTML = '<div class="error">Preview unavailable\nInvalid sample JSON fixture\n' + String(sampleData.__error__) + '</div>';
+      return;
+    }
+
+    try {
+      const fn = new Function(visualSource);
+      fn();
+      if (!lastTemplate && !app.innerHTML.trim()) {
+        app.innerHTML = '<div class="error">No visualizer output produced. The script may require unsupported Postman APIs.</div>';
+      }
+    } catch (err) {
+      showError('Script execution error', err);
+    }
+  })();
+  </script>
+</body>
+</html>
