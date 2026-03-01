@@ -1,5 +1,5 @@
 // Postman Visualizer: PyPNM-CMTS/ServingGroup/Upstream/OFDMA/PreEqualization/Results/basic
-// Last Update: 2026-02-28 12:04:00 MST
+// Last Update: 2026-02-28 13:44:00 MST
 
 const response = pm.response.json();
 
@@ -118,16 +118,28 @@ function buildPayload(r) {
       const cv = analysis.carrier_values || {};
       const freqHzList = Array.isArray(cv.frequency) ? cv.frequency : [];
       const magList = Array.isArray(cv.magnitudes) ? cv.magnitudes : [];
-      if (!freqHzList.length || !magList.length) continue;
+      const chanEstList = Array.isArray(cv.channel_estimate_magnitude_db) ? cv.channel_estimate_magnitude_db : [];
+      if (!freqHzList.length || (!magList.length && !chanEstList.length)) continue;
 
-      const points = [];
-      const lim = Math.min(freqHzList.length, magList.length);
-      for (let i = 0; i < lim; i += 1) {
+      const preeqPoints = [];
+      const chanEstPoints = [];
+      const limMag = Math.min(freqHzList.length, magList.length);
+      for (let i = 0; i < limMag; i += 1) {
         const fHz = n(freqHzList[i]);
         const y = n(magList[i]);
         if (fHz == null || y == null) continue;
-        points.push({ x: fHz / 1e6, y });
+        preeqPoints.push({ x: fHz / 1e6, y });
       }
+
+      const limEst = Math.min(freqHzList.length, chanEstList.length);
+      for (let i = 0; i < limEst; i += 1) {
+        const fHz = n(freqHzList[i]);
+        const y = n(chanEstList[i]);
+        if (fHz == null || y == null) continue;
+        chanEstPoints.push({ x: fHz / 1e6, y });
+      }
+
+      const points = preeqPoints.length ? preeqPoints : chanEstPoints;
       if (!points.length) continue;
 
       totalModems += 1;
@@ -135,7 +147,8 @@ function buildPayload(r) {
       const chanId = analysis.channel_id ?? ch.channel_id ?? ('Unknown-' + (chIndex + 1));
       const startMHz = points[0].x;
       const endMHz = points[points.length - 1].x;
-      const stats = computeStats(points.map((p) => p.y));
+      const computedStats = computeStats(points.map((p) => p.y));
+      const rawStats = analysis.signal_statistics || {};
       const gd = normalizeGroupDelay(cv.group_delay);
       const gdStats = gd.length ? computeStats(gd) : null;
       const spacingHz = n(analysis.subcarrier_spacing) || 0;
@@ -154,13 +167,21 @@ function buildPayload(r) {
         status,
         message: modem.message || ((pre.stage_messages || {}).precheck) || '',
         carriers: points.length,
-        mag_min: fmtn(stats.min, 2),
-        mag_avg: fmtn(stats.avg, 2),
-        mag_max: fmtn(stats.max, 2),
+        mag_min: fmtn(computedStats.min, 2),
+        mag_avg: fmtn(computedStats.avg, 2),
+        mag_max: fmtn(computedStats.max, 2),
+        stats_mean: fmtn(rawStats.mean, 3),
+        stats_median: fmtn(rawStats.median, 3),
+        stats_std: fmtn(rawStats.std, 3),
+        stats_power: fmtn(rawStats.power, 3),
+        stats_peak_to_peak: fmtn(rawStats.peak_to_peak, 3),
+        stats_crest_factor: fmtn(rawStats.crest_factor, 3),
         range_label: fmtInt(startMHz) + ' - ' + fmtInt(endMHz) + ' MHz',
         window_label: 'Bandwidth (' + fmtInt(startMHz) + ' - ' + fmtInt(endMHz) + ' MHz)',
         chart_id: 'ce-mag-' + chIndex + '-' + mIndex,
-        points,
+        points: preeqPoints,
+        est_chart_id: 'ce-est-' + chIndex + '-' + mIndex,
+        chan_est_points: chanEstPoints,
         gd_chart_id: 'ce-gd-' + chIndex + '-' + mIndex,
         gd_points: gd.length ? gd.map((v, i) => ({ x: i, y: v })) : [],
         gd_avg: gdStats ? fmtn(gdStats.avg, 4) : 'N/A',
@@ -192,8 +213,9 @@ function buildPayload(r) {
         };
         chGroup.windows.set(windowKey, win);
       }
+      row.combined_points = chanEstPoints.length ? chanEstPoints : points;
       win.rows.push(row);
-      win.combined_series.push({ label: 'CM', points, chart_id: row.chart_id });
+      win.combined_series.push({ label: 'CM', points: row.combined_points, chart_id: row.chart_id });
       win.modem_count += 1;
     }
   }
@@ -278,6 +300,8 @@ const template = `
   .cm-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.cm-stat{border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center}
   .cm-stat .slabel{color:var(--muted);font-size:11px}.cm-stat .sval{font-weight:700;font-size:12px;margin-top:2px}
   .chart-label{font-size:12px;color:var(--muted);font-weight:700;text-align:left}
+  .est-toggle{display:flex;gap:8px;flex-wrap:wrap}
+  .est-toggle label{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:11px;color:var(--muted)}
   @media (max-width:1280px){.trace-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media (max-width:980px){.trace-grid,.cm-grid{grid-template-columns:1fr}}
 </style>
@@ -332,12 +356,16 @@ const template = `
           const card=document.createElement('div'); card.className='cm-card'; card.title=row.sysdescr_hover||'No system_description available';
           card.innerHTML='<div class="cm-head"><h3 class="cm-title">'+(row.system_model||'N/A')+' · '+(row.system_sw||'N/A')+' · '+row.mac_address+'</h3><div class="cm-sub">'+row.range_label+'</div></div>'+
             '<div class="cm-stats">'+
-            '<div class="cm-stat"><div class="slabel">Mag Avg</div><div class="sval">'+row.mag_avg+'</div></div>'+
-            '<div class="cm-stat"><div class="slabel">Echoes</div><div class="sval">'+row.echo_count+'</div></div>'+
-            '<div class="cm-stat"><div class="slabel">Echo ft</div><div class="sval">'+row.echo_ft+'</div></div>'+
+            '<div class="cm-stat"><div class="slabel">Mean</div><div class="sval">'+row.stats_mean+'</div></div>'+
+            '<div class="cm-stat"><div class="slabel">Median</div><div class="sval">'+row.stats_median+'</div></div>'+
+            '<div class="cm-stat"><div class="slabel">Std Dev</div><div class="sval">'+row.stats_std+'</div></div>'+
+            '<div class="cm-stat"><div class="slabel">Power</div><div class="sval">'+row.stats_power+'</div></div>'+
+            '<div class="cm-stat"><div class="slabel">Peak to Peak</div><div class="sval">'+row.stats_peak_to_peak+'</div></div>'+
+            '<div class="cm-stat"><div class="slabel">Crest Factor</div><div class="sval">'+row.stats_crest_factor+'</div></div>'+
             '</div>'+
-            '<div class="chart-label">Magnitude</div>';
-          const box=document.createElement('div'); box.className='chart-box small'; const canvas=document.createElement('canvas'); canvas.id=row.chart_id; box.appendChild(canvas); card.appendChild(box);
+            '<div class="chart-label">Estimated Frequency Response</div>';
+          const estBox=document.createElement('div'); estBox.className='chart-box small'; const estCanvas=document.createElement('canvas'); estCanvas.id=row.est_chart_id; estBox.appendChild(estCanvas); card.appendChild(estBox);
+          const estToggle=document.createElement('div'); estToggle.className='est-toggle'; estToggle.id='tog-'+row.est_chart_id; card.appendChild(estToggle);
           const gdLabel=document.createElement('div'); gdLabel.className='chart-label'; gdLabel.textContent='Group Delay'; card.appendChild(gdLabel);
           if (row.gd_points && row.gd_points.length) {
             const gdBox=document.createElement('div'); gdBox.className='chart-box small'; const gdCanvas=document.createElement('canvas'); gdCanvas.id=row.gd_chart_id; gdBox.appendChild(gdCanvas); card.appendChild(gdBox);
@@ -348,7 +376,7 @@ const template = `
         });
         wCard.appendChild(grid);
         const combinedDatasets=(w.combined_series||[]).map((s,i)=>({label:s.label,data:s.points,parsing:false,pointRadius:0,borderWidth:1.4,tension:0,borderColor:palette[i%palette.length]}));
-        const combinedChart=createLineChart(combinedCanvas,combinedDatasets,w.combined_title,'MHz','Magnitude');
+        const combinedChart=createLineChart(combinedCanvas,combinedDatasets,w.combined_title,'MHz','Estimated Frequency Response (dB)');
         const allLabel=document.createElement('label'); allLabel.className='trace-toggle all'; const allCb=document.createElement('input'); allCb.type='checkbox'; allCb.checked=true; const allTxt=document.createElement('span'); allTxt.textContent='All'; allLabel.appendChild(allCb); allLabel.appendChild(allTxt); wLeft.appendChild(allLabel);
         const rowToggleCheckboxes=[];
         (w.rows||[]).forEach((row,i)=>{
@@ -359,8 +387,23 @@ const template = `
         allCb.addEventListener('change',()=>{ rowToggleCheckboxes.forEach((cb,i)=>{ cb.checked=allCb.checked; if(combinedChart&&combinedChart.data&&combinedChart.data.datasets&&combinedChart.data.datasets[i]) combinedChart.data.datasets[i].hidden=!allCb.checked; }); allCb.indeterminate=false; if(combinedChart) combinedChart.update('none'); });
         (w.combined_series||[]).forEach((s,i)=>{
           const row=(w.rows||[]).find((r)=>r.chart_id===s.chart_id);
-          const cv=document.getElementById(s.chart_id);
-          createLineChart(cv,[{label:row?row.mac_address:s.label,data:s.points,parsing:false,pointRadius:0,borderWidth:1.4,tension:0,borderColor:palette[i%palette.length]}],null,'MHz','Magnitude');
+          if (row && row.est_chart_id) {
+            const est=document.getElementById(row.est_chart_id);
+            const estDs=[];
+            if (Array.isArray(row.points) && row.points.length) estDs.push({label:'Pre-EQ Magnitude',data:row.points,parsing:false,pointRadius:0,borderWidth:1.4,tension:0,borderColor:'#3b82f6'});
+            if (Array.isArray(row.chan_est_points) && row.chan_est_points.length) estDs.push({label:'Estimated Frequency Response',data:row.chan_est_points,parsing:false,pointRadius:0,borderWidth:1.4,tension:0,borderColor:'#ef4444'});
+            const estChart = (est && estDs.length) ? createLineChart(est,estDs,null,'MHz','Estimated Frequency Response (dB)') : null;
+            const toggles=document.getElementById('tog-'+row.est_chart_id);
+            if (toggles && estDs.length) {
+              estDs.forEach((d, di)=>{
+                const label=document.createElement('label');
+                const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=true;
+                const txt=document.createElement('span'); txt.textContent=d.label;
+                cb.addEventListener('change',()=>{ if(estChart&&estChart.data&&estChart.data.datasets&&estChart.data.datasets[di]){ estChart.data.datasets[di].hidden=!cb.checked; estChart.update('none'); } });
+                label.appendChild(cb); label.appendChild(txt); toggles.appendChild(label);
+              });
+            }
+          }
           if (row && row.gd_points && row.gd_points.length) {
             const gd=document.getElementById(row.gd_chart_id);
             createLineChart(gd,[{label:'GD',data:row.gd_points,parsing:false,pointRadius:0,borderWidth:1.4,tension:0,borderColor:palette[i%palette.length]}],null,'Index','Group Delay');
