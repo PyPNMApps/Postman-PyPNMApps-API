@@ -383,7 +383,7 @@ const template = `
           } else {
             const gdEmpty=document.createElement('div'); gdEmpty.className='chart-box small'; gdEmpty.style.display='grid'; gdEmpty.style.placeItems='center'; gdEmpty.style.color='var(--muted)'; gdEmpty.textContent='No Group Delay'; card.appendChild(gdEmpty);
           }
-          const echoLabel=document.createElement('div'); echoLabel.className='chart-label'; echoLabel.textContent='Echo Information'; card.appendChild(echoLabel);
+          const echoLabel=document.createElement('div'); echoLabel.className='chart-label'; echoLabel.textContent=(row.echoes && row.echoes.length) ? 'Echo Detected' : 'No Echo Detected'; card.appendChild(echoLabel);
           if (row.echoes && row.echoes.length) {
             const tbl=document.createElement('table'); tbl.className='echo-table';
             tbl.innerHTML='<thead><tr><th>Bin</th><th>Time us</th><th>Amplitude</th><th>Distance ft</th></tr></thead><tbody>'+
@@ -391,7 +391,7 @@ const template = `
               '</tbody>';
             card.appendChild(tbl);
           } else {
-            const echoEmpty=document.createElement('div'); echoEmpty.className='chart-box small'; echoEmpty.style.height='52px'; echoEmpty.style.display='grid'; echoEmpty.style.placeItems='center'; echoEmpty.style.color='var(--muted)'; echoEmpty.textContent='No Echo Information'; card.appendChild(echoEmpty);
+            const echoEmpty=document.createElement('div'); echoEmpty.className='chart-box small'; echoEmpty.style.height='52px'; echoEmpty.style.display='grid'; echoEmpty.style.placeItems='center'; echoEmpty.style.color='var(--muted)'; echoEmpty.textContent='No Echo Detected'; card.appendChild(echoEmpty);
           }
           grid.appendChild(card);
         });
