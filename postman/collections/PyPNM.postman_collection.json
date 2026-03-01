@@ -6944,6 +6944,162 @@
           "name": "ChannelEstimation",
           "item": [
             {
+              "name": "Start",
+              "id": "5e6b4d9e-3a65-4450-9628-2899e36cd2ab",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"cable_modem\": {\r\n        \"mac_address\": \"{{cm_mac_address}}\",\r\n        \"ip_address\": \"{{cm_ip_address}}\",\r\n        \"pnm_parameters\": {\r\n            \"tftp\": {\r\n                \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n                \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n            },\r\n            \"capture\": {\r\n                \"channel_ids\": [\r\n                    {{channel_ids}}\r\n                ]\r\n            }\r\n        },\r\n        \"snmp\": {\r\n            \"snmpV2C\": {\r\n                \"community\": \"{{cm_snmp_community_rw}}\"\r\n            }\r\n        }\r\n    },\r\n    \"capture\": {\r\n        \"parameters\": {\r\n            \"measurement_duration\": 300,\r\n            \"sample_interval\": 1\r\n        }\r\n    },\r\n    \"measure\": {\r\n        \"mode\": 0\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/start",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "channelEstimation",
+                    "start"
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "let json;",
+                      "",
+                      "pm.test('Response is valid JSON', function () {",
+                      "  pm.response.to.be.json;",
+                      "  json = pm.response.json();",
+                      "});",
+                      "",
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test('operation_id exists and is a non-empty string', function () {",
+                      "  const body = json || pm.response.json();",
+                      "  const opId = body?.operation_id || body?.operation?.operation_id || body?.data?.operation_id;",
+                      "",
+                      "  pm.expect(opId, 'operation_id').to.be.a('string');",
+                      "  pm.expect(opId.trim().length, 'operation_id non-empty').to.be.greaterThan(0);",
+                      "",
+                      "  try { pm.collectionVariables.set('chan_est_multi_operation_id', opId); }",
+                      "  catch (e) { pm.environment.set('chan_est_multi_operation_id', opId); }",
+                      "",
+                      "  // Backward compatibility with existing analysis requests",
+                      "  try { pm.collectionVariables.set('op_id', opId); }",
+                      "  catch (e) { pm.environment.set('op_id', opId); }",
+                      "});",
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Results",
+              "id": "c28d01c9-79f0-440e-89a4-498e914ab48a",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/results/{{chan_est_multi_operation_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "channelEstimation",
+                    "results",
+                    "{{chan_est_multi_operation_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Status",
+              "id": "a26a3b0e-b4a9-453e-b4e7-6a9c9de37e43",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/status/{{chan_est_multi_operation_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "channelEstimation",
+                    "status",
+                    "{{chan_est_multi_operation_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Stop",
+              "id": "9e240482-4e72-4be5-b1d2-632a564e108f",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/channelEstimation/stop/{{chan_est_multi_operation_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "channelEstimation",
+                    "stop",
+                    "{{chan_est_multi_operation_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
               "name": "Ofdm-ChannelEstimation-Analysis-Min-Avg-Max",
               "event": [
                 {
@@ -9296,6 +9452,162 @@
           "name": "OFDMA-PreEqualization",
           "item": [
             {
+              "name": "Start",
+              "id": "395fd5c8-6106-449d-86f4-67103b4d399f",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"cable_modem\": {\r\n    \"mac_address\": \"{{cm_mac_address}}\",\r\n    \"ip_address\": \"{{cm_ip_address}}\",\r\n    \"pnm_parameters\": {\r\n      \"tftp\": {\r\n        \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n        \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n      },\r\n      \"capture\": {\r\n        \"channel_ids\": [ {{channel_ids}} ]\r\n      }\r\n    },\r\n    \"snmp\": {\r\n      \"snmpV2C\": {\r\n        \"community\": \"{{cm_snmp_community_rw}}\"\r\n      }\r\n    }\r\n  },\r\n  \"capture\": {\r\n    \"parameters\": {\r\n      \"measurement_duration\": 30,\r\n      \"sample_interval\": 1\r\n    }\r\n  },\r\n  \"measure\": {\r\n    \"mode\": 0\r\n  }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/us/ofdmaPreEqualization/start",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "us",
+                    "ofdmaPreEqualization",
+                    "start"
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "let json;",
+                      "",
+                      "pm.test('Response is valid JSON', function () {",
+                      "  pm.response.to.be.json;",
+                      "  json = pm.response.json();",
+                      "});",
+                      "",
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test('operation_id exists and is a non-empty string', function () {",
+                      "  const body = json || pm.response.json();",
+                      "  const opId = body?.operation_id || body?.operation?.operation_id || body?.data?.operation_id;",
+                      "",
+                      "  pm.expect(opId, 'operation_id').to.be.a('string');",
+                      "  pm.expect(opId.trim().length, 'operation_id non-empty').to.be.greaterThan(0);",
+                      "",
+                      "  try { pm.collectionVariables.set('ofdma_preeq_multi_operation_id', opId); }",
+                      "  catch (e) { pm.environment.set('ofdma_preeq_multi_operation_id', opId); }",
+                      "",
+                      "  // Backward compatibility with existing analysis requests",
+                      "  try { pm.collectionVariables.set('op_id', opId); }",
+                      "  catch (e) { pm.environment.set('op_id', opId); }",
+                      "});",
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Results",
+              "id": "19a950d5-8411-4094-92f7-7696363a2e82",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/us/ofdmaPreEqualization/results/{{ofdma_preeq_multi_operation_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "us",
+                    "ofdmaPreEqualization",
+                    "results",
+                    "{{ofdma_preeq_multi_operation_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Status",
+              "id": "121d7e7f-547b-45a9-afa0-39224a4e18c7",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/us/ofdmaPreEqualization/status/{{ofdma_preeq_multi_operation_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "us",
+                    "ofdmaPreEqualization",
+                    "status",
+                    "{{ofdma_preeq_multi_operation_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Stop",
+              "id": "553b1fa7-ccdd-4e33-9725-f697c08888b0",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/us/ofdmaPreEqualization/stop/{{ofdma_preeq_multi_operation_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "us",
+                    "ofdmaPreEqualization",
+                    "stop",
+                    "{{ofdma_preeq_multi_operation_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
               "name": "Ofdma-PreEqualization-Analysis-Min-Avg-Max",
               "event": [
                 {
@@ -11404,6 +11716,162 @@
         {
           "name": "RxMER",
           "item": [
+            {
+              "name": "Start",
+              "id": "45555220-f0c1-43c7-b810-b14e7fa2f328",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"cable_modem\": {\r\n        \"mac_address\": \"{{cm_mac_address}}\",\r\n        \"ip_address\": \"{{cm_ip_address}}\",\r\n        \"pnm_parameters\": {\r\n            \"tftp\": {\r\n                \"ipv4\": \"{{tftp_server_ipv4}}\",\r\n                \"ipv6\": \"{{tftp_server_ipv6}}\"\r\n            },\r\n            \"capture\": {\r\n                \"channel_ids\": [\r\n                    {{channel_ids}}\r\n                ]\r\n            }\r\n        },\r\n        \"snmp\": {\r\n            \"snmpV2C\": {\r\n                \"community\": \"{{cm_snmp_community_rw}}\"\r\n            }\r\n        }\r\n    },\r\n    \"capture\": {\r\n        \"parameters\": {\r\n            \"measurement_duration\": {{measurement_duration}},\r\n            \"sample_interval\": 1\r\n        }\r\n    },\r\n    \"measure\": {\r\n        \"mode\": 1\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/rxMer/start",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "rxMer",
+                    "start"
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "let json;",
+                      "",
+                      "pm.test('Response is valid JSON', function () {",
+                      "  pm.response.to.be.json;",
+                      "  json = pm.response.json();",
+                      "});",
+                      "",
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test('operation_id exists and is a non-empty string', function () {",
+                      "  const body = json || pm.response.json();",
+                      "  const opId = body?.operation_id || body?.operation?.operation_id || body?.data?.operation_id;",
+                      "",
+                      "  pm.expect(opId, 'operation_id').to.be.a('string');",
+                      "  pm.expect(opId.trim().length, 'operation_id non-empty').to.be.greaterThan(0);",
+                      "",
+                      "  try { pm.collectionVariables.set('rxmer_multi_operation_id', opId); }",
+                      "  catch (e) { pm.environment.set('rxmer_multi_operation_id', opId); }",
+                      "",
+                      "  // Backward compatibility with existing analysis requests",
+                      "  try { pm.collectionVariables.set('op_id', opId); }",
+                      "  catch (e) { pm.environment.set('op_id', opId); }",
+                      "});",
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Results",
+              "id": "1ba6779a-733e-464e-8153-259bb10b259e",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/rxMer/results/{{rxmer_multi_operation_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "rxMer",
+                    "results",
+                    "{{rxmer_multi_operation_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Status",
+              "id": "a8a3bade-0d08-4960-81ef-a9f216f38b7e",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/rxMer/status/{{rxmer_multi_operation_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "rxMer",
+                    "status",
+                    "{{rxmer_multi_operation_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Stop",
+              "id": "9303a1d0-a865-41c7-9279-99d107f4f334",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{pypnm_url}}/advance/multi/ds/rxMer/stop/{{rxmer_multi_operation_id}}",
+                  "host": [
+                    "{{pypnm_url}}"
+                  ],
+                  "path": [
+                    "advance",
+                    "multi",
+                    "ds",
+                    "rxMer",
+                    "stop",
+                    "{{rxmer_multi_operation_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
             {
               "name": "Ofdm-RxMER-Analysis-Min-Avg-Max",
               "event": [
