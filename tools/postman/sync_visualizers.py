@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import difflib
 import json
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -49,6 +50,20 @@ def _find_visualizer_test_event(req: dict) -> dict | None:
         script = event.get("script") or {}
         if "pm.visualizer.set" in _join_script_lines(script.get("exec")):
             return event
+    return None
+
+
+def _extract_visualizer_header_rel(req: dict) -> str | None:
+    event = _find_visualizer_test_event(req)
+    if event is None:
+        return None
+    lines = (event.get("script") or {}).get("exec") or []
+    pattern = re.compile(r"^\s*//\s*Postman Visualizer:\s*(.+?)\s*$")
+    for line in lines:
+        match = pattern.match(line)
+        if match:
+            rel = match.group(1).strip().strip("/")
+            return rel or None
     return None
 
 
@@ -124,7 +139,7 @@ def sync_visualizers(*, root: Path, collection_rel: Path, visual_root_rel: Path,
 
     for parent_parts, req in visualizer_reqs:
         req_name = req.get("name", "")
-        rel = "/".join([*parent_parts, req_name])
+        rel = _extract_visualizer_header_rel(req) or "/".join([*parent_parts, req_name])
         html_path, matched_rel = _resolve_visual_html_path(visual_root, rel)
         if matched_rel:
             mapped_paths.add(matched_rel)
