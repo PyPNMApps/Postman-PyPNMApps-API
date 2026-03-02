@@ -382,6 +382,64 @@ def _actual_preview_path_for_example(ex: VisualExample, preview_root: Path) -> P
     return preview_root.joinpath(*parts).with_suffix(".html")
 
 
+def _operation_from_stem(stem: str) -> str:
+    tokens = [t for t in stem.split("-") if t]
+    if not tokens:
+        return "General"
+    first = tokens[0].lower()
+    if first in {"ofdm", "ofdma"} and len(tokens) > 1:
+        return tokens[1]
+    if first == "getcapture" and len(tokens) > 1:
+        return tokens[1]
+    return tokens[0]
+
+
+def _capture_operation_for_example(ex: VisualExample) -> str:
+    parts = ex.key_rel.parts
+    if len(parts) < 3:
+        return "General"
+    capture_group = parts[1]
+    stem = parts[-1]
+    container = "/".join(parts[2:-1]).strip("/")
+
+    if capture_group == "MultiCapture":
+        return container or _operation_from_stem(stem)
+
+    if capture_group == "SingleCapture":
+        inferred = _operation_from_stem(stem)
+        if container:
+            if inferred and inferred.lower() not in container.lower():
+                return f"{inferred} ({container})"
+            return container
+        return inferred or "General"
+
+    return "General"
+
+
+def _append_examples_table(
+    lines: list[str],
+    examples_in_group: list[VisualExample],
+    family_index_dir: Path,
+    repo_root: Path,
+    visual_docs_root: Path,
+    preview_root: Path,
+) -> None:
+    lines.append("| Example | Preview | JSON | Docs |")
+    lines.append("| --- | --- | --- | --- |")
+    for ex in examples_in_group:
+        page_path = _actual_page_path_for_example(ex, visual_docs_root)
+        preview_path = _actual_preview_path_for_example(ex, preview_root)
+        preview_link = os_path_rel(family_index_dir, preview_path)
+        docs_link = os_path_rel(family_index_dir, page_path)
+        json_link = _github_blob_link_for_path(ex.json_path, repo_root) if ex.json_path else ""
+        example_name = "/".join(_page_parts_for_example(ex)) if _page_parts_for_example(ex) else ex.key_rel.as_posix()
+        render_cell = f"[preview]({preview_link})" if ex.html_path else "missing"
+        json_cell = f"[json]({json_link})" if ex.json_path else "missing"
+        details_cell = f"[docs]({docs_link})"
+        lines.append(f"| `{example_name}` | {render_cell} | {json_cell} | {details_cell} |")
+    lines.append("")
+
+
 def build_visual_landing_markdown(examples: Iterable[VisualExample]) -> str:
     families = sorted({ex.source_family for ex in examples})
     lines = [INDEX_HEADER.strip(), ""]
@@ -421,20 +479,31 @@ def build_family_index_markdown(
     for group in sorted(grouped):
         lines.append(f"## {group}")
         lines.append("")
-        lines.append("| Example | Preview | JSON | Docs |")
-        lines.append("| --- | --- | --- | --- |")
-        for ex in grouped[group]:
-            page_path = _actual_page_path_for_example(ex, visual_docs_root)
-            preview_path = _actual_preview_path_for_example(ex, preview_root)
-            preview_link = os_path_rel(family_index_dir, preview_path)
-            docs_link = os_path_rel(family_index_dir, page_path)
-            json_link = _github_blob_link_for_path(ex.json_path, repo_root) if ex.json_path else ""
-            example_name = "/".join(_page_parts_for_example(ex)) if _page_parts_for_example(ex) else ex.key_rel.as_posix()
-            render_cell = f"[preview]({preview_link})" if ex.html_path else "missing"
-            json_cell = f"[json]({json_link})" if ex.json_path else "missing"
-            details_cell = f"[docs]({docs_link})"
-            lines.append(f"| `{example_name}` | {render_cell} | {json_cell} | {details_cell} |")
-        lines.append("")
+        group_examples = grouped[group]
+        if family == "PyPNM" and group in {"MultiCapture", "SingleCapture"}:
+            by_operation: dict[str, list[VisualExample]] = {}
+            for ex in group_examples:
+                by_operation.setdefault(_capture_operation_for_example(ex), []).append(ex)
+            for operation in sorted(by_operation):
+                lines.append(f"### {operation}")
+                lines.append("")
+                _append_examples_table(
+                    lines=lines,
+                    examples_in_group=by_operation[operation],
+                    family_index_dir=family_index_dir,
+                    repo_root=repo_root,
+                    visual_docs_root=visual_docs_root,
+                    preview_root=preview_root,
+                )
+        else:
+            _append_examples_table(
+                lines=lines,
+                examples_in_group=group_examples,
+                family_index_dir=family_index_dir,
+                repo_root=repo_root,
+                visual_docs_root=visual_docs_root,
+                preview_root=preview_root,
+            )
 
     return "\n".join(lines).rstrip() + "\n"
 

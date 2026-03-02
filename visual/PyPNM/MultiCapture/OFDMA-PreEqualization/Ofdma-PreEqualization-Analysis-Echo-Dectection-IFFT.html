@@ -1,5 +1,6 @@
 // Postman Visualizer: MultiCapture/OFDMA-PreEqualization/Ofdma-PreEqualization-Analysis-Echo-Dectection-IFFT
-// Last Update: 2026-02-25 06:01:33 MST
+// Last Update: 2026-03-02 12:10:00 MST
+// Visual Constraints: Follow canonical visual rules in CODING_AGENTS.md.
 
 var template = `
 <style>
@@ -145,7 +146,7 @@ var template = `
 
 <div class="panel">
   <div class="panel-title">All Channels ({{channel_count}}) · IFFT Magnitude Aligned by Delay</div>
-  <div class="panel-info">Master Axis: {{combined.delay_start_us}} - {{combined.delay_end_us}} μs ({{combined.total_points}} points, showing {{combined.display_points}} sampled)</div>
+  <div class="panel-info">Delay Range: {{combined.delay_start_us}} - {{combined.delay_end_us}} μs</div>
   <canvas id="chart-all-aligned" class="chart-canvas" height="150"></canvas>
 </div>
 
@@ -243,7 +244,7 @@ var template = `
 
       var info = document.createElement('div');
       info.className = 'panel-info';
-      info.textContent = 'Delay Range: ' + ch.delay_start_us + ' - ' + ch.delay_end_us + ' μs (' + ch.total_points + ' points, showing ' + ch.display_points + ' sampled)';
+      info.textContent = 'Delay Range: ' + ch.delay_start_us + ' - ' + ch.delay_end_us + ' μs';
       panel.appendChild(info);
 
       var chips = document.createElement('div');
@@ -380,10 +381,23 @@ function constructVisualizerPayload() {
     return d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds()) + ' UTC';
   }
   function buildDeviceInfo(resp) {
-    var sys = (resp && resp.system_description && typeof resp.system_description === 'object') ? resp.system_description : null;
+    var deviceRoot = (resp && resp.device && typeof resp.device === 'object') ? resp.device : resp;
+    var sys = (deviceRoot && deviceRoot.system_description && typeof deviceRoot.system_description === 'object')
+      ? deviceRoot.system_description
+      : ((resp && resp.system_description && typeof resp.system_description === 'object') ? resp.system_description : null);
+    if (!sys && resp && resp.data && Array.isArray(resp.data.results)) {
+      for (var i = 0; i < resp.data.results.length; i++) {
+        var r = resp.data.results[i] || {};
+        var details = (r && r.device_details && typeof r.device_details === 'object') ? r.device_details : null;
+        var candidate = details && details.system_description && typeof details.system_description === 'object'
+          ? details.system_description
+          : (details && details.sysDescr && typeof details.sysDescr === 'object' ? details.sysDescr : null);
+        if (candidate) { sys = candidate; break; }
+      }
+    }
     if (!sys) return null;
     return {
-      macAddress: safeText(resp.mac_address).toLowerCase(),
+      macAddress: safeText((deviceRoot && deviceRoot.mac_address) || (resp && resp.mac_address)).toLowerCase(),
       model: safeText(sys.MODEL),
       vendor: safeText(sys.VENDOR),
       swVersion: safeText(sys.SW_REV),
@@ -562,6 +576,7 @@ function constructVisualizerPayload() {
   });
 
   var deviceInfo = buildDeviceInfo(response);
+  var deviceRoot = (response && response.device && typeof response.device === 'object') ? response.device : response;
   return {
     analysis_type: raw.analysis_type || 'N/A',
     results: channelRows,
@@ -570,7 +585,7 @@ function constructVisualizerPayload() {
     capture_time: formatCaptureTime(((raw.pnm_header || {}).capture_time)) || formatCaptureTime(((response.pnm_header || {}).capture_time)),
     has_device_info: !!deviceInfo,
     device_info: deviceInfo || {
-      macAddress: safeText(response.mac_address).toLowerCase(),
+      macAddress: safeText((deviceRoot && deviceRoot.mac_address) || response.mac_address).toLowerCase(),
       model: 'N/A', vendor: 'N/A', swVersion: 'N/A', hwVersion: 'N/A', bootRom: 'N/A'
     }
   };
