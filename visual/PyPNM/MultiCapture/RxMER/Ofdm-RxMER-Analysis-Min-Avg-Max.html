@@ -395,11 +395,11 @@ function constructVisualizerPayload() {
 
   let deviceInfo = {
     macAddress: sanitizeMac(device.mac_address || response.mac_address, ''),
-    MODEL: '',
-    VENDOR: '',
-    SW_REV: '',
-    HW_REV: '',
-    BOOTR: ''
+    MODEL: 'LCPET-3',
+    VENDOR: 'LANCity',
+    SW_REV: '1.0.0',
+    HW_REV: '1.0',
+    BOOTR: 'NONE'
   };
   let captureTime = null;
 

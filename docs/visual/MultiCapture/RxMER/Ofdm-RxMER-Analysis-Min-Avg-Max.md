@@ -412,11 +412,11 @@ function constructVisualizerPayload() {
 
   let deviceInfo = {
     macAddress: sanitizeMac(device.mac_address || response.mac_address, ''),
-    MODEL: '',
-    VENDOR: '',
-    SW_REV: '',
-    HW_REV: '',
-    BOOTR: ''
+    MODEL: 'LCPET-3',
+    VENDOR: 'LANCity',
+    SW_REV: '1.0.0',
+    HW_REV: '1.0',
+    BOOTR: 'NONE'
   };
   let captureTime = null;
 
@@ -473,17 +473,23 @@ pm.visualizer.set(template, constructVisualizerPayload());
 
 ````json
 {
+    "system_description": {
+        "HW_REV": "1.0",
+        "VENDOR": "LANCity",
+        "BOOTR": "NONE",
+        "SW_REV": "1.0.0",
+        "MODEL": "LCPET-3"
+    },
     "status": 0,
     "message": "Analysis MIN_AVG_MAX completed for group ac9aae4629ef4296",
     "device": {
-        "mac_address": "b0:f5:30:83:69:c0",
+        "mac_address": "aa:bb:cc:dd:ee:ff",
         "system_description": {
-            "HW_REV": "0B",
-            "VENDOR": "Hitron Technologies",
-            "BOOTR": "2022.01-MXL-v-4.0.369",
-            "SW_REV": "8.5.0.0.1b4",
-            "MODEL": "CGNDP4",
-            "is_empty": false
+            "HW_REV": "1.0",
+            "VENDOR": "LANCity",
+            "BOOTR": "NONE",
+            "SW_REV": "1.0.0",
+            "MODEL": "LCPET-3"
         }
     },
     "data": {
