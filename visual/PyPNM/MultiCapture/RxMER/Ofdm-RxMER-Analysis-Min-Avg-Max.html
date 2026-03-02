@@ -1,5 +1,5 @@
 // Postman Visualizer: MultiCapture/RxMER/Ofdm-RxMER-Analysis-Min-Avg-Max
-// Last Update: 2026-02-25 06:01:33 MST
+// Last Update: 2026-03-01 09:49:00 MST
 
 const template = `
 <style>
@@ -331,7 +331,7 @@ pm.getData(function (err, value) {
 `;
 
 function sanitizeMac(value, fallback) {
-  var fb = (fallback === undefined || fallback === null) ? 'N/A' : fallback;
+  var fb = (fallback === undefined || fallback === null) ? '' : fallback;
   if (value === undefined || value === null) return fb;
   var text = String(value).trim();
   if (!text) return fb;
@@ -342,26 +342,22 @@ function sanitizeMac(value, fallback) {
 
 function sanitizeSystemDescription(_sys) {
   var sys = (_sys && typeof _sys === 'object') ? _sys : {};
-  var hasKeys = ['HW_REV', 'VENDOR', 'BOOTR', 'SW_REV', 'MODEL'].some(function (k) {
-    return sys[k] !== undefined && sys[k] !== null && String(sys[k]).trim() !== '';
-  });
-  if (!hasKeys) return null;
   function present(v) { return v !== undefined && v !== null && String(v).trim() !== ''; }
   return {
-    HW_REV: present(sys.HW_REV) ? String(sys.HW_REV).trim() : 'N/A',
-    VENDOR: present(sys.VENDOR) ? String(sys.VENDOR).trim() : 'N/A',
-    BOOTR: present(sys.BOOTR) ? String(sys.BOOTR).trim() : 'N/A',
-    SW_REV: present(sys.SW_REV) ? String(sys.SW_REV).trim() : 'N/A',
-    MODEL: present(sys.MODEL) ? String(sys.MODEL).trim() : 'N/A'
+    HW_REV: present(sys.HW_REV) ? String(sys.HW_REV).trim() : '',
+    VENDOR: present(sys.VENDOR) ? String(sys.VENDOR).trim() : '',
+    BOOTR: present(sys.BOOTR) ? String(sys.BOOTR).trim() : '',
+    SW_REV: present(sys.SW_REV) ? String(sys.SW_REV).trim() : '',
+    MODEL: present(sys.MODEL) ? String(sys.MODEL).trim() : ''
   };
 }
 
 function mergeDeviceInfo(base, incoming) {
   if (!base) return incoming;
   if (!incoming) return base;
-  if (base.macAddress === 'N/A' && incoming.macAddress !== 'N/A') base.macAddress = incoming.macAddress;
+  if (!base.macAddress && incoming.macAddress) base.macAddress = incoming.macAddress;
   ['MODEL', 'VENDOR', 'SW_REV', 'HW_REV', 'BOOTR'].forEach(function (k) {
-    if (base[k] === 'N/A' && incoming[k] !== 'N/A') base[k] = incoming[k];
+    if (!base[k] && incoming[k]) base[k] = incoming[k];
   });
   return base;
 }
@@ -383,6 +379,7 @@ function formatCaptureTime(raw) {
 
 function constructVisualizerPayload() {
   const response = pm.response.json();
+  const device = (response && response.device && typeof response.device === 'object') ? response.device : {};
   const raw = (response && response.data && typeof response.data === 'object') ? response.data : {};
 
   const channelData = Object.entries(raw).map(([k, v]) => {
@@ -397,19 +394,23 @@ function constructVisualizerPayload() {
   });
 
   let deviceInfo = {
-    macAddress: sanitizeMac(response.mac_address, 'N/A'),
-    MODEL: 'LCPET-3',
-    VENDOR: 'LANCity',
-    SW_REV: '1.0.0',
-    HW_REV: '1.0',
-    BOOTR: 'NONE'
+    macAddress: sanitizeMac(device.mac_address || response.mac_address, ''),
+    MODEL: '',
+    VENDOR: '',
+    SW_REV: '',
+    HW_REV: '',
+    BOOTR: ''
   };
   let captureTime = null;
 
-  const rootSys = sanitizeSystemDescription(response.system_description || (((response || {}).data || {}).system_description) || {});
+  const rootSys = sanitizeSystemDescription(
+    device.system_description ||
+    response.system_description ||
+    (((response || {}).data || {}).system_description) || {}
+  );
   if (rootSys) {
     deviceInfo = mergeDeviceInfo(deviceInfo, {
-      macAddress: sanitizeMac(response.mac_address, 'N/A'),
+      macAddress: sanitizeMac(device.mac_address || response.mac_address, ''),
       MODEL: rootSys.MODEL,
       VENDOR: rootSys.VENDOR,
       SW_REV: rootSys.SW_REV,
@@ -422,7 +423,7 @@ function constructVisualizerPayload() {
     const sys = sanitizeSystemDescription((((c || {}).device_details || {}).system_description) || {});
     if (sys) {
       deviceInfo = mergeDeviceInfo(deviceInfo, {
-        macAddress: sanitizeMac(c.mac_address || response.mac_address, 'N/A'),
+        macAddress: sanitizeMac(c.mac_address || device.mac_address || response.mac_address, ''),
         MODEL: sys.MODEL,
         VENDOR: sys.VENDOR,
         SW_REV: sys.SW_REV,
@@ -433,10 +434,10 @@ function constructVisualizerPayload() {
     if (!captureTime) captureTime = formatCaptureTime((((c || {}).pnm_header) || {}).capture_time);
   });
 
-  const showDeviceInfo = [deviceInfo.MODEL, deviceInfo.VENDOR, deviceInfo.SW_REV, deviceInfo.HW_REV, deviceInfo.BOOTR].some(v => v !== 'N/A');
+  const showDeviceInfo = true;
 
   return {
-    macAddress: sanitizeMac(response.mac_address, 'N/A'),
+    macAddress: sanitizeMac(device.mac_address || response.mac_address, ''),
     channelCount: channelData.length,
     status: response.status === 0 ? 'Success' : 'Error',
     channelData: channelData,

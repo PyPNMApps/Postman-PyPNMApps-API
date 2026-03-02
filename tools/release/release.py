@@ -95,8 +95,8 @@ def run_quality_gates(root: Path) -> None:
 
     sanitize_script = root / "tools" / "sanitize.py"
     if sanitize_script.exists():
-        print("[check] sanitize (check mode)")
-        run([python_bin, str(sanitize_script), "--check"])
+        print("[update] sanitize (fix mode)")
+        run([python_bin, str(sanitize_script), "--fix"])
 
     sync_visualizers_script = root / "tools" / "postman" / "sync_visualizers.py"
     if sync_visualizers_script.exists():

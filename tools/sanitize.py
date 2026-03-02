@@ -216,6 +216,11 @@ def main(argv: list[str]) -> int:
         help="Check only; do not write changes. Exit non-zero if files would change.",
     )
     mode_group.add_argument(
+        "--check-pass-fail",
+        action="store_true",
+        help="Check only; report findings but always exit zero.",
+    )
+    mode_group.add_argument(
         "--fix",
         action="store_true",
         help="Apply sanitize fixes in-place.",
@@ -229,7 +234,7 @@ def main(argv: list[str]) -> int:
     found_files: list[Path] = []
     changed_files: list[Path] = []
     do_write = bool(args.fix)
-    mode = "fix" if do_write else "check"
+    mode = "fix" if do_write else ("check-pass-fail" if args.check_pass_fail else "check")
 
     print(f"Sanitize {mode}: root={root}")
     print(f"Checking directories under: {root}")
@@ -252,6 +257,9 @@ def main(argv: list[str]) -> int:
     )
 
     if not do_write and found_files:
+        if args.check_pass_fail:
+            print("Sanitize check-pass-fail: findings detected; continuing with exit code 0.")
+            return 0
         return 2
     return 0
 

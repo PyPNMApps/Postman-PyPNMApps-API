@@ -44,9 +44,9 @@ run_quality_gates() {
   py_bin="$(preferred_python)"
 
   if [[ -f "./tools/sanitize.py" ]]; then
-    run_check "sanitize --fix" "${py_bin}" ./tools/sanitize.py --fix
+    run_check "sanitize --check-pass-fail" "${py_bin}" ./tools/sanitize.py --check-pass-fail
   else
-    echo "[skip]  sanitize --fix (tools/sanitize.py not found)"
+    echo "[skip]  sanitize --check-pass-fail (tools/sanitize.py not found)"
   fi
 
   if [[ -f "./tools/postman/sync_visualizers.py" ]]; then

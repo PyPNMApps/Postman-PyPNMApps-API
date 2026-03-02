@@ -1,5 +1,6 @@
 // Postman Visualizer: MultiCapture/RxMER/Ofdm-RxMER-Analysis-Profile-Performance-1
-// Last Update: 2026-02-25 06:01:33 MST
+// Last Update: 2026-03-02 11:39:00 MST
+// Visual Constraints: Follow canonical visual rules in CODING_AGENTS.md.
 
 const template = `
 <style>
@@ -379,10 +380,11 @@ function extractFecSummary(profile) {
 }
 
 function buildDeviceInfo(response) {
-  var sys = (response && response.system_description && typeof response.system_description === 'object') ? response.system_description : null;
+  var deviceRoot = (response && response.device && typeof response.device === 'object') ? response.device : response;
+  var sys = (deviceRoot && deviceRoot.system_description && typeof deviceRoot.system_description === 'object') ? deviceRoot.system_description : null;
   if (!sys) return null;
   return {
-    macAddress: sanitizeMac(response.mac_address, 'N/A'),
+    macAddress: sanitizeMac(deviceRoot && deviceRoot.mac_address, 'N/A'),
     model: safeText(sys.MODEL),
     vendor: safeText(sys.VENDOR),
     swVersion: safeText(sys.SW_REV),
@@ -393,6 +395,7 @@ function buildDeviceInfo(response) {
 
 function constructVisualizerPayload() {
   var response = pm.response.json() || {};
+  var deviceRoot = (response && response.device && typeof response.device === 'object') ? response.device : response;
   var raw = (response && response.data && typeof response.data === 'object') ? response.data : {};
 
   var channelData = Object.keys(raw).map(function (k) {
@@ -466,14 +469,14 @@ function constructVisualizerPayload() {
 
   var deviceInfo = buildDeviceInfo(response);
   return {
-    macAddress: sanitizeMac(response.mac_address, 'N/A'),
+    macAddress: sanitizeMac(deviceRoot && deviceRoot.mac_address, 'N/A'),
     status: Number(response.status) === 0 ? 'Success' : 'Error',
     channelCount: channelData.length,
     profileIdsLabel: uniqueProfileIds.length ? uniqueProfileIds.join(', ') : 'N/A',
     captureTime: firstCaptureTime,
     hasDeviceInfo: !!deviceInfo,
     deviceInfo: deviceInfo || {
-      macAddress: sanitizeMac(response.mac_address, 'N/A'),
+      macAddress: sanitizeMac(deviceRoot && deviceRoot.mac_address, 'N/A'),
       model: 'N/A', vendor: 'N/A', swVersion: 'N/A', hwVersion: 'N/A', bootRom: 'N/A'
     },
     channelData: channelData

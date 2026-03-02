@@ -62,12 +62,14 @@ Usage:
 
 ```bash
 tools/sanitize.py --check
+tools/sanitize.py --check-pass-fail
 tools/sanitize.py --fix
 ```
 
 Modes:
 
 - `--check` : read-only, reports findings, exits non-zero when changes would be needed
+- `--check-pass-fail` : read-only, reports findings, always exits zero
 - `--fix` : applies changes in-place
 
 ## Postman Visualizer Sync Tool
