@@ -145,7 +145,7 @@ var template = `
 
 <div class="panel">
   <div class="panel-title">All Channels ({{channel_count}}) · IFFT Magnitude Aligned by Delay</div>
-  <div class="panel-info">Master Axis: {{combined.delay_start_us}} - {{combined.delay_end_us}} μs ({{combined.total_points}} points, showing {{combined.display_points}} sampled)</div>
+  <div class="panel-info">Master Axis: {{combined.delay_start_us}} - {{combined.delay_end_us}} μs</div>
   <canvas id="chart-all-aligned" class="chart-canvas" height="150"></canvas>
 </div>
 
@@ -243,7 +243,7 @@ var template = `
 
       var info = document.createElement('div');
       info.className = 'panel-info';
-      info.textContent = 'Delay Range: ' + ch.delay_start_us + ' - ' + ch.delay_end_us + ' μs (' + ch.total_points + ' points, showing ' + ch.display_points + ' sampled)';
+      info.textContent = 'Delay Range: ' + ch.delay_start_us + ' - ' + ch.delay_end_us + ' μs';
       panel.appendChild(info);
 
       var chips = document.createElement('div');
