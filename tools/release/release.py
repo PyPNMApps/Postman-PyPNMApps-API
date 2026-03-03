@@ -27,6 +27,10 @@ def run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess[str]:
     return result
 
 
+def format_cmd(cmd: list[str]) -> str:
+    return " ".join(cmd)
+
+
 def tag_exists(tag: str) -> bool:
     result = run(["git", "rev-parse", "-q", "--verify", f"refs/tags/{tag}"], check=False)
     return result.returncode == 0
@@ -212,15 +216,20 @@ def main() -> None:
     ensure_branch_allowed()
     ensure_clean_worktree()
 
-    if not args.skip_checks:
-        run_quality_gates(root)
+    try:
+        if not args.skip_checks:
+            run_quality_gates(root)
 
-    release_version = resolve_release_version(root, args.version)
-    print(f"Selected release version: {release_version}")
+        release_version = resolve_release_version(root, args.version)
+        print(f"Selected release version: {release_version}")
 
-    bump_version_files(root, release_version)
-    create_release_commit_and_tag(release_version, not args.no_push)
-    print(f"Release {release_version} complete.")
+        bump_version_files(root, release_version)
+        create_release_commit_and_tag(release_version, not args.no_push)
+        print(f"Release {release_version} complete.")
+    except subprocess.CalledProcessError as exc:
+        print(f"[fail] command failed with exit code {exc.returncode}: {format_cmd(exc.cmd)}")
+        print("[fail] release aborted")
+        raise SystemExit(exc.returncode)
 
 
 if __name__ == "__main__":
