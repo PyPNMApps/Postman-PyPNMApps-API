@@ -413,7 +413,7 @@ pm.visualizer.set(template, payload);
             "success_count": 22,
             "failure_count": 3,
             "modems": {
-                "20:6a:94:d7:d3:70": {
+                "aa:bb:cc:dd:ee:00": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -422,7 +422,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "74:9b:e8:11:ed:70": {
+                "aa:bb:cc:dd:ee:01": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -431,7 +431,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "a8:4e:3f:37:3e:30": {
+                "aa:bb:cc:dd:ee:02": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -440,7 +440,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "1c:ab:c0:9d:d6:00": {
+                "aa:bb:cc:dd:ee:03": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -449,7 +449,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "20:6a:94:34:63:f4": {
+                "aa:bb:cc:dd:ee:04": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -458,7 +458,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "20:6a:94:d7:d3:60": {
+                "aa:bb:cc:dd:ee:05": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -467,7 +467,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "38:ad:2b:3e:86:54": {
+                "aa:bb:cc:dd:ee:06": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -476,7 +476,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "38:ad:2b:3e:87:7c": {
+                "aa:bb:cc:dd:ee:07": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -485,7 +485,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "60:6c:63:f4:64:f8": {
+                "aa:bb:cc:dd:ee:08": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -494,7 +494,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "74:9b:e8:72:7a:54": {
+                "aa:bb:cc:dd:ee:09": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -503,7 +503,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "84:0b:7c:0b:e5:48": {
+                "aa:bb:cc:dd:ee:0a": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -512,7 +512,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "90:aa:c3:4b:75:60": {
+                "aa:bb:cc:dd:ee:0b": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -521,7 +521,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "90:aa:c3:8a:bd:18": {
+                "aa:bb:cc:dd:ee:0c": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -530,7 +530,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "90:aa:c3:c9:d0:d0": {
+                "aa:bb:cc:dd:ee:0d": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -539,7 +539,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "b0:f5:30:b7:76:30": {
+                "aa:bb:cc:dd:ee:0e": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -548,7 +548,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "dc:36:0c:79:f1:8c": {
+                "aa:bb:cc:dd:ee:0f": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -557,7 +557,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "dc:36:0c:ee:ce:e0": {
+                "aa:bb:cc:dd:ee:10": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -566,7 +566,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "f8:1d:0f:cd:a0:f0": {
+                "aa:bb:cc:dd:ee:11": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -575,7 +575,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "f8:34:5a:53:27:48": {
+                "aa:bb:cc:dd:ee:12": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -584,7 +584,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "f8:34:5a:7f:d6:80": {
+                "aa:bb:cc:dd:ee:13": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -593,7 +593,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "f8:34:5a:80:84:12": {
+                "aa:bb:cc:dd:ee:14": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -602,7 +602,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "f8:34:5a:83:35:34": {
+                "aa:bb:cc:dd:ee:15": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -611,7 +611,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "fc:77:7b:11:8f:da": {
+                "aa:bb:cc:dd:ee:16": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -620,7 +620,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "fc:77:7b:ca:7b:10": {
+                "aa:bb:cc:dd:ee:17": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",
@@ -629,7 +629,7 @@ pm.visualizer.set(template, payload);
                         "MODEL": "LCPET-3"
                     }
                 },
-                "fc:77:7b:cc:04:b0": {
+                "aa:bb:cc:dd:ee:18": {
                     "sysdescr": {
                         "HW_REV": "1.0",
                         "VENDOR": "LANCity",

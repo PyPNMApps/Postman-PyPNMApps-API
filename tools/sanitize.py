@@ -65,6 +65,30 @@ def _sanitize_mac_string(text: str) -> str:
     return GENERIC_MAC_VARIANTS[3]
 
 
+def _render_mac_from_compact(template: str, compact: str) -> str:
+    if ":" in template:
+        return ":".join(compact[i : i + 2] for i in range(0, 12, 2))
+    if "-" in template:
+        return "-".join(compact[i : i + 2] for i in range(0, 12, 2))
+    if "_" in template:
+        return "_".join(compact[i : i + 2] for i in range(0, 12, 2))
+    return compact
+
+
+def _sanitize_mac_key(text: str, mac_key_map: dict[str, str], mac_key_counter: list[int]) -> str:
+    existing = mac_key_map.get(text)
+    if existing is not None:
+        return existing
+
+    # Keep a deterministic generic prefix and vary the last octet to avoid key collisions.
+    suffix = mac_key_counter[0] % 256
+    compact = f"aabbccddee{suffix:02x}"
+    mac_key_counter[0] += 1
+    rendered = _render_mac_from_compact(text, compact)
+    mac_key_map[text] = rendered
+    return rendered
+
+
 def _sanitize_mac_substrings(text: str) -> str:
     return MAC_PATTERN.sub(lambda m: _sanitize_mac_string(m.group(0)), text)
 
@@ -90,32 +114,56 @@ def _sanitize_text_content(text: str) -> str:
     return text
 
 
-def _sanitize_json(obj: Any, parent_key: str | None = None) -> Any:
+def _sanitize_json(
+    obj: Any,
+    parent_key: str | None = None,
+    mac_key_map: dict[str, str] | None = None,
+    mac_key_counter: list[int] | None = None,
+) -> Any:
+    if mac_key_map is None:
+        mac_key_map = {}
+    if mac_key_counter is None:
+        mac_key_counter = [0]
+
     if isinstance(obj, dict):
         out: dict[str, Any] = {}
         for key, value in obj.items():
             key_lower = key.lower()
+            out_key = _sanitize_mac_key(key, mac_key_map, mac_key_counter) if MAC_PATTERN.fullmatch(key) else key
 
             if key == "system_description" and isinstance(value, dict):
-                out[key] = dict(GENERIC_SYSTEM_DESCRIPTION)
+                out[out_key] = dict(GENERIC_SYSTEM_DESCRIPTION)
                 continue
 
             if key_lower == "sysdescr" and isinstance(value, dict):
-                out[key] = dict(GENERIC_SYSTEM_DESCRIPTION)
+                out[out_key] = dict(GENERIC_SYSTEM_DESCRIPTION)
                 continue
 
             if isinstance(value, str):
                 if "mac" in key_lower and MAC_PATTERN.fullmatch(value):
-                    out[key] = _sanitize_mac_string(value)
+                    out[out_key] = _sanitize_mac_string(value)
                     continue
-                out[key] = _sanitize_mac_substrings(value)
+                out[out_key] = _sanitize_mac_substrings(value)
                 continue
 
-            out[key] = _sanitize_json(value, parent_key=key)
+            out[out_key] = _sanitize_json(
+                value,
+                parent_key=key,
+                mac_key_map=mac_key_map,
+                mac_key_counter=mac_key_counter,
+            )
         return out
 
     if isinstance(obj, list):
-        return [_sanitize_json(item, parent_key=parent_key) for item in obj]
+        return [
+            _sanitize_json(
+                item,
+                parent_key=parent_key,
+                mac_key_map=mac_key_map,
+                mac_key_counter=mac_key_counter,
+            )
+            for item in obj
+        ]
 
     if isinstance(obj, str):
         if parent_key and "mac" in parent_key.lower() and MAC_PATTERN.fullmatch(obj):
@@ -184,7 +232,7 @@ def sanitize_file(path: Path, write: bool = True) -> bool:
         except json.JSONDecodeError as exc:
             print(f"WARNING: Skipping {path}: {exc}", file=sys.stderr)
             return False
-        sanitized = _normalize_root_system_description(_sanitize_json(data))
+        sanitized = _normalize_root_system_description(_sanitize_json(data, mac_key_map={}, mac_key_counter=[0]))
         rendered = json.dumps(sanitized, indent=4) + "\n"
     elif path.suffix.lower() == ".html":
         rendered = _sanitize_text_content(raw)
