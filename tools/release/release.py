@@ -98,9 +98,12 @@ def run_quality_gates(root: Path) -> None:
     python_bin = _preferred_python(root)
 
     sanitize_script = root / "tools" / "sanitize.py"
-    if sanitize_script.exists():
-        print("[update] sanitize (fix mode)")
-        run([python_bin, str(sanitize_script), "--fix"])
+    if not sanitize_script.exists():
+        raise SystemExit(f"ERROR: required sanitizer not found at {sanitize_script}")
+    print("[update] MAC/sysDescr sanitize (fix mode)")
+    run([python_bin, str(sanitize_script), "--fix", "--root", "visual"])
+    print("[check] MAC/sysDescr sanitize clean")
+    run([python_bin, str(sanitize_script), "--check", "--root", "visual"])
 
     sync_visualizers_script = root / "tools" / "postman" / "sync_visualizers.py"
     if sync_visualizers_script.exists():

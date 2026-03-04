@@ -16,252 +16,227 @@
             "modems": {
                 "20:6a:94:d7:d3:70": {
                     "sysdescr": {
-                        "HW_REV": "",
-                        "VENDOR": "",
-                        "BOOTR": "",
-                        "SW_REV": "",
-                        "MODEL": "",
-                        "is_empty": true
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "74:9b:e8:11:ed:70": {
                     "sysdescr": {
-                        "HW_REV": "",
-                        "VENDOR": "",
-                        "BOOTR": "",
-                        "SW_REV": "",
-                        "MODEL": "",
-                        "is_empty": true
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "a8:4e:3f:37:3e:30": {
                     "sysdescr": {
-                        "HW_REV": "",
-                        "VENDOR": "",
-                        "BOOTR": "",
-                        "SW_REV": "",
-                        "MODEL": "",
-                        "is_empty": true
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "1c:ab:c0:9d:d6:00": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "mango-1.6.5-ge4b629a1",
-                        "SW_REV": "4.5.11.26b1",
-                        "MODEL": "CGNM-SHW",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "20:6a:94:34:63:f4": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.727888.R.2304181116",
-                        "SW_REV": "7.3.5.3.3b2",
-                        "MODEL": "EN2251-RES",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "20:6a:94:d7:d3:60": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGR2.86C.610248.R.2210181404",
-                        "SW_REV": "7.3.5.3.1b5",
-                        "MODEL": "CODA5814Q",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "38:ad:2b:3e:86:54": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "2022.01-MXL-v-4.0.357",
-                        "SW_REV": "8.4.0.0.1b2",
-                        "MODEL": "CODA60",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "38:ad:2b:3e:87:7c": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "2022.01-MXL-v-4.0.357.F",
-                        "SW_REV": "8.4.0.0.3b2",
-                        "MODEL": "CODA60V",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "60:6c:63:f4:64:f8": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.727888.R.2305250917.F",
-                        "SW_REV": "7.3.5.3.2b1",
-                        "MODEL": "CODA56",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "74:9b:e8:72:7a:54": {
                     "sysdescr": {
-                        "HW_REV": "0.65",
-                        "VENDOR": "Hitron Technologies Inc.",
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
                         "BOOTR": "NONE",
-                        "SW_REV": "7.2.4.0.3.b5",
-                        "MODEL": "ODIN-1112",
-                        "is_empty": false
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "84:0b:7c:0b:e5:48": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.727889.R.2402291559.F",
-                        "SW_REV": "7.3.5.3U8-UNI-CTR",
-                        "MODEL": "EN2251",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "90:aa:c3:4b:75:60": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.668728.R.2407251438",
-                        "SW_REV": "7.3.5.3.1b5",
-                        "MODEL": "CODA-4589-RES",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "90:aa:c3:8a:bd:18": {
                     "sysdescr": {
-                        "HW_REV": "2A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.727888.R.2305251031.F",
-                        "SW_REV": "7.3.5.3.2b2",
-                        "MODEL": "CODA",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "90:aa:c3:c9:d0:d0": {
                     "sysdescr": {
-                        "HW_REV": "0A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.635901.R.2008260951",
-                        "SW_REV": "7.2.4.5.1b6",
-                        "MODEL": "CGNDP3M",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "b0:f5:30:b7:76:30": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "2022.01-MXL-v-4.0.369",
-                        "SW_REV": "8.5.0.0.1b4",
-                        "MODEL": "CODA6021U",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "dc:36:0c:79:f1:8c": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.727888.R.2304140934.F",
-                        "SW_REV": "7.3.5.3.2b1",
-                        "MODEL": "CODA56",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "dc:36:0c:ee:ce:e0": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGR2.86C.703059.R.2405091611",
-                        "SW_REV": "7.3.5.3.1b5",
-                        "MODEL": "CODA5834",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "f8:1d:0f:cd:a0:f0": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.597968.R.1811011626",
-                        "SW_REV": "7.1.1.2.5b3",
-                        "MODEL": "CODA-4589-RES",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "f8:34:5a:53:27:48": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.727888.R.2304181538.F",
-                        "SW_REV": "7.3.5.3.2b3",
-                        "MODEL": "CODA-57-RES",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "f8:34:5a:7f:d6:80": {
                     "sysdescr": {
-                        "HW_REV": "1C",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGR2.86C.668728.R.2206081646",
-                        "SW_REV": "7.3.5.3.1b5",
-                        "MODEL": "CODA-5810",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "f8:34:5a:80:84:12": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.727888.R.2304181538",
-                        "SW_REV": "7.3.5.3.2b3",
-                        "MODEL": "CODA-56-RES",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "f8:34:5a:83:35:34": {
                     "sysdescr": {
-                        "HW_REV": "2A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.727888.R.2304181116",
-                        "SW_REV": "7.3.5.3.3b2",
-                        "MODEL": "EN2251-HSP",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "fc:77:7b:11:8f:da": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.727888.R.2304181538",
-                        "SW_REV": "7.3.5.3.3b2",
-                        "MODEL": "CODA-57-RES",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "fc:77:7b:ca:7b:10": {
                     "sysdescr": {
-                        "HW_REV": "2A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGM2.86C.635901.R.2008260951",
-                        "SW_REV": "7.2.4.5.1b8",
-                        "MODEL": "CGNDP3M",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 },
                 "fc:77:7b:cc:04:b0": {
                     "sysdescr": {
-                        "HW_REV": "1A",
-                        "VENDOR": "Hitron Technologies",
-                        "BOOTR": "CGR2.86C.610248.R.2210181404",
-                        "SW_REV": "7.3.5.3.1b3",
-                        "MODEL": "CODA5610Q",
-                        "is_empty": false
+                        "HW_REV": "1.0",
+                        "VENDOR": "LANCity",
+                        "BOOTR": "NONE",
+                        "SW_REV": "1.0.0",
+                        "MODEL": "LCPET-3"
                     }
                 }
             }
