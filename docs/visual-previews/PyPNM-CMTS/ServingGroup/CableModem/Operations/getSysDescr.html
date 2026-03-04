@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyPNM-CMTS / ServingGroup / CableModem / Operations / getSysDescr</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 12px;
+      background: #f8fafc;
+      color: #111827;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .frame {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .error {
+      white-space: pre-wrap;
+      color: #fecaca;
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      padding: 8px;
+      border-radius: 6px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #0f172a;
+        color: #e5e7eb;
+      }
+      .frame {
+        background: #111827;
+        border-color: #374151;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/handlebars@4.7.8/dist/handlebars.min.js"></script>
+</head>
+<body>
+  <div id="app" class="frame"></div>
+  <script>
+  (function() {
+    const sampleData = {"status": 0, "message": "heavy refresh rate limited", "timestamp": 1772605145, "poll": {"type": "heavy"}, "groups": [{"service_group_id": 1, "status": 0, "message": "", "modem_count": 25, "success_count": 22, "failure_count": 3, "modems": {"20:6a:94:d7:d3:70": {"sysdescr": {"HW_REV": "", "VENDOR": "", "BOOTR": "", "SW_REV": "", "MODEL": "", "is_empty": true}}, "74:9b:e8:11:ed:70": {"sysdescr": {"HW_REV": "", "VENDOR": "", "BOOTR": "", "SW_REV": "", "MODEL": "", "is_empty": true}}, "a8:4e:3f:37:3e:30": {"sysdescr": {"HW_REV": "", "VENDOR": "", "BOOTR": "", "SW_REV": "", "MODEL": "", "is_empty": true}}, "1c:ab:c0:9d:d6:00": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "mango-1.6.5-ge4b629a1", "SW_REV": "4.5.11.26b1", "MODEL": "CGNM-SHW", "is_empty": false}}, "20:6a:94:34:63:f4": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.727888.R.2304181116", "SW_REV": "7.3.5.3.3b2", "MODEL": "EN2251-RES", "is_empty": false}}, "20:6a:94:d7:d3:60": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "CGR2.86C.610248.R.2210181404", "SW_REV": "7.3.5.3.1b5", "MODEL": "CODA5814Q", "is_empty": false}}, "38:ad:2b:3e:86:54": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "2022.01-MXL-v-4.0.357", "SW_REV": "8.4.0.0.1b2", "MODEL": "CODA60", "is_empty": false}}, "38:ad:2b:3e:87:7c": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "2022.01-MXL-v-4.0.357.F", "SW_REV": "8.4.0.0.3b2", "MODEL": "CODA60V", "is_empty": false}}, "60:6c:63:f4:64:f8": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.727888.R.2305250917.F", "SW_REV": "7.3.5.3.2b1", "MODEL": "CODA56", "is_empty": false}}, "74:9b:e8:72:7a:54": {"sysdescr": {"HW_REV": "0.65", "VENDOR": "Hitron Technologies Inc.", "BOOTR": "NONE", "SW_REV": "7.2.4.0.3.b5", "MODEL": "ODIN-1112", "is_empty": false}}, "84:0b:7c:0b:e5:48": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.727889.R.2402291559.F", "SW_REV": "7.3.5.3U8-UNI-CTR", "MODEL": "EN2251", "is_empty": false}}, "90:aa:c3:4b:75:60": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.668728.R.2407251438", "SW_REV": "7.3.5.3.1b5", "MODEL": "CODA-4589-RES", "is_empty": false}}, "90:aa:c3:8a:bd:18": {"sysdescr": {"HW_REV": "2A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.727888.R.2305251031.F", "SW_REV": "7.3.5.3.2b2", "MODEL": "CODA", "is_empty": false}}, "90:aa:c3:c9:d0:d0": {"sysdescr": {"HW_REV": "0A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.635901.R.2008260951", "SW_REV": "7.2.4.5.1b6", "MODEL": "CGNDP3M", "is_empty": false}}, "b0:f5:30:b7:76:30": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "2022.01-MXL-v-4.0.369", "SW_REV": "8.5.0.0.1b4", "MODEL": "CODA6021U", "is_empty": false}}, "dc:36:0c:79:f1:8c": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.727888.R.2304140934.F", "SW_REV": "7.3.5.3.2b1", "MODEL": "CODA56", "is_empty": false}}, "dc:36:0c:ee:ce:e0": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "CGR2.86C.703059.R.2405091611", "SW_REV": "7.3.5.3.1b5", "MODEL": "CODA5834", "is_empty": false}}, "f8:1d:0f:cd:a0:f0": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.597968.R.1811011626", "SW_REV": "7.1.1.2.5b3", "MODEL": "CODA-4589-RES", "is_empty": false}}, "f8:34:5a:53:27:48": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.727888.R.2304181538.F", "SW_REV": "7.3.5.3.2b3", "MODEL": "CODA-57-RES", "is_empty": false}}, "f8:34:5a:7f:d6:80": {"sysdescr": {"HW_REV": "1C", "VENDOR": "Hitron Technologies", "BOOTR": "CGR2.86C.668728.R.2206081646", "SW_REV": "7.3.5.3.1b5", "MODEL": "CODA-5810", "is_empty": false}}, "f8:34:5a:80:84:12": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.727888.R.2304181538", "SW_REV": "7.3.5.3.2b3", "MODEL": "CODA-56-RES", "is_empty": false}}, "f8:34:5a:83:35:34": {"sysdescr": {"HW_REV": "2A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.727888.R.2304181116", "SW_REV": "7.3.5.3.3b2", "MODEL": "EN2251-HSP", "is_empty": false}}, "fc:77:7b:11:8f:da": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.727888.R.2304181538", "SW_REV": "7.3.5.3.3b2", "MODEL": "CODA-57-RES", "is_empty": false}}, "fc:77:7b:ca:7b:10": {"sysdescr": {"HW_REV": "2A", "VENDOR": "Hitron Technologies", "BOOTR": "CGM2.86C.635901.R.2008260951", "SW_REV": "7.2.4.5.1b8", "MODEL": "CGNDP3M", "is_empty": false}}, "fc:77:7b:cc:04:b0": {"sysdescr": {"HW_REV": "1A", "VENDOR": "Hitron Technologies", "BOOTR": "CGR2.86C.610248.R.2210181404", "SW_REV": "7.3.5.3.1b3", "MODEL": "CODA5610Q", "is_empty": false}}}}]};
+    const visualSource = "// Postman Visualizer: PyPNM-CMTS/ServingGroup/CableModem/Operations/getSysDescr\n// Last Update: 2026-03-03 23:48:00 MST\n// Visual Constraints: Follow canonical visual rules in CODING_AGENTS.md.\n\nconst response = pm.response.json() || {};\n\nfunction safeText(value, fallback) {\n  const fb = fallback == null ? 'N/A' : fallback;\n  if (value == null) return fb;\n  const s = String(value).trim();\n  return s ? s : fb;\n}\n\nfunction sanitizeMac(value) {\n  const raw = safeText(value, 'N/A');\n  if (raw === 'N/A') return raw;\n  const compact = raw.replace(/[^0-9a-f]/gi, '').toLowerCase();\n  if (compact.length !== 12) return raw.toLowerCase();\n  return compact.match(/.{1,2}/g).join(':');\n}\n\nfunction fmtUtc(epochSec) {\n  const n = Number(epochSec);\n  if (!Number.isFinite(n)) return 'N/A';\n  const d = new Date(n * 1000);\n  if (!Number.isFinite(d.getTime())) return 'N/A';\n  const p = (x) => String(x).padStart(2, '0');\n  return d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds()) + ' UTC';\n}\n\nfunction toSortedEntries(obj) {\n  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return [];\n  return Object.keys(obj).sort((a, b) => String(a).localeCompare(String(b))).map((k) => [k, obj[k]]);\n}\n\nfunction buildPayload(resp) {\n  const groups = Array.isArray(resp && resp.groups) ? resp.groups : [];\n  const rows = [];\n  let modemCount = 0;\n  let successCount = 0;\n  let failureCount = 0;\n\n  const vendorCounts = Object.create(null);\n  const modelCounts = Object.create(null);\n\n  for (let i = 0; i < groups.length; i += 1) {\n    const g = groups[i] || {};\n    const sgId = g.service_group_id != null ? String(g.service_group_id) : 'N/A';\n    modemCount += Number.isFinite(Number(g.modem_count)) ? Number(g.modem_count) : 0;\n    successCount += Number.isFinite(Number(g.success_count)) ? Number(g.success_count) : 0;\n    failureCount += Number.isFinite(Number(g.failure_count)) ? Number(g.failure_count) : 0;\n\n    const modems = g.modems && typeof g.modems === 'object' ? g.modems : {};\n    const entries = toSortedEntries(modems);\n    for (let j = 0; j < entries.length; j += 1) {\n      const mac = entries[j][0];\n      const modemObj = entries[j][1] || {};\n      const sys = modemObj && modemObj.sysdescr && typeof modemObj.sysdescr === 'object' ? modemObj.sysdescr : {};\n\n      const vendor = safeText(sys.VENDOR);\n      const model = safeText(sys.MODEL);\n\n      if (vendor !== 'N/A') vendorCounts[vendor] = (vendorCounts[vendor] || 0) + 1;\n      if (model !== 'N/A') modelCounts[model] = (modelCounts[model] || 0) + 1;\n\n      rows.push({\n        serviceGroupId: sgId,\n        macAddress: sanitizeMac(mac),\n        model: model,\n        vendor: vendor,\n        swVersion: safeText(sys.SW_REV),\n        hwVersion: safeText(sys.HW_REV),\n        bootRom: safeText(sys.BOOTR),\n        sysDescrStatus: sys && sys.is_empty === false ? 'Available' : 'Empty'\n      });\n    }\n  }\n\n  rows.sort((a, b) => {\n    const sgCmp = String(a.serviceGroupId).localeCompare(String(b.serviceGroupId), undefined, { numeric: true });\n    if (sgCmp !== 0) return sgCmp;\n    return String(a.macAddress).localeCompare(String(b.macAddress));\n  });\n\n  const serviceGroupBuckets = Object.create(null);\n  for (let i = 0; i < rows.length; i += 1) {\n    const row = rows[i];\n    const sgId = row.serviceGroupId || 'N/A';\n    if (!serviceGroupBuckets[sgId]) {\n      serviceGroupBuckets[sgId] = { serviceGroupId: sgId, rows: [] };\n    }\n    serviceGroupBuckets[sgId].rows.push(row);\n  }\n  const serviceGroups = Object.keys(serviceGroupBuckets)\n    .sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }))\n    .map((key) => serviceGroupBuckets[key]);\n\n  function toTopList(countMap) {\n    return Object.keys(countMap)\n      .sort((a, b) => countMap[b] - countMap[a] || a.localeCompare(b))\n      .slice(0, 8)\n      .map((name) => ({ name, count: countMap[name] }));\n  }\n\n  return {\n    title: 'Serving Group Cable Modem getSysDescr',\n    message: safeText(resp && resp.message),\n    status: Number(resp && resp.status),\n    statusText: Number(resp && resp.status) === 0 ? 'Success' : 'Error',\n    pollType: safeText((resp && (resp.poll_type || resp.pollType || (resp.poll && resp.poll.type) || resp.request_type)), 'N/A'),\n    captureTime: fmtUtc(resp && resp.timestamp),\n    groupCount: groups.length,\n    modemCount: modemCount,\n    successCount: successCount,\n    failureCount: failureCount,\n    topVendors: toTopList(vendorCounts),\n    topModels: toTopList(modelCounts),\n    hasRows: rows.length > 0,\n    serviceGroups: serviceGroups,\n    rows: rows\n  };\n}\n\nconst payload = buildPayload(response);\n\nconst template = `\n<style>\n  :root {\n    color-scheme: light dark;\n    --bg: #141821;\n    --panel: #1b2332;\n    --panel2: #182234;\n    --line: rgba(255,255,255,0.10);\n    --text: #e7edf8;\n    --muted: #b8c8e8;\n    --accent: #9ec0ff;\n    --ok: #39c28e;\n    --warn: #f4c84b;\n    --nok: #ff7a7a;\n  }\n  @media (prefers-color-scheme: light) {\n    :root {\n      --bg: #f4f7fc;\n      --panel: #ffffff;\n      --panel2: #f7f9fd;\n      --line: #d9e1ef;\n      --text: #0f172a;\n      --muted: #475569;\n      --accent: #2563eb;\n      --ok: #15803d;\n      --warn: #b45309;\n      --nok: #dc2626;\n    }\n  }\n  * { box-sizing: border-box; }\n  body {\n    margin: 0;\n    padding: 16px;\n    background: var(--bg);\n    color: var(--text);\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;\n  }\n  .wrap { max-width: 1700px; margin: 0 auto; display: grid; gap: 12px; }\n  .header-row {\n    display: grid;\n    grid-template-columns: 1fr auto 1fr;\n    align-items: center;\n    gap: 8px;\n  }\n  .title {\n    grid-column: 2;\n    margin: 0;\n    text-align: center;\n    font-size: 22px;\n    font-weight: 700;\n    color: var(--text);\n  }\n  .capture-time {\n    justify-self: end;\n    font-size: 12px;\n    color: var(--text);\n    background: var(--panel2);\n    border: 1px solid var(--line);\n    border-radius: 999px;\n    padding: 6px 10px;\n    white-space: nowrap;\n  }\n  .panel {\n    background: var(--panel);\n    border: 1px solid var(--line);\n    border-radius: 10px;\n    padding: 12px;\n  }\n  .panel-title {\n    margin: 0 0 8px;\n    text-align: center;\n    color: var(--accent);\n    font-size: 16px;\n    font-weight: 700;\n  }\n  .meta {\n    margin: 0;\n    text-align: center;\n    color: var(--muted);\n    font-size: 12px;\n  }\n  .kpis {\n    display: grid;\n    gap: 10px;\n    grid-template-columns: repeat(7, minmax(0, 1fr));\n  }\n  @media (max-width: 1200px) {\n    .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }\n  }\n  @media (max-width: 760px) {\n    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }\n  }\n  .kpi {\n    background: var(--panel2);\n    border: 1px solid var(--line);\n    border-radius: 8px;\n    padding: 10px;\n  }\n  .kpi .label { font-size: 12px; color: var(--muted); }\n  .kpi .value { margin-top: 4px; font-weight: 700; font-size: 16px; color: var(--text); }\n  .value.ok { color: var(--ok); }\n  .value.warn { color: var(--warn); }\n  .value.nok { color: var(--nok); }\n  .split {\n    display: grid;\n    gap: 12px;\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n  }\n  @media (max-width: 1000px) {\n    .split { grid-template-columns: 1fr; }\n  }\n  .mini-table {\n    width: 100%;\n    border-collapse: collapse;\n    font-size: 12px;\n  }\n  .mini-table th,\n  .mini-table td {\n    border: 1px solid var(--line);\n    padding: 6px 8px;\n    text-align: left;\n  }\n  .mini-table th { background: var(--panel2); color: var(--text); }\n  .mini-table td { background: var(--panel); color: var(--text); }\n  .table-wrap { overflow-x: auto; }\n  .sg-title {\n    margin: 10px 0 6px;\n    color: var(--accent);\n    font-size: 14px;\n    font-weight: 700;\n    text-align: left;\n  }\n  .device-table {\n    width: 100%;\n    border-collapse: collapse;\n    min-width: 1150px;\n    font-size: 12px;\n  }\n  .device-table th,\n  .device-table td {\n    border: 1px solid var(--line);\n    padding: 7px 8px;\n    text-align: left;\n    vertical-align: top;\n    white-space: nowrap;\n  }\n  .device-table th { background: var(--panel2); color: var(--text); }\n  .device-table td { background: var(--panel); color: var(--text); }\n  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }\n  .empty {\n    text-align: center;\n    color: var(--muted);\n    font-size: 14px;\n    padding: 14px;\n    border: 1px dashed var(--line);\n    border-radius: 8px;\n    background: var(--panel2);\n  }\n</style>\n\n<div class=\"wrap\">\n  <div class=\"header-row\">\n    <div></div>\n    <h1 class=\"title\">{{title}}</h1>\n    <div class=\"capture-time\">Capture Time: {{captureTime}}</div>\n  </div>\n\n  <div class=\"panel\">\n    <div class=\"panel-title\">Summary</div>\n    <p class=\"meta\">Status: <strong>{{statusText}}</strong> · Message: {{message}}</p>\n    <div class=\"kpis\">\n      <div class=\"kpi\"><div class=\"label\">Serving Groups</div><div class=\"value\">{{groupCount}}</div></div>\n      <div class=\"kpi\"><div class=\"label\">Modems</div><div class=\"value\">{{modemCount}}</div></div>\n      <div class=\"kpi\"><div class=\"label\">Success Count</div><div class=\"value ok\">{{successCount}}</div></div>\n      <div class=\"kpi\"><div class=\"label\">Failure Count</div><div class=\"value nok\">{{failureCount}}</div></div>\n      <div class=\"kpi\"><div class=\"label\">PollType</div><div class=\"value\">{{pollType}}</div></div>\n    </div>\n  </div>\n\n  <div class=\"split\">\n    <div class=\"panel\">\n      <div class=\"panel-title\">Top Vendors</div>\n      <table class=\"mini-table\">\n        <thead><tr><th>Vendor</th><th>Count</th></tr></thead>\n        <tbody>\n          {{#if topVendors.length}}\n            {{#each topVendors}}<tr><td>{{name}}</td><td>{{count}}</td></tr>{{/each}}\n          {{else}}\n            <tr><td colspan=\"2\">N/A</td></tr>\n          {{/if}}\n        </tbody>\n      </table>\n    </div>\n\n    <div class=\"panel\">\n      <div class=\"panel-title\">Top Models</div>\n      <table class=\"mini-table\">\n        <thead><tr><th>Model</th><th>Count</th></tr></thead>\n        <tbody>\n          {{#if topModels.length}}\n            {{#each topModels}}<tr><td>{{name}}</td><td>{{count}}</td></tr>{{/each}}\n          {{else}}\n            <tr><td colspan=\"2\">N/A</td></tr>\n          {{/if}}\n        </tbody>\n      </table>\n    </div>\n  </div>\n\n  <div class=\"panel\">\n    <div class=\"panel-title\">Device Info</div>\n    {{#if hasRows}}\n      {{#each serviceGroups}}\n        <h3 class=\"sg-title\">Service Group {{serviceGroupId}}</h3>\n        <div class=\"table-wrap\">\n          <table class=\"device-table\">\n            <thead>\n              <tr>\n                <th>MacAddress</th>\n                <th>Model</th>\n                <th>Vendor</th>\n                <th>SW Version</th>\n                <th>HW Version</th>\n                <th>Boot ROM</th>\n              </tr>\n            </thead>\n            <tbody>\n              {{#each rows}}\n                <tr>\n                  <td class=\"mono\">{{macAddress}}</td>\n                  <td>{{model}}</td>\n                  <td>{{vendor}}</td>\n                  <td class=\"mono\">{{swVersion}}</td>\n                  <td class=\"mono\">{{hwVersion}}</td>\n                  <td class=\"mono\">{{bootRom}}</td>\n                </tr>\n              {{/each}}\n            </tbody>\n          </table>\n        </div>\n      {{/each}}\n    {{else}}\n      <div class=\"empty\">No modem sysDescr data found.</div>\n    {{/if}}\n  </div>\n</div>\n`;\n\npayload.isOk = Number(payload.status) === 0;\npm.visualizer.set(template, payload);\n";
+    const app = document.getElementById("app");
+    let visualizerData = sampleData;
+    let lastTemplate = null;
+
+    function showError(prefix, err) {
+      const msg = String(err && err.stack || err);
+      app.innerHTML = '<div class="error">' + prefix + '\n' + msg + '</div>';
+    }
+
+    async function executeRenderedScripts(root) {
+      const scripts = Array.from(root.querySelectorAll("script"));
+      for (const oldScript of scripts) {
+        const newScript = document.createElement("script");
+        for (const attr of oldScript.attributes) {
+          newScript.setAttribute(attr.name, attr.value);
+        }
+        const parent = oldScript.parentNode;
+        if (!parent) continue;
+
+        if (oldScript.src) {
+          await new Promise((resolve, reject) => {
+            newScript.onload = resolve;
+            newScript.onerror = function() {
+              reject(new Error('Failed to load script: ' + oldScript.src));
+            };
+            parent.replaceChild(newScript, oldScript);
+          });
+          continue;
+        }
+
+        newScript.textContent = oldScript.textContent;
+        parent.replaceChild(newScript, oldScript);
+      }
+    }
+
+    function renderTemplate(template, data) {
+      lastTemplate = template;
+      visualizerData = data == null ? sampleData : data;
+      try {
+        const looksLikeHandlebars =
+          typeof template === "string" &&
+          template.indexOf("{") !== -1 &&
+          template.indexOf("}") !== -1;
+        if (window.Handlebars && looksLikeHandlebars) {
+          const compiled = window.Handlebars.compile(template);
+          app.innerHTML = compiled(visualizerData);
+          void executeRenderedScripts(app).catch((err) => showError('Rendered script execution error', err));
+        } else if (typeof template === "string") {
+          app.innerHTML = template;
+          void executeRenderedScripts(app).catch((err) => showError('Rendered script execution error', err));
+        } else {
+          app.textContent = String(template);
+        }
+      } catch (err) {
+        showError('Template render error', err);
+      }
+    }
+
+    function makeKVStore() {
+      const store = Object.create(null);
+      return {
+        get: function(key) { return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : undefined; },
+        set: function(key, value) { store[key] = value; return value; },
+        unset: function(key) { delete store[key]; }
+      };
+    }
+
+    window.pm = {
+      response: {
+        json: function() { return sampleData; },
+        text: function() { return JSON.stringify(sampleData); }
+      },
+      request: {
+        body: {
+          raw: "{}"
+        }
+      },
+      environment: makeKVStore(),
+      globals: makeKVStore(),
+      variables: makeKVStore(),
+      getData: function(cb) {
+        if (typeof cb === "function") cb(null, visualizerData);
+      },
+      visualizer: {
+        set: function(template, data) {
+          renderTemplate(template, data);
+        }
+      }
+    };
+
+    window.console = window.console || { log(){}, warn(){}, error(){} };
+    window.addEventListener('error', function(ev) {
+      if (ev && ev.error) showError('Window error', ev.error);
+    });
+    window.addEventListener('unhandledrejection', function(ev) {
+      showError('Unhandled promise rejection', ev && ev.reason);
+    });
+
+    if (sampleData && typeof sampleData === 'object' && sampleData.__error__) {
+      app.innerHTML = '<div class="error">Preview unavailable\nInvalid sample JSON fixture\n' + String(sampleData.__error__) + '</div>';
+      return;
+    }
+
+    try {
+      const fn = new Function(visualSource);
+      fn();
+      if (!lastTemplate && !app.innerHTML.trim()) {
+        app.innerHTML = '<div class="error">No visualizer output produced. The script may require unsupported Postman APIs.</div>';
+      }
+    } catch (err) {
+      showError('Script execution error', err);
+    }
+  })();
+  </script>
+</body>
+</html>
