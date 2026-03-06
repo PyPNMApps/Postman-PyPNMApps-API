@@ -2,18 +2,20 @@
 
 ## Overview
 
-This repository provides Postman collections, environment, globals, and visualizer examples for PyPNM API workflows.
+This repository provides Postman local-mode artifacts and visualizer examples for PyPNM API workflows.
+
+Required Postman version: **Postman Desktop v12+** (local YAML collection support).
 
 Main artifacts:
 
-- `postman/collections/PyPNM.postman_collection.json`
-- `postman/collections/PyPNM-CMTS.postman_collection.json` (placeholder shell)
-- `postman/environments/PyPNM Remote Server.postman_environment.json`
-- `postman/globals/workspace.postman_globals.json`
+- `postman/collections/PyPNM/**.request.yaml`
+- `postman/collections/PyPNM-CMTS/**.request.yaml`
+- `postman/environments/PyPNM Remote Server.environment.yaml`
+- `postman/globals/workspace.globals.yaml`
 
 ## Install Postman
 
-1. Follow `docs/postman-install.md` for Ubuntu/Windows download and install steps
+1. Follow `docs/postman-install.md` for Ubuntu/Windows install steps
 2. Install and open Postman
 
 ## Clone Repository
@@ -23,17 +25,17 @@ git clone https://github.com/PyPNMApps/Postman-PyPNMApps-API.git
 cd Postman-PyPNMApps-API
 ```
 
-## Import Into Postman
+## Load Postman Assets
 
 Follow `docs/postman-import-and-navigation.md` for:
 
-- importing collections/environment/globals
+- opening local-mode YAML collections/environment/globals
 - configuring `pypnm_url`
 - navigating the `PyPNM` collection and first request
 
 ## Configure URL and Variables
 
-Minimum globals commonly needed:
+Minimum variables commonly needed:
 
 - `pypnm_url`
 - `cm_ip_address`
@@ -62,7 +64,7 @@ Health check:
 2. Set `pypnm_url`
 3. Click `Send`
 
-Then try a single capture request such as `Ofdm-RxMER-GetCapture`.
+Then try a single-capture request such as `Ofdm-RxMER-GetCapture`.
 
 ## Visualizer Notes
 

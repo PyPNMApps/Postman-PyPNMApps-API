@@ -1,106 +1,40 @@
-# Postman Collection Formatting
+# Postman Local YAML Format
 
-Use the Postman collection formatter to normalize `postman/collections/PyPNM.postman_collection.json` across Linux and Windows.
+This repository uses Postman local-mode YAML artifacts as the source of truth.
 
-It provides:
+## Paths
 
-- consistent JSON formatting (default: 2-space indent)
-- LF line endings (`\n`)
-- schema version detection (`v2.0` / `v2.1`)
-- normalization of non-finite numeric values (`NaN` / `Infinity`) to `null` for valid JSON output
+- Collections: `postman/collections/<collection>/.../*.request.yaml`
+- Environments: `postman/environments/*.environment.yaml`
+- Globals: `postman/globals/*.globals.yaml`
 
-## Setup
+## Required Conventions
 
-Create and activate the repo virtual environment:
+- Keep one request per file (`*.request.yaml`).
+- Preserve folder hierarchy under each collection directory.
+- Keep request `name` human-friendly; keep filename filesystem-safe.
+- Keep Postman variables as literal `{{var}}`.
+- Use quoted strings when needed to avoid YAML type coercion.
+- Prefer multiline block style for long scripts/bodies.
+
+## Visualizer Script Sync
+
+Use this tool to check/update embedded visualizer script code:
 
 ```bash
-./install.sh
 source .venv/bin/activate
+tools/postman/sync_visualizers.py --check
+tools/postman/sync_visualizers.py --update
 ```
 
-If you want Linux/macOS command examples from the installer output, use:
+For `PyPNM-CMTS`:
 
 ```bash
-./install.sh --os-linux
+source .venv/bin/activate
+tools/postman/sync_visualizers.py --check --collection postman/collections/PyPNM-CMTS --visual-root visual/PyPNM-CMTS
+tools/postman/sync_visualizers.py --update --collection postman/collections/PyPNM-CMTS --visual-root visual/PyPNM-CMTS
 ```
 
-## Windows (PowerShell) - Default
+## Migration Note
 
-Formatter wrapper:
-
-- `tools/postman/format_collection.ps1`
-
-Check formatting only:
-
-```powershell
-.\tools\postman\format_collection.ps1 -Check
-```
-
-Apply formatting:
-
-```powershell
-.\tools\postman\format_collection.ps1 -Fix
-```
-
-Compact/minified output (optional):
-
-```powershell
-.\tools\postman\format_collection.ps1 -Fix -Compact
-```
-
-## Linux / macOS (Shell)
-
-Formatter wrapper:
-
-- `tools/postman/format_collection.sh`
-
-If needed, make sure the shell wrapper is executable:
-
-```bash
-chmod +x tools/postman/format_collection.sh
-```
-
-Check formatting only (no file changes):
-
-```bash
-tools/postman/format_collection.sh --check
-```
-
-Apply formatting:
-
-```bash
-tools/postman/format_collection.sh --fix
-```
-
-Compact/minified output (optional):
-
-```bash
-tools/postman/format_collection.sh --fix --compact
-```
-
-## Alternate Collection Path
-
-Both wrappers support formatting a different collection file (for example `PyPNM-CMTS`).
-
-Linux / macOS:
-
-```bash
-tools/postman/format_collection.sh --path postman/collections/PyPNM-CMTS.postman_collection.json --fix
-```
-
-Windows PowerShell:
-
-```powershell
-.\tools\postman\format_collection.ps1 -Path postman/collections/PyPNM-CMTS.postman_collection.json -Fix
-```
-
-## Recommended Usage
-
-Run formatting before commit when the collection JSON changes:
-
-1. Format collection:
-   - `.\tools\postman\format_collection.ps1 -Fix`
-2. Sync visualizer scripts (if visual HTML changed):
-   - `tools/postman/sync_visualizers.py --update`
-3. Regenerate visual docs (if visual HTML/JSON changed):
-   - `tools/docs/build_visual_docs.py`
+Legacy single-file Postman collection JSON exports are not the primary artifact in this repo. Prefer editing YAML request files directly.

@@ -63,10 +63,10 @@ fi
 print_windows_examples() {
   echo "Windows (PowerShell) commands (default examples):"
   echo "  .\\.venv\\Scripts\\Activate.ps1"
-  echo "  .\\tools\\postman\\format_collection.ps1 -Check"
-  echo "  .\\tools\\postman\\format_collection.ps1 -Fix"
   echo "  python .\\tools\\postman\\sync_visualizers.py --check"
   echo "  python .\\tools\\postman\\sync_visualizers.py --update"
+  echo "  python .\\tools\\postman\\sync_visualizers.py --check --collection postman/collections/PyPNM-CMTS --visual-root visual/PyPNM-CMTS"
+  echo "  python .\\tools\\postman\\sync_visualizers.py --update --collection postman/collections/PyPNM-CMTS --visual-root visual/PyPNM-CMTS"
   echo "  python .\\tools\\sanitize.py --check"
   echo "  python .\\tools\\sanitize.py --fix"
   echo "  python .\\tools\\docs\\build_visual_docs.py"
@@ -77,10 +77,10 @@ print_windows_examples() {
 print_linux_examples() {
   echo "Linux/macOS shell commands:"
   echo "  source .venv/bin/activate"
-  echo "  tools/postman/format_collection.sh --check"
-  echo "  tools/postman/format_collection.sh --fix"
   echo "  tools/postman/sync_visualizers.py --check"
   echo "  tools/postman/sync_visualizers.py --update"
+  echo "  tools/postman/sync_visualizers.py --check --collection postman/collections/PyPNM-CMTS --visual-root visual/PyPNM-CMTS"
+  echo "  tools/postman/sync_visualizers.py --update --collection postman/collections/PyPNM-CMTS --visual-root visual/PyPNM-CMTS"
   echo "  tools/sanitize.py --check"
   echo "  tools/sanitize.py --fix"
   echo "  tools/docs/build_visual_docs.py"
@@ -96,7 +96,6 @@ if [[ "${OS_MODE}" == "windows" ]]; then
   print_windows_examples
   echo "Linux/macOS equivalent (optional):"
   echo "  source .venv/bin/activate"
-  echo "  tools/postman/format_collection.sh --fix"
 else
   print_linux_examples
 fi
@@ -105,15 +104,10 @@ echo "  tools/support/bump_version.py --version X.Y.Z --check"
 echo "  tools/support/bump_version.py --version X.Y.Z"
 echo "  tools/release/release.py --version-info"
 echo "Recommended visual workflow:"
-echo "  1) Format collection JSON (if collection changed)"
-if [[ "${OS_MODE}" == "windows" ]]; then
-  echo "     .\\tools\\postman\\format_collection.ps1 -Fix"
-else
-  echo "     tools/postman/format_collection.sh --fix"
-fi
-echo "  2) Sync visualizer scripts"
+echo "  1) Sync visualizer scripts"
 echo "     tools/postman/sync_visualizers.py --update"
-echo "  3) Regenerate visual docs"
+echo "     tools/postman/sync_visualizers.py --update --collection postman/collections/PyPNM-CMTS --visual-root visual/PyPNM-CMTS"
+echo "  2) Regenerate visual docs"
 echo "     tools/docs/build_visual_docs.py"
-echo "  4) Run tests"
+echo "  3) Run tests"
 echo "     pytest -q"

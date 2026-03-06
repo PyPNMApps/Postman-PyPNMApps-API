@@ -5,7 +5,7 @@ Project utilities live under `tools/` to keep the repository root clean.
 See also:
 
 - `docs/visual-workflow.md` for the recommended visual edit -> Postman sync -> docs workflow
-- `docs/postman-collection-format.md` for Postman collection JSON formatting (Windows-first usage)
+- `docs/postman-collection-format.md` for local YAML Postman conventions and migration notes
 
 ## Setup
 
@@ -80,9 +80,9 @@ Path:
 
 Purpose:
 
-- Syncs Postman collection visualizer test scripts from `visual/PyPNM/**/*.html`
-- Treats Postman request paths/names as the source of truth for matching visual HTML paths
-- Detects drift between `visual/` HTML and `postman/collections/PyPNM.postman_collection.json`
+- Syncs Postman request visualizer scripts from `visual/**/*.html` into local YAML request files
+- Treats request header mapping (`// Postman Visualizer: ...`) as source for HTML path resolution
+- Detects drift between `visual/` HTML and `postman/collections/**/.request.yaml`
 
 Usage:
 
@@ -93,36 +93,8 @@ tools/postman/sync_visualizers.py --update
 
 Modes:
 
-- `--check` : read-only, exits non-zero if collection visualizer scripts drift from `visual/`
-- `--update` : updates collection visualizer scripts in place from matched HTML files
-
-## Postman Collection Formatter
-
-Paths:
-
-- `tools/postman/format_collection.py`
-- `tools/postman/format_collection.sh`
-- `tools/postman/format_collection.ps1`
-
-Purpose:
-
-- Formats Postman collection JSON with consistent style and LF line endings
-- Detects Postman collection schema version (`v2.0` / `v2.1`)
-- Normalizes non-finite values (`NaN` / `Infinity`) to `null` for valid JSON output
-
-Windows (default examples):
-
-```powershell
-.\tools\postman\format_collection.ps1 -Check
-.\tools\postman\format_collection.ps1 -Fix
-```
-
-Linux/macOS:
-
-```bash
-tools/postman/format_collection.sh --check
-tools/postman/format_collection.sh --fix
-```
+- `--check` : read-only, exits non-zero if visualizer scripts drift from `visual/`
+- `--update` : updates request YAML `scripts[].code` from matched HTML files
 
 ## Version Bump Tool
 

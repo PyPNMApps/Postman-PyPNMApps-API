@@ -109,7 +109,7 @@ def run_quality_gates(root: Path) -> None:
     if sync_visualizers_script.exists():
         print("[update] postman visualizer sync (PyPNM)")
         run([python_bin, str(sync_visualizers_script), "--update"])
-        cmts_collection = root / "postman" / "collections" / "PyPNM-CMTS.postman_collection.json"
+        cmts_collection = root / "postman" / "collections" / "PyPNM-CMTS"
         cmts_visual_root = root / "visual" / "PyPNM-CMTS"
         if cmts_collection.exists() and cmts_visual_root.exists():
             print("[update] postman visualizer sync (PyPNM-CMTS)")

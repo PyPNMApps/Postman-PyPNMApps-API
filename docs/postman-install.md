@@ -1,5 +1,10 @@
 # Install Postman Desktop (Ubuntu and Windows)
 
+## Required Version
+
+- Use **Postman Desktop v12 or newer** for this repository.
+- This repo uses local-mode YAML collections (`*.request.yaml`) aligned with Postman Collection v3 workflows.
+
 ## Download
 
 - Official Postman downloads page: `https://www.postman.com/downloads/`

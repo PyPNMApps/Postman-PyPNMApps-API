@@ -6,7 +6,7 @@ This directory contains user documentation for working with the Postman PyPNMApp
 
 - `docs/postman-install.md` - Postman Desktop download/install steps for Ubuntu and Windows.
 - `docs/postman-import-and-navigation.md` - Import Postman files, configure globals, and navigate collections.
-- `docs/postman-collection-format.md` - Format Postman collection JSON consistently on Windows/Linux.
+- `docs/postman-collection-format.md` - Postman local YAML conventions and migration notes.
 - `docs/user-guide.md` - End-user setup and Postman import/use instructions.
 - `docs/tools.md` - Local developer tooling (`sanitize`, `bump_version`, `release`, `git-save`, `git-push`).
 - `docs/visual-workflow.md` - Simple workflow for editing visuals and syncing Postman visualizer scripts.

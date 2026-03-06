@@ -5,13 +5,15 @@ from __future__ import annotations
 
 import argparse
 import difflib
-import json
 import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
-DEFAULT_COLLECTION_PATH = Path("postman/collections/PyPNM.postman_collection.json")
+import yaml
+
+DEFAULT_COLLECTION_PATH = Path("postman/collections/PyPNM")
 DEFAULT_VISUAL_ROOT = Path("visual/PyPNM")
 
 
@@ -25,41 +27,64 @@ class SyncResult:
     extra_visual_html: int = 0
 
 
-def _load_json(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+class _LiteralStr(str):
+    pass
 
 
-def _join_script_lines(lines: list[str] | None) -> str:
-    return "\n".join(lines or [])
+def _represent_literal_str(dumper: yaml.Dumper, data: _LiteralStr) -> yaml.ScalarNode:
+    return dumper.represent_scalar("tag:yaml.org,2002:str", str(data), style="|")
 
 
-def _has_visualizer(req: dict) -> bool:
-    for event in req.get("event", []) or []:
-        if event.get("listen") != "test":
-            continue
-        script = event.get("script") or {}
-        if "pm.visualizer.set" in _join_script_lines(script.get("exec")):
+yaml.SafeDumper.add_representer(_LiteralStr, _represent_literal_str)
+
+
+def _to_literal_multiline(obj: Any) -> Any:
+    if isinstance(obj, dict):
+        return {k: _to_literal_multiline(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_to_literal_multiline(v) for v in obj]
+    if isinstance(obj, str) and "\n" in obj:
+        return _LiteralStr(obj)
+    return obj
+
+
+def _load_yaml(path: Path) -> dict[str, Any]:
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return data if isinstance(data, dict) else {}
+
+
+def _dump_yaml(path: Path, data: dict[str, Any]) -> None:
+    out = yaml.safe_dump(
+        _to_literal_multiline(data),
+        sort_keys=False,
+        allow_unicode=True,
+        default_flow_style=False,
+        width=1_000_000,
+    )
+    path.write_text(out, encoding="utf-8")
+
+
+def _has_visualizer(req: dict[str, Any]) -> bool:
+    for script in req.get("scripts", []) or []:
+        if "pm.visualizer.set" in str(script.get("code", "")):
             return True
     return False
 
 
-def _find_visualizer_test_event(req: dict) -> dict | None:
-    for event in req.get("event", []) or []:
-        if event.get("listen") != "test":
-            continue
-        script = event.get("script") or {}
-        if "pm.visualizer.set" in _join_script_lines(script.get("exec")):
-            return event
+def _find_visualizer_script(req: dict[str, Any]) -> dict[str, Any] | None:
+    for script in req.get("scripts", []) or []:
+        if "pm.visualizer.set" in str(script.get("code", "")):
+            return script
     return None
 
 
-def _extract_visualizer_header_rel(req: dict) -> str | None:
-    event = _find_visualizer_test_event(req)
-    if event is None:
+def _extract_visualizer_header_rel(req: dict[str, Any]) -> str | None:
+    script = _find_visualizer_script(req)
+    if script is None:
         return None
-    lines = (event.get("script") or {}).get("exec") or []
+    code = str(script.get("code", ""))
     pattern = re.compile(r"^\s*//\s*Postman Visualizer:\s*(.+?)\s*$")
-    for line in lines:
+    for line in code.splitlines():
         match = pattern.match(line)
         if match:
             rel = match.group(1).strip().strip("/")
@@ -67,14 +92,11 @@ def _extract_visualizer_header_rel(req: dict) -> str | None:
     return None
 
 
-def _walk_items(items: list[dict] | None, path_parts: list[str], out: list[tuple[list[str], dict]]) -> None:
-    for item in items or []:
-        name = item.get("name", "")
-        if "item" in item:
-            _walk_items(item.get("item"), [*path_parts, name], out)
-            continue
-        if _has_visualizer(item):
-            out.append((path_parts, item))
+def _request_rel_from_file(path: Path, collection_root: Path) -> str:
+    rel = path.relative_to(collection_root).as_posix()
+    if rel.endswith(".request.yaml"):
+        return rel[: -len(".request.yaml")]
+    return rel
 
 
 def _all_visual_html_paths(root: Path) -> set[str]:
@@ -87,11 +109,9 @@ def _resolve_visual_html_path(visual_root: Path, rel: str) -> tuple[Path | None,
     direct = visual_root / f"{rel}.html"
     if direct.exists():
         return direct, rel
-    # Support common visual-variant pattern, e.g. .../Results/basic.html
     basic = visual_root / rel / "basic.html"
     if basic.exists():
         return basic, f"{rel}/basic"
-    # Support sibling basic variant for request names like .../Results -> .../basic.html
     if rel.endswith("/Results"):
         parent_rel = rel.rsplit("/", 1)[0]
         parent_basic = visual_root / parent_rel / "basic.html"
@@ -101,10 +121,6 @@ def _resolve_visual_html_path(visual_root: Path, rel: str) -> tuple[Path | None,
 
 
 def _diff_line_stats(old_lines: list[str], new_lines: list[str]) -> tuple[int, int, int, int]:
-    """
-    Return a compact diff summary:
-    (added_lines, removed_lines, replaced_old_lines, replaced_new_lines)
-    """
     added = 0
     removed = 0
     replaced_old = 0
@@ -122,27 +138,34 @@ def _diff_line_stats(old_lines: list[str], new_lines: list[str]) -> tuple[int, i
 
 
 def sync_visualizers(*, root: Path, collection_rel: Path, visual_root_rel: Path, fix: bool, verbose: bool) -> SyncResult:
-    collection_path = root / collection_rel
+    collection_root = root / collection_rel
     visual_root = root / visual_root_rel
-    if not collection_path.exists():
-        raise SystemExit(f"ERROR: Collection not found: {collection_path}")
+    if not collection_root.exists() or not collection_root.is_dir():
+        raise SystemExit(f"ERROR: Collection root not found: {collection_root}")
     if not visual_root.exists():
         raise SystemExit(f"ERROR: Visual root not found: {visual_root}")
 
-    collection = _load_json(collection_path)
-    visualizer_reqs: list[tuple[list[str], dict]] = []
-    _walk_items(collection.get("item"), [], visualizer_reqs)
+    request_files = sorted(collection_root.rglob("*.request.yaml"))
+    visualizer_req_files: list[Path] = []
+    for req_file in request_files:
+        req = _load_yaml(req_file)
+        if _has_visualizer(req):
+            visualizer_req_files.append(req_file)
 
-    result = SyncResult(visualizer_requests=len(visualizer_reqs))
+    result = SyncResult(visualizer_requests=len(visualizer_req_files))
     mapped_paths: set[str] = set()
     missing: list[str] = []
 
-    for parent_parts, req in visualizer_reqs:
-        req_name = req.get("name", "")
-        rel = _extract_visualizer_header_rel(req) or "/".join([*parent_parts, req_name])
+    for req_file in visualizer_req_files:
+        req = _load_yaml(req_file)
+        header_rel = _extract_visualizer_header_rel(req)
+        fallback_rel = _request_rel_from_file(req_file, collection_root)
+        rel = header_rel or fallback_rel
+
         root_prefix = f"{visual_root.name}/"
         if rel.startswith(root_prefix):
             rel = rel[len(root_prefix) :]
+
         html_path, matched_rel = _resolve_visual_html_path(visual_root, rel)
         if matched_rel:
             mapped_paths.add(matched_rel)
@@ -154,13 +177,14 @@ def sync_visualizers(*, root: Path, collection_rel: Path, visual_root_rel: Path,
             continue
 
         result.matched_html += 1
-        html_lines = html_path.read_text(encoding="utf-8").splitlines()
-        event = _find_visualizer_test_event(req)
-        if event is None:
-            # Should not happen because _has_visualizer gated this request.
+        html_text = html_path.read_text(encoding="utf-8").rstrip("\n")
+        html_lines = html_text.splitlines()
+        script = _find_visualizer_script(req)
+        if script is None:
             continue
-        script = event.setdefault("script", {})
-        old_lines = script.get("exec") or []
+        old_text = str(script.get("code", "")).rstrip("\n")
+        old_lines = old_text.splitlines()
+
         if old_lines != html_lines:
             result.drifted_scripts += 1
             added, removed, repl_old, repl_new = _diff_line_stats(old_lines, html_lines)
@@ -173,9 +197,9 @@ def sync_visualizers(*, root: Path, collection_rel: Path, visual_root_rel: Path,
                 summary += f"; ~{repl_old}->{repl_new}"
             summary += ")"
             if fix:
-                script["exec"] = html_lines
-                script.setdefault("type", "text/javascript")
+                script["code"] = html_text
                 result.changed_scripts += 1
+                _dump_yaml(req_file, req)
                 print(f"CHANGE: {summary}")
             else:
                 print(f"DRIFT: {summary}")
@@ -186,22 +210,21 @@ def sync_visualizers(*, root: Path, collection_rel: Path, visual_root_rel: Path,
     if missing and fix:
         raise SystemExit("ERROR: Missing matching visual HTML file(s) for one or more Postman visualizer requests.")
 
-    if fix and result.changed_scripts:
-        collection_path.write_text(json.dumps(collection, indent=2) + "\n", encoding="utf-8")
-
     return result
 
 
 def _parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Sync Postman visualizer test scripts from visual/PyPNM HTML files")
+    p = argparse.ArgumentParser(
+        description="Sync Postman visualizer scripts from visual HTML files into local YAML requests"
+    )
     mode = p.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true", help="Read-only check mode (exit 2 on drift)")
-    mode.add_argument("--update", action="store_true", help="Update collection visualizer scripts in place")
+    mode.add_argument("--update", action="store_true", help="Update YAML request visualizer scripts in place")
     mode.add_argument("--fix", action="store_true", help="Deprecated alias for --update")
     p.add_argument(
         "--collection",
         default=str(DEFAULT_COLLECTION_PATH),
-        help=f"Collection JSON path (default: {DEFAULT_COLLECTION_PATH})",
+        help=f"Collection root dir (default: {DEFAULT_COLLECTION_PATH})",
     )
     p.add_argument(
         "--visual-root",

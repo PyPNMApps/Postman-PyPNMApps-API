@@ -7,16 +7,16 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-0A66C2)](https://pypnmapps.github.io/Postman-PyPNMApps-API/)
 
-This repository contains Postman collections, environment/globals files, and example visualizers for PyPNM API workflows.
+This repository contains Postman local-mode YAML collections, environment/globals files, and example visualizers for PyPNM API workflows.
 
 It includes:
-- Postman collections (`PyPNM`, `PyPNM-CMTS`)
-- environment and globals exports
+- Postman collections (`PyPNM`, `PyPNM-CMTS`) as split YAML request files
+- environment and globals YAML files
 - `visual/` example Postman Visualizer HTML + JSON fixtures
 
 ## Basic Setup
 
-1. Install Postman Desktop (Ubuntu/Windows): `docs/postman-install.md`
+1. Install Postman Desktop v12+ (Ubuntu/Windows): `docs/postman-install.md`
 2. Clone this repository:
 
 ```bash

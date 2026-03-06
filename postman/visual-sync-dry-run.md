@@ -1,6 +1,6 @@
 # Postman Visual Sync Dry Run (Revised)
 
-Naming source of truth: `postman/collections/PyPNM.postman_collection.json` (Postman request/folder paths).
+Naming source of truth: `postman/collections/PyPNM/**/*.request.yaml` (Postman request/folder paths).
 
 This report is for **HTML visualizer script path/name alignment**. Shared JSON fixtures are allowed where payload shape is the same (for example SpectrumAnalyzer SNMP vs file variants).
 

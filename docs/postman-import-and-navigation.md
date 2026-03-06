@@ -2,26 +2,29 @@
 
 Use this guide after installing Postman and cloning the repository.
 
-## Import Files Into Postman
+Required Postman version: **Postman Desktop v12+**.
 
-In Postman, import the following files:
+## Local-Mode Source of Truth
 
-- [`postman/collections/PyPNM.postman_collection.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/collections/PyPNM.postman_collection.json)
-- [`postman/collections/PyPNM-CMTS.postman_collection.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/collections/PyPNM-CMTS.postman_collection.json)
-- [`postman/environments/PyPNM Remote Server.postman_environment.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/environments/PyPNM%20Remote%20Server.postman_environment.json)
-- [`postman/globals/workspace.postman_globals.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/globals/workspace.postman_globals.json)
+This repository uses Postman local-mode file artifacts:
 
-Recommended import flow:
+- Collections: `postman/collections/<collection>/.../*.request.yaml`
+- Environments: `postman/environments/*.environment.yaml`
+- Globals: `postman/globals/*.globals.yaml`
+
+Do not expect a single `*.postman_collection.json` export as the primary source.
+
+## Open In Postman
+
+Recommended flow:
 
 1. Open Postman Desktop
-2. Click `Import`
-3. Select `Files`
-4. Choose the files listed above
-5. Confirm import
+2. Use local mode / open workspace from your cloned repository
+3. Point Postman to this repository root so it can read `postman/` YAML artifacts
 
-## Configure Base URL / Globals
+## Configure Base URL / Variables
 
-Set `pypnm_url` in Postman Globals.
+Set `pypnm_url` in globals (or equivalent environment variable if your workspace uses environment scope).
 
 Example:
 
@@ -29,36 +32,38 @@ Example:
 
 Important:
 
-- Collection requests use `{{pypnm_url}}` (global variable)
-- The provided environment file includes `base_url`
-- If you prefer environment-only configuration, update the collection requests to use `{{base_url}}`
+- Request URLs in this repo use `{{pypnm_url}}` by default.
+- Keep variable syntax in Postman form (`{{var}}`).
 
-## Navigate the Imported Content
+## Navigate Main Collections
 
-### Collections
+- `postman/collections/PyPNM/`
+- `postman/collections/PyPNM-CMTS/`
 
-- `PyPNM` (primary collection)
-- `PyPNM-CMTS` (placeholder shell)
-
-### Good First Request
+## Good First Request
 
 Use a simple health check first:
 
-1. Open [`PyPNM` collection](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/collections/PyPNM.postman_collection.json)
-2. Open `Health` folder
-3. Open `Health` request
+1. Open collection `PyPNM`
+2. Open folder `Health`
+3. Open request `Health.request.yaml` (`name: Health`)
 4. Confirm `pypnm_url` is set
 5. Click `Send`
 
-### Common Next Areas
+## Common Next Areas
 
 - `SingleCapture` for single-capture workflows and visualizers
 - `MultiCapture` for multi-capture operations and analysis flows
-- `FileManager` for file workflow endpoints
+- `PNM/Files` for file workflow endpoints
 - `System` / `Health` for service checks and system actions
 
-## Troubleshooting Import Setup
+## Troubleshooting
 
-- If requests fail immediately, confirm `pypnm_url` is set in [Globals (`workspace.postman_globals.json`)](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/globals/workspace.postman_globals.json)
-- If variables appear unresolved, verify [`workspace.postman_globals.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/globals/workspace.postman_globals.json) imported successfully
-- If you use the environment value (`base_url`) instead, verify the imported environment [`PyPNM Remote Server.postman_environment.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/environments/PyPNM%20Remote%20Server.postman_environment.json) and ensure request URLs in [`PyPNM.postman_collection.json`](https://github.com/PyPNMApps/Postman-PyPNMApps-API/blob/main/postman/collections/PyPNM.postman_collection.json) were updated from `{{pypnm_url}}`
+- If variables appear unresolved, confirm globals/environment YAML loaded in local mode.
+- If requests fail immediately, verify `pypnm_url` and authentication-related variables.
+- If visual output looks stale, run:
+
+```bash
+source .venv/bin/activate
+tools/postman/sync_visualizers.py --check
+```
