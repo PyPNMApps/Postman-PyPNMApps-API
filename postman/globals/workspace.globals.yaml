@@ -1,0 +1,127 @@
+name: Globals
+values:
+  - key: channel_ids
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: cm_mac_address
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: cm_ip_address
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: snmp_v2_community_rw
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: tftp_server_ipv4
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: tftp_server_ipv6
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: pypnm_url
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: cm_snmp_community_rw
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: validateMacAddress
+    value: ''
+    enabled: true
+    type: any
+    description: ''
+  - key: validateIpAddress
+    value: ''
+    enabled: true
+    type: any
+    description: ''
+  - key: validateTransactionId
+    value: ''
+    enabled: true
+    type: any
+    description: ''
+  - key: analysis_min_avg_max
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: op_id
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: measurement_duration
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: multi_measurement_duration
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: mac_address
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: transaction_id
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: filename
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: operation_id
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: rxmer_analysis_profile_perf_1
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: rxmer_analysis_heat_map
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: chan_est_group_delay
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: chan_set_echo_detection_ifft
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: analysis_group_delay
+    value: ''
+    enabled: true
+    type: default
+    description: ''
+  - key: analysis_echo_detection_ifft
+    value: ''
+    enabled: true
+    type: default
+    description: ''

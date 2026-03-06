@@ -1,0 +1,7 @@
+$kind: http-request
+url: "{{pypnm_url}}/pypnm/system/log/download"
+method: GET
+body:
+  type: json
+  content: ""
+order: 3000

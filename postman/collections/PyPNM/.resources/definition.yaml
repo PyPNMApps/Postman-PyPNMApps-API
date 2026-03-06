@@ -1,0 +1,88 @@
+$kind: collection
+description: >-
+  **Proactive Network Maintenance (PNM) API for DOCSIS devices**
+
+
+  Python-based RESTful API for accessing, analyzing, and visualizing DOCSIS
+  3.1/4.0 PNM telemetry.
+
+
+  **PyPNM provides structured endpoints for:**
+
+  - Downstream and upstream OFDM/OFDMA diagnostics
+
+  - OFDM RxMER and Channel Estimation Analysis
+
+  - Modulation profile decoding and traffic stats
+
+  - FEC summary and profile-specific correction metrics
+
+  - Spectrum capture, constellation display, and pre-equalization
+
+  - TFTP/SNMP-based file retrieval and modem polling
+
+
+  Designed for integration into dashboards, automation pipelines, and
+  engineering tools to assist with plant health monitoring, anomaly detection,
+  and DOCSIS signal quality evaluation.
+
+
+  🔗 [**GitHub - PyPNM**](https://github.com/mgarcia01752/PyPNM)
+scripts:
+  - type: http:afterResponse
+    code: >-
+      // Collection-level test utilities and common validations
+
+
+      // Validate response time is reasonable (under 30 seconds for PNM
+      operations)
+
+      pm.test('Response time is acceptable', function() {
+          pm.expect(pm.response.responseTime).to.be.below(30000);
+      });
+
+
+      // Check for common error patterns
+
+      if (pm.response.code >= 400) {
+          pm.test('Error response has proper structure', function() {
+              const jsonData = pm.response.json();
+              pm.expect(jsonData).to.have.property('detail').or.to.have.property('error').or.to.have.property('message');
+          });
+      }
+
+
+      // Utility function to validate MAC address format
+
+      pm.globals.set('validateMacAddress', function(mac) {
+          const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+          return macRegex.test(mac);
+      });
+
+
+      // Utility function to validate IP address format
+
+      pm.globals.set('validateIpAddress', function(ip) {
+          const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+          return ipRegex.test(ip);
+      });
+
+
+      // Utility function to validate transaction ID format
+
+      pm.globals.set('validateTransactionId', function(txnId) {
+          return typeof txnId === 'string' && txnId.length > 0;
+      });
+
+
+      // Check if response has valid JSON content type
+
+      if (pm.response.code < 300) {
+          const contentType = pm.response.headers.get('Content-Type');
+          if (contentType && contentType.includes('application/json')) {
+              pm.test('Response has valid JSON content type', function() {
+                  pm.expect(contentType).to.include('application/json');
+              });
+          }
+      }
+    language: text/javascript

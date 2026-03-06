@@ -1,0 +1,7 @@
+$kind: http-request
+url: "{{pypnm_url}}/pypnm/system/webService/reload"
+method: GET
+body:
+  type: json
+  content: ""
+order: 4000

@@ -1,0 +1,11 @@
+$kind: http-request
+url: "{{pypnm_cmts_url}}/cmts/pnm/sg/ds/ofdm/rxmer/cancel"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"pnm_capture_operation_id\": \"{{rxmer_cmts_operation_id}}\"\r
+
+    }"
+order: 3000

@@ -1,0 +1,10 @@
+$kind: http-request
+url: "{{pypnm_cmts_url}}/cmts/pnm/sg/us/ofdma/preEqualization/status"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+      "pnm_capture_operation_id": "{{ofdma_preeq_cmts_operation_id}}"
+    }
+order: 2000

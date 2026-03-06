@@ -1,0 +1,93 @@
+$kind: http-request
+url: "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"cable_modem\": {\r
+
+    \    \"mac_address\": \"{{cm_mac_address}}\",\r
+
+    \    \"ip_address\": \"{{cm_ip_address}}\",\r
+
+    \    \"pnm_parameters\": {\r
+
+    \      \"tftp\": {\r
+
+    \        \"ipv4\": \"{{tftp_server_ipv4}}\",\r
+
+    \        \"ipv6\": \"{{tftp_server_ipv6}}\"\r
+
+    \      }\r
+
+    \    },\r
+
+    \    \"snmp\": {\r
+
+    \      \"snmpV2C\": {\r
+
+    \        \"community\": \"{{cm_snmp_community_rw}}\"\r
+
+    \      }\r
+
+    \    }\r
+
+    \  },\r
+
+    \  \"analysis\": {\r
+
+    \    \"type\": \"basic\",\r
+
+    \    \"output\": {\r
+
+    \      \"type\": \"json\"\r
+
+    \    },\r
+
+    \    \"plot\": {\r
+
+    \      \"ui\": {\r
+
+    \        \"theme\": \"dark\"\r
+
+    \      }\r
+
+    \    },\r
+
+    \    \"spectrum_analysis\": {\r
+
+    \      \"moving_average\": {\r
+
+    \        \"points\": 10\r
+
+    \      }\r
+
+    \    }\r
+
+    \  },\r
+
+    \  \"capture_parameters\": {\r
+
+    \    \"inactivity_timeout\": 60,\r
+
+    \    \"first_segment_center_freq\": 300000000,\r
+
+    \    \"last_segment_center_freq\": 900000000,\r
+
+    \    \"segment_freq_span\": 1000000,\r
+
+    \    \"num_bins_per_segment\": 256,\r
+
+    \    \"noise_bw\": 150,\r
+
+    \    \"window_function\": 1,\r
+
+    \    \"num_averages\": 1,\r
+
+    \    \"spectrum_retrieval_type\": 1\r
+
+    \  }\r
+
+    }"
+order: 1000

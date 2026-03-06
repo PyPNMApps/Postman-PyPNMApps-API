@@ -1,0 +1,6 @@
+$kind: collection
+variables:
+  rxmer_cmts_operation_id: ""
+  mac_addresses: ""
+  sg_ids: ""
+  chan_est_cmts_operation_id: ""

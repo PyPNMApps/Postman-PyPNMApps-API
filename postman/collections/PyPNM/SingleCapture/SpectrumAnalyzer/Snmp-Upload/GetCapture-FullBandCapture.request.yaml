@@ -1,0 +1,427 @@
+$kind: http-request
+url: "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture/fullBandCapture"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"cable_modem\": {\r
+
+    \        \"mac_address\": \"{{cm_mac_address}}\",\r
+
+    \        \"ip_address\": \"{{cm_ip_address}}\",\r
+
+    \        \"pnm_parameters\": {\r
+
+    \            \"tftp\": {\r
+
+    \                \"ipv4\": \"{{tftp_server_ipv4}}\",\r
+
+    \                \"ipv6\": \"{{tftp_server_ipv6}}\"\r
+
+    \            }\r
+
+    \        },\r
+
+    \        \"snmp\": {\r
+
+    \            \"snmpV2C\": {\r
+
+    \                \"community\": \"{{cm_snmp_community_rw}}\"\r
+
+    \            }\r
+
+    \        }\r
+
+    \    },\r
+
+    \    \"analysis\": {\r
+
+    \        \"type\": \"basic\",\r
+
+    \        \"output\": {\r
+
+    \            \"type\": \"json\"\r
+
+    \        },\r
+
+    \        \"plot\": {\r
+
+    \            \"ui\": {\r
+
+    \                \"theme\": \"dark\"\r
+
+    \            }\r
+
+    \        },\r
+
+    \        \"spectrum_analysis\": {\r
+
+    \            \"moving_average\": {\r
+
+    \                \"points\": 10\r
+
+    \            }\r
+
+    \        }\r
+
+    \    },\r
+
+    \    \"capture_parameters\": {\r
+
+    \        \"inactivity_timeout\": 60,\r
+
+    \        \"direction\": \"downstream\",\r
+
+    \        \"resolution_bw\": 300000,\r
+
+    \        \"noise_bw\": 150,\r
+
+    \        \"window_function\": 1,\r
+
+    \        \"num_averages\": 1,\r
+
+    \        \"spectrum_retrieval_type\": 2\r
+
+    \    }\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: |-
+      // Postman Visualizer: SingleCapture/SpectrumAnalyzer/Snmp-Upload/GetCapture-FullBandCapture
+      // Last Update: 2026-02-25 06:01:33 MST
+
+      // Remarks (CODING_AGENTS visual standard)
+      // - Device Info renders as a separate top block with standardized labels
+      // - Capture Time (when available) is shown next to the title
+      // - Frequency labels default to whole-number MHz for UI readability
+      var template = `
+      <style>
+          body {
+              font-family: Arial, sans-serif;
+              background: #0b0b0b;
+              color: #e8e8e8;
+              margin: 0;
+              padding: 16px;
+          }
+          .container {
+              max-width: 1500px;
+              margin: 0 auto;
+          }
+          .header-row {
+              display: grid;
+              grid-template-columns: 1fr auto 1fr;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 12px;
+          }
+          .page-title {
+              grid-column: 2;
+              margin: 0;
+              text-align: center;
+              color: #f2f2f2;
+              font-size: 22px;
+              font-weight: 700;
+          }
+          .capture-time {
+              grid-column: 3;
+              justify-self: end;
+              font-size: 12px;
+              color: #d7deec;
+              background: rgba(255,255,255,0.03);
+              border: 1px solid rgba(255,255,255,0.08);
+              border-radius: 999px;
+              padding: 6px 10px;
+              white-space: nowrap;
+          }
+          .device-info {
+              background: #151515;
+              padding: 14px;
+              margin-bottom: 14px;
+              border-radius: 10px;
+              border: 1px solid #2a2a2a;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          }
+          .table-wrap {
+              overflow-x: auto;
+              border: 1px solid rgba(255,255,255,0.08);
+              border-radius: 10px;
+          }
+          .table-title {
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.7px;
+              padding: 10px 12px;
+              background: rgba(255,255,255,0.03);
+              border-bottom: 1px solid rgba(255,255,255,0.08);
+              color: #dbe3ff;
+          }
+          .table {
+              width: 100%;
+              min-width: 720px;
+              border-collapse: collapse;
+          }
+          .table th {
+              text-align: left;
+              white-space: nowrap;
+              padding: 9px 12px;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.45px;
+              color: #dbe3ff;
+              background: rgba(255,255,255,0.03);
+          }
+          .table td {
+              padding: 10px 12px;
+              font-size: 12px;
+              color: #fff;
+              white-space: nowrap;
+              border-top: 1px solid rgba(255,255,255,0.08);
+          }
+          .mono {
+              font-family: Consolas, "Liberation Mono", Menlo, monospace;
+          }
+          .meta-row {
+              display: flex;
+              gap: 10px;
+              flex-wrap: wrap;
+              margin-top: 8px;
+          }
+          .meta-pill {
+              background: rgba(255,255,255,0.03);
+              border: 1px solid rgba(255,255,255,0.08);
+              border-radius: 999px;
+              padding: 6px 10px;
+              font-size: 12px;
+              color: #cfd6e5;
+          }
+          .chart-panel {
+              background: #2d2d2d;
+              border: 1px solid #3d3d3d;
+              border-radius: 10px;
+              padding: 14px;
+          }
+          .chart-title {
+              margin: 0 0 10px 0;
+              text-align: center;
+              color: #5a6fd8;
+              font-size: 14px;
+              font-weight: 700;
+          }
+          .chart-wrap {
+              position: relative;
+              height: 340px;
+          }
+          #spectrumChart {
+              display: block;
+              width: 100% !important;
+              height: 100% !important;
+              box-sizing: border-box;
+              background: #1a1a1a;
+              border: 1px solid #4d4d4d;
+              border-radius: 6px;
+          }
+      </style>
+
+      <div class="container">
+          <div class="header-row">
+              <div class="page-title">Spectrum Analysis (FBC)</div>
+              {{#if captureTime}}<div class="capture-time">Capture Time: {{captureTime}}</div>{{/if}}
+          </div>
+
+          <div class="device-info">
+              <div class="table-wrap">
+                  <div class="table-title">Device Info</div>
+                  <table class="table">
+                      <thead>
+                          <tr>
+                              <th>MacAddress</th>
+                              <th>Model</th>
+                              <th>Vendor</th>
+                              <th>SW Version</th>
+                              <th>HW Version</th>
+                              <th>Boot ROM</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          <tr>
+                              <td class="mono">{{deviceInfo.macAddress}}</td>
+                              <td>{{deviceInfo.MODEL}}</td>
+                              <td>{{deviceInfo.VENDOR}}</td>
+                              <td class="mono">{{deviceInfo.SW_REV}}</td>
+                              <td class="mono">{{deviceInfo.HW_REV}}</td>
+                              <td class="mono">{{deviceInfo.BOOTR}}</td>
+                          </tr>
+                      </tbody>
+                  </table>
+              </div>
+              <div class="meta-row">
+                  <div class="meta-pill">Bins: {{binCount}}</div>
+                  <div class="meta-pill">Bin Width: {{binBandwidthMHz}} MHz</div>
+                  <div class="meta-pill">Window Avg: {{windowAveragePoints}} points</div>
+                  <div class="meta-pill">Channel Power: {{channelPowerDbmv}} dBmV</div>
+              </div>
+          </div>
+
+          <div class="chart-panel">
+              <div class="chart-title">Spectrum Magnitude and Moving Average (dBmV)</div>
+              <div class="chart-wrap">
+                  <canvas id="spectrumChart"></canvas>
+              </div>
+          </div>
+      </div>
+
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+      <script>
+          pm.getData(function (err, value) {
+              if (err) return;
+              var ctx = document.getElementById('spectrumChart');
+              if (!ctx) return;
+
+              new Chart(ctx, {
+                  type: 'line',
+                  data: {
+                      labels: value.frequencyLabelsMHz,
+                      datasets: [
+                          {
+                              label: 'Raw Magnitude (dBmV)',
+                              data: value.magnitudes,
+                              borderColor: 'rgba(90, 111, 216, 1)',
+                              backgroundColor: 'rgba(90, 111, 216, 0.12)',
+                              fill: false,
+                              pointRadius: 0,
+                              borderWidth: 1
+                          },
+                          {
+                              label: 'Moving Average (dBmV)',
+                              data: value.movingAverageMagnitudes,
+                              borderColor: 'rgba(198, 40, 40, 1)',
+                              backgroundColor: 'rgba(198, 40, 40, 0.12)',
+                              fill: false,
+                              pointRadius: 0,
+                              borderWidth: 1.2
+                          }
+                      ]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      legend: {
+                          display: true,
+                          labels: { fontColor: '#e0e0e0' }
+                      },
+                      title: { display: false },
+                      elements: { line: { tension: 0 } },
+                      scales: {
+                          xAxes: [{
+                              display: true,
+                              ticks: {
+                                  fontColor: '#b0b0b0',
+                                  maxTicksLimit: 12,
+                                  autoSkip: true,
+                                  maxRotation: 0,
+                                  minRotation: 0
+                              },
+                              gridLines: { color: 'rgba(255,255,255,0.08)' },
+                              scaleLabel: {
+                                  display: true,
+                                  labelString: 'Frequency (MHz)',
+                                  fontColor: '#e0e0e0'
+                              }
+                          }],
+                          yAxes: [{
+                              display: true,
+                              ticks: { fontColor: '#b0b0b0' },
+                              gridLines: { color: 'rgba(255,255,255,0.08)' },
+                              scaleLabel: {
+                                  display: true,
+                                  labelString: 'Magnitude (dBmV)',
+                                  fontColor: '#e0e0e0'
+                              }
+                          }]
+                      }
+                  }
+              });
+          });
+      </script>`;
+
+      function sanitizeMac(value, fallback) {
+          var fb = (fallback === undefined || fallback === null) ? 'N/A' : fallback;
+          if (value === undefined || value === null) return fb;
+          var text = String(value).trim();
+          if (!text) return fb;
+          var compact = text.replace(/[^0-9a-f]/gi, '').toLowerCase();
+          if (compact.length !== 12) return text;
+          return compact.match(/.{1,2}/g).join(':');
+      }
+
+      function sanitizeSystemDescription(_sys) {
+          var sys = (_sys && typeof _sys === 'object') ? _sys : {};
+          function present(v) { return v !== undefined && v !== null && String(v).trim() !== ''; }
+          return {
+              HW_REV: present(sys.HW_REV) ? String(sys.HW_REV).trim() : 'N/A',
+              VENDOR: present(sys.VENDOR) ? String(sys.VENDOR).trim() : 'N/A',
+              BOOTR: present(sys.BOOTR) ? String(sys.BOOTR).trim() : 'N/A',
+              SW_REV: present(sys.SW_REV) ? String(sys.SW_REV).trim() : 'N/A',
+              MODEL: present(sys.MODEL) ? String(sys.MODEL).trim() : 'N/A'
+          };
+      }
+
+      function formatCaptureTime(raw) {
+          if (raw === undefined || raw === null || raw === '') return null;
+          if (typeof raw === 'number' && isFinite(raw)) {
+              var ms = raw > 1e12 ? raw : raw * 1000;
+              var d = new Date(ms);
+              if (isNaN(d.getTime())) return null;
+              return d.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+          }
+          var n = Number(raw);
+          if (!isNaN(n) && isFinite(n)) return formatCaptureTime(n);
+          var d2 = new Date(raw);
+          if (isNaN(d2.getTime())) return String(raw);
+          return d2.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+      }
+
+      function constructVisualizerPayload() {
+          var response = pm.response.json();
+          var data = (response && response.data) ? response.data : {};
+          var analysis = (data.analysis && data.analysis[0]) ? data.analysis[0] : {};
+          var prim = (data.primative && data.primative[0]) ? data.primative[0] : {};
+          var signalAnalysis = (analysis && analysis.signal_analysis) ? analysis.signal_analysis : {};
+          var windowAverage = (signalAnalysis && signalAnalysis.window_average) ? signalAnalysis.window_average : {};
+          var sys = (((analysis || {}).device_details || {}).system_description) || {};
+          var pnmHeader =
+              ((analysis || {}).pnm_header) ||
+              ((prim || {}).pnm_header) ||
+              null;
+          var freqs = Array.isArray(signalAnalysis.frequencies) ? signalAnalysis.frequencies : [];
+
+          return {
+              deviceInfo: (function () {
+                  var s = sanitizeSystemDescription(sys);
+                  return {
+                      macAddress: sanitizeMac(prim.mac_address || response.mac_address, 'N/A'),
+                      MODEL: s.MODEL,
+                      VENDOR: s.VENDOR,
+                      SW_REV: s.SW_REV,
+                      HW_REV: s.HW_REV,
+                      BOOTR: s.BOOTR
+                  };
+              })(),
+              captureTime: formatCaptureTime((pnmHeader || {}).capture_time),
+              frequencyLabelsMHz: freqs.map(function (f) { return (Number(f) / 1000000).toFixed(0); }),
+              magnitudes: Array.isArray(signalAnalysis.magnitudes) ? signalAnalysis.magnitudes : [],
+              movingAverageMagnitudes: Array.isArray(windowAverage.magnitudes) ? windowAverage.magnitudes : [],
+              binCount: freqs.length,
+              binBandwidthMHz: signalAnalysis.bin_bandwidth ? (Number(signalAnalysis.bin_bandwidth) / 1000000).toFixed(1) : 'N/A',
+              windowAveragePoints: windowAverage.points || 'N/A',
+              channelPowerDbmv: (signalAnalysis.channel_power_dbmv !== undefined && signalAnalysis.channel_power_dbmv !== null)
+                  ? Number(signalAnalysis.channel_power_dbmv).toFixed(2)
+                  : 'N/A'
+          };
+      }
+
+      pm.visualizer.set(template, constructVisualizerPayload());
+    language: text/javascript
+order: 1000

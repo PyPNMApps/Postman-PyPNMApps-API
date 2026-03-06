@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{pypnm_url}}/docs/pnm/files/getHexdump/transactionID/{{transaction_id}}"
+method: GET
+order: 9000

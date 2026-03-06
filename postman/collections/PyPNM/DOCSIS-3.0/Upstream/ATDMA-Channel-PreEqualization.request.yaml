@@ -1,0 +1,1172 @@
+$kind: http-request
+url: "{{pypnm_url}}/docs/if30/us/atdma/chan/preEqualization"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"cable_modem\": {\r
+
+    \    \"mac_address\": \"{{cm_mac_address}}\",\r
+
+    \    \"ip_address\": \"{{cm_ip_address}}\",\r
+
+    \    \"snmp\": {\r
+
+    \      \"snmpV2C\": {\r
+
+    \        \"community\": \"{{cm_snmp_community_rw}}\"\r
+
+    \      }\r
+
+    \    }\r
+
+    \  }\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: >-
+      // Postman Visualizer: DOCSIS-3.0/Upstream/ATDMA-Channel-PreEqualization
+
+      // Last Update: 2026-02-25 06:01:33 MST
+
+
+      // Postman Visualizer: Upstream Pre-EQ + Topology + Stats + Tap Bars +
+      Freq Response + Group Delay Graphs
+
+      // Paste into Tests tab.
+
+      //
+
+      // Updates:
+
+      // - Marks the strongest POST-main tap (highest magnitude_power_dB after
+      MAIN) in red.
+
+      // - Adds a POST-main tap table (T1..T16) with delay + cable echo distance
+      in meters/feet.
+
+      // - Delay source priority per tap:
+
+      //   1) taps[i].delay_us (if present)
+
+      //   2) group_delay.delay_us[i] when it aligns to taps[] length
+
+      // - Cable echo distance uses Δdelay relative to MAIN tap delay:
+
+      //   distance_m = |Δt| * VF * c / 2
+
+      //   default VF=0.87 (configurable below)
+
+      //
+
+      // Requested table change:
+
+      // - Removed columns: TapIndex, Tap dB, Mag, Delay (μs)
+
+
+      (function () {
+        const resp = pm.response.json();
+
+        const safe = (v, d = "") => (v === undefined || v === null ? d : v);
+
+        const esc = (s) =>
+          String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+        const isNum = (v) => typeof v === "number" && isFinite(v);
+        const fmt = (v, digits = 2) => (isNum(v) ? v.toFixed(digits) : "—");
+
+        const tapDisp = (i) => (Number.isInteger(i) ? String(i + 1) : "—");
+
+        const results = safe(resp.results, {});
+        const usIdxKeys = Object.keys(results).sort((a, b) => Number(a) - Number(b));
+
+        const C_MPS = 299792458;
+        const DEFAULT_VF = 0.87;
+
+
+
+        function buildDeviceInfoBlock() {
+          const device = (resp.device && typeof resp.device === "object") ? resp.device : {};
+          const sys = (device.system_description && typeof device.system_description === "object") ? device.system_description : {};
+          const v = (x) => esc(safe(x, "N/A"));
+          return `
+            <div class="section" style="padding:12px 14px;">
+              <div class="section-head" style="margin-bottom:8px;">
+                <div class="section-title device-info-title">Device Info</div>
+              </div>
+              <div style="overflow:auto;border:1px solid rgba(148,163,184,0.18);border-radius:12px;">
+                <table class="tbl" style="min-width:720px;">
+                  <thead><tr><th>MacAddress</th><th>Model</th><th>Vendor</th><th>SW Version</th><th>HW Version</th><th>Boot ROM</th></tr></thead>
+                  <tbody><tr><td class="mono">${v(device.mac_address)}</td><td>${v(sys.MODEL)}</td><td>${v(sys.VENDOR)}</td><td class="mono">${v(sys.SW_REV)}</td><td class="mono">${v(sys.HW_REV)}</td><td class="mono">${v(sys.BOOTR)}</td></tr></tbody>
+                </table>
+              </div>
+            </div>`;
+        }
+
+        function getMainTapIndex(usRecord) {
+          const mRaw = Number(usRecord?.main_tap_location);
+          const nRaw = Number(usRecord?.num_taps);
+
+          if (!Number.isInteger(mRaw) || !Number.isInteger(nRaw) || nRaw <= 0) {
+            return null;
+          }
+
+          if (mRaw >= 1 && mRaw <= nRaw) {
+            const idx = mRaw - 1;
+            if (idx >= 0 && idx < nRaw) {
+              return idx;
+            }
+            return null;
+          }
+
+          if (mRaw >= 0 && mRaw < nRaw) {
+            return mRaw;
+          }
+
+          return null;
+        }
+
+        function getDbRange(taps) {
+          let minDb = Infinity;
+          let maxDb = -Infinity;
+
+          for (const t of taps) {
+            const db = t?.magnitude_power_dB;
+            if (isNum(db)) {
+              if (db < minDb) minDb = db;
+              if (db > maxDb) maxDb = db;
+            }
+          }
+
+          if (!isFinite(minDb) || !isFinite(maxDb)) {
+            return { minDb: 0, maxDb: 1 };
+          }
+
+          if (maxDb - minDb < 1e-9) {
+            return { minDb: minDb - 1, maxDb: maxDb + 1 };
+          }
+
+          return { minDb, maxDb };
+        }
+
+        function barHeightPct(db, minDb, maxDb) {
+          if (!isNum(db)) return 0;
+          const pct = ((db - minDb) / (maxDb - minDb)) * 100;
+          return Math.min(100, Math.max(0, pct));
+        }
+
+        function summarizeArray(arr) {
+          const xs = Array.isArray(arr) ? arr.filter(isNum) : [];
+          if (xs.length === 0) {
+            return { n: 0, min: null, max: null, mean: null, p2p: null, std: null };
+          }
+          let min = Infinity;
+          let max = -Infinity;
+          let sum = 0;
+
+          for (const x of xs) {
+            if (x < min) min = x;
+            if (x > max) max = x;
+            sum += x;
+          }
+
+          const mean = sum / xs.length;
+
+          let varSum = 0;
+          for (const x of xs) {
+            const d = x - mean;
+            varSum += d * d;
+          }
+
+          const std = Math.sqrt(varSum / xs.length);
+
+          return {
+            n: xs.length,
+            min,
+            max,
+            mean,
+            p2p: max - min,
+            std,
+          };
+        }
+
+        function severityFromRatios(mainTapRatioDb, nonMainEnergyDb) {
+          if (!isNum(mainTapRatioDb) || !isNum(nonMainEnergyDb)) return "sev-unk";
+          if (mainTapRatioDb >= 35 && nonMainEnergyDb <= -35) return "sev-good";
+          if (mainTapRatioDb >= 28 && nonMainEnergyDb <= -28) return "sev-warn";
+          return "sev-bad";
+        }
+
+        function normalizeSeries(freqBins, yVals) {
+          const pts = [];
+          const n = Math.min(freqBins.length, yVals.length);
+          for (let i = 0; i < n; i++) {
+            const x = Number(freqBins[i]);
+            const y = Number(yVals[i]);
+            if (isFinite(x) && isFinite(y)) {
+              pts.push({ x, y });
+            }
+          }
+          return pts;
+        }
+
+        function seriesRange(pts) {
+          let minX = Infinity,
+            maxX = -Infinity,
+            minY = Infinity,
+            maxY = -Infinity;
+
+          for (const p of pts) {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+          }
+
+          if (!isFinite(minX) || !isFinite(maxX)) {
+            minX = 0;
+            maxX = 1;
+          }
+          if (!isFinite(minY) || !isFinite(maxY)) {
+            minY = 0;
+            maxY = 1;
+          }
+
+          if (maxX - minX < 1e-12) {
+            minX -= 1;
+            maxX += 1;
+          }
+          if (maxY - minY < 1e-12) {
+            minY -= 1;
+            maxY += 1;
+          }
+
+          return { minX, maxX, minY, maxY };
+        }
+
+        function catmullRomToBezierPath(points, sx, sy) {
+          if (points.length < 2) return "";
+          const P = points.map((p) => ({ x: sx(p.x), y: sy(p.y) }));
+          let d = `M ${P[0].x.toFixed(2)} ${P[0].y.toFixed(2)}`;
+
+          for (let i = 0; i < P.length - 1; i++) {
+            const p0 = P[Math.max(0, i - 1)];
+            const p1 = P[i];
+            const p2 = P[i + 1];
+            const p3 = P[Math.min(P.length - 1, i + 2)];
+
+            const c1x = p1.x + (p2.x - p0.x) / 6;
+            const c1y = p1.y + (p2.y - p0.y) / 6;
+            const c2x = p2.x - (p3.x - p1.x) / 6;
+            const c2y = p2.y - (p3.y - p1.y) / 6;
+
+            d += ` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(
+              2
+            )}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+          }
+
+          return d;
+        }
+
+        function buildSvgSmoothChart(opts) {
+          const {
+            title,
+            subtitle,
+            usKey,
+            xVals,
+            yVals,
+            yUnits,
+            yDigits,
+            lineClass,
+            emptyMsg,
+          } = opts;
+
+          const pts = normalizeSeries(xVals, yVals);
+          if (pts.length < 2) {
+            return `
+              <div class="fr-empty">
+                <div class="meta">${esc(emptyMsg || `No data for US Index ${usKey}.`)}</div>
+              </div>
+            `;
+          }
+
+          const { minX, maxX, minY, maxY } = seriesRange(pts);
+
+          const W = 820;
+          const H = 220;
+          const padL = 46;
+          const padR = 16;
+          const padT = 14;
+          const padB = 28;
+
+          const plotW = W - padL - padR;
+          const plotH = H - padT - padB;
+
+          const sx = (x) => padL + ((x - minX) / (maxX - minX)) * plotW;
+          const sy = (y) => padT + (1 - (y - minY) / (maxY - minY)) * plotH;
+
+          const pathD = catmullRomToBezierPath(pts, sx, sy);
+
+          const yTicks = 4;
+          const grid = [];
+          for (let t = 0; t <= yTicks; t++) {
+            const yy = padT + (t / yTicks) * plotH;
+            const val = maxY - (t / yTicks) * (maxY - minY);
+            grid.push({ yy, val });
+          }
+
+          const xMid = (minX + maxX) / 2;
+          const yMid = (minY + maxY) / 2;
+
+          const yFmt = (v) => (isNum(v) ? v.toFixed(yDigits ?? 2) : "—");
+
+          return `
+            <div class="fr-wrap">
+              <div class="fr-head">
+                <div class="fr-title">${esc(title)}</div>
+                <div class="fr-meta mono">
+                  ${esc(subtitle || "")}
+                </div>
+              </div>
+
+              <svg class="fr-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
+                   aria-label="${esc(title)} chart">
+                ${grid
+                  .map(
+                    (g) => `
+                  <line x1="${padL}" y1="${g.yy.toFixed(2)}" x2="${W - padR}" y2="${g.yy.toFixed(
+                      2
+                    )}" class="fr-grid"/>
+                  <text x="${padL - 8}" y="${(g.yy + 4).toFixed(2)}" text-anchor="end" class="fr-axis">${esc(
+                      yFmt(g.val)
+                    )}${yUnits ? " " + esc(yUnits) : ""}</text>
+                `
+                  )
+                  .join("")}
+
+                <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H - padB}" class="fr-axisline"/>
+                <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" class="fr-axisline"/>
+
+                <text x="${padL}" y="${H - 8}" text-anchor="start" class="fr-axis">${esc(
+                  fmt(minX, 4)
+                )}</text>
+                <text x="${sx(xMid).toFixed(2)}" y="${H - 8}" text-anchor="middle" class="fr-axis">${esc(
+                  fmt(xMid, 4)
+                )}</text>
+                <text x="${W - padR}" y="${H - 8}" text-anchor="end" class="fr-axis">${esc(
+                  fmt(maxX, 4)
+                )}</text>
+
+                <text x="${W - padR}" y="${sy(yMid).toFixed(2)}" text-anchor="end" class="fr-axis">${esc(
+                  yFmt(yMid)
+                )}${yUnits ? " " + esc(yUnits) : ""}</text>
+
+                <path d="${pathD}" class="${esc(lineClass || "fr-line")}"/>
+              </svg>
+
+              <div class="fr-foot meta">
+                Smooth curve is a Catmull-Rom spline rendered as cubic Beziers (no markers).
+              </div>
+            </div>
+          `;
+        }
+
+        function buildFreqResponseChart(usKey, freqBins, magDbNorm) {
+          return buildSvgSmoothChart({
+            title: "Frequency Response · Magnitude Power (Normalized)",
+            subtitle: `US ${usKey} · bins=${Math.min(freqBins.length, magDbNorm.length)}`,
+            usKey,
+            xVals: freqBins,
+            yVals: magDbNorm,
+            yUnits: "dB",
+            yDigits: 3,
+            lineClass: "fr-line",
+            emptyMsg: `No metrics.frequency_response.magnitude_power_db_normalized for US Index ${usKey}.`,
+          });
+        }
+
+        function buildGroupDelayChart(usKey, xBins, delayUs) {
+          return buildSvgSmoothChart({
+            title: "Group Delay · Delay (μs)",
+            subtitle: `US ${usKey} · bins=${Math.min(xBins.length, delayUs.length)}`,
+            usKey,
+            xVals: xBins,
+            yVals: delayUs,
+            yUnits: "μs",
+            yDigits: 5,
+            lineClass: "gd-line",
+            emptyMsg: `No group_delay.delay_us for US Index ${usKey}.`,
+          });
+        }
+
+        function layoutTopology(nodes) {
+          const x0 = 20,
+            x1 = 320;
+          const y0 = 30;
+          const usGap = 124;
+
+          const placed = [];
+          const cm = nodes.find((n) => n.kind === "cm");
+          placed.push({ ...cm, x: x0, y: y0 });
+
+          let y = y0;
+          for (const us of nodes.filter((n) => n.kind === "us")) {
+            placed.push({ ...us, x: x1, y });
+            y += usGap;
+          }
+
+          return placed;
+        }
+
+        function box(w, h, r) {
+          return `rx="${r}" ry="${r}" width="${w}" height="${h}"`;
+        }
+
+        function topoSvg(usRows) {
+          const cmId = "cm";
+          const nodes = [];
+
+          nodes.push({
+            id: cmId,
+            kind: "cm",
+            label: "CM",
+            sub: "",
+            w: 240,
+            h: 60,
+          });
+
+          for (const k of usIdxKeys) {
+            const r = usRows[k];
+            const taps = Array.isArray(r?.taps) ? r.taps : [];
+            const mainIdx = getMainTapIndex(r);
+            const gd = r?.group_delay;
+            const gdUs = summarizeArray(gd?.delay_us);
+
+            const usId = `us-${k}`;
+            nodes.push({
+              id: usId,
+              kind: "us",
+              label: `US ${k}`,
+              sub: "",
+              detail1: "",
+              detail2: "",
+              w: 430,
+              h: 92,
+            });
+          }
+
+          const placed = layoutTopology(nodes);
+
+          const W = 860;
+          const H = Math.max(240, 92 + usIdxKeys.length * 124);
+          const defs = `
+            <defs>
+              <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="rgba(0,0,0,0.35)"/>
+              </filter>
+            </defs>
+          `;
+
+          function nodeById(id) {
+            return placed.find((p) => p.id === id);
+          }
+
+          function centerRight(n) {
+            return { x: n.x + n.w, y: n.y + n.h / 2 };
+          }
+
+          function centerLeft(n) {
+            return { x: n.x, y: n.y + n.h / 2 };
+          }
+
+          const edges = [];
+          for (const k of usIdxKeys) {
+            edges.push({ from: cmId, to: `us-${k}` });
+          }
+
+          const edgeSvg = edges
+            .map((e) => {
+              const a = nodeById(e.from);
+              const b = nodeById(e.to);
+              if (!a || !b) return "";
+              const p1 = centerRight(a);
+              const p2 = centerLeft(b);
+              const mx = (p1.x + p2.x) / 2;
+              const d = `M ${p1.x} ${p1.y} C ${mx} ${p1.y}, ${mx} ${p2.y}, ${p2.x} ${p2.y}`;
+              return `<path d="${d}" class="topo-edge"/>`;
+            })
+            .join("");
+
+          const nodeSvg = placed
+            .map((n) => {
+              const title = esc(n.label);
+              const sub = esc(n.sub || "");
+              const detail1 = esc(n.detail1 || "");
+              const detail2 = esc(n.detail2 || "");
+              const cls =
+                n.kind === "cm"
+                  ? "topo-box topo-cm"
+                  : n.kind === "us"
+                  ? "topo-box topo-us"
+                  : "topo-box topo-feat";
+
+              return `
+              <g transform="translate(${n.x},${n.y})" filter="url(#shadow)">
+                <rect ${box(n.w, n.h, 14)} class="${cls}"></rect>
+                <text x="14" y="28" class="topo-title">${title}</text>
+                ${sub ? `<text x="14" y="52" class="topo-sub mono">${sub}</text>` : ""}
+                ${detail1 ? `<text x="14" y="70" class="topo-sub mono">${detail1}</text>` : ""}
+                ${detail2 ? `<text x="14" y="86" class="topo-sub mono">${detail2}</text>` : ""}
+              </g>
+            `;
+            })
+            .join("");
+
+          return `
+            <div class="topo-wrap">
+              <div class="section-head">
+                <div class="section-title">Topology</div>
+              </div>
+
+              <svg class="topo-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Topology diagram">
+                ${defs}
+                ${edgeSvg}
+                ${nodeSvg}
+              </svg>
+            </div>
+          `;
+        }
+
+        function buildSummaryRows() {
+          const rows = {};
+          for (const k of usIdxKeys) {
+            const r = results[k] || {};
+            const taps = Array.isArray(r?.taps) ? r.taps : [];
+            const mainIdx = getMainTapIndex(r);
+
+            const gd = r?.group_delay || {};
+            const gdUs = summarizeArray(gd?.delay_us);
+
+            const fr = r?.metrics?.frequency_response || {};
+            const frDbNorm = summarizeArray(fr?.magnitude_power_db_normalized);
+
+            const m = r?.metrics || {};
+            const sev = severityFromRatios(m?.main_tap_ratio, m?.non_main_tap_energy_ratio);
+
+            rows[k] = {
+              usKey: k,
+              sev,
+              taps: safe(r?.num_taps, taps.length),
+              mainTap: mainIdx === null ? "—" : tapDisp(mainIdx),
+
+              mainTapRatioDb: m?.main_tap_ratio,
+              nonMainEnergyDb: m?.non_main_tap_energy_ratio,
+              preTotalDb: m?.pre_main_tap_total_energy_ratio,
+              postTotalDb: m?.post_main_tap_total_energy_ratio,
+              prePostSymDb: m?.pre_post_energy_symmetry_ratio,
+
+              gdMeanUs: gdUs.mean,
+              gdP2PUs: gdUs.p2p,
+              gdStdUs: gdUs.std,
+
+              frSpanDb: frDbNorm.p2p,
+
+              fft: safe(fr?.fft_size, safe(gd?.fft_size, "—")),
+            };
+          }
+          return rows;
+        }
+
+        function buildStatsTable(rowsByKey) {
+          const rows = usIdxKeys.map((k) => rowsByKey[k]).filter(Boolean);
+
+          return `
+            <div class="section">
+              <div class="section-head">
+                <div class="section-title">Channel Stats</div>
+              </div>
+
+              <div class="table-wrap">
+                <table class="tbl">
+                  <thead>
+                    <tr>
+                      <th class="mono">US</th>
+                      <th class="mono">Taps</th>
+                      <th class="mono">Main Tap</th>
+                      <th class="mono">FFT</th>
+                      <th class="mono">MainTapRatio (dB)</th>
+                      <th class="mono">NonMainEnergy (dB)</th>
+                      <th class="mono">PreTotal (dB)</th>
+                      <th class="mono">PostTotal (dB)</th>
+                      <th class="mono">Pre/Post Sym (dB)</th>
+                      <th class="mono">GD Mean (μs)</th>
+                      <th class="mono">GD P2P (μs)</th>
+                      <th class="mono">FR Span (dB)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows
+                      .map(
+                        (r) => `
+                      <tr class="${esc(r.sev)}">
+                        <td class="mono">${esc(String(r.usKey))}</td>
+                        <td class="mono">${esc(String(r.taps))}</td>
+                        <td class="mono">${esc(String(r.mainTap))}</td>
+                        <td class="mono">${esc(String(r.fft))}</td>
+
+                        <td class="mono">${esc(fmt(r.mainTapRatioDb, 2))}</td>
+                        <td class="mono">${esc(fmt(r.nonMainEnergyDb, 2))}</td>
+                        <td class="mono">${esc(fmt(r.preTotalDb, 2))}</td>
+                        <td class="mono">${esc(fmt(r.postTotalDb, 2))}</td>
+                        <td class="mono">${esc(fmt(r.prePostSymDb, 2))}</td>
+
+                        <td class="mono">${esc(fmt(r.gdMeanUs, 5))}</td>
+                        <td class="mono">${esc(fmt(r.gdP2PUs, 5))}</td>
+                        <td class="mono">${esc(fmt(r.frSpanDb, 4))}</td>
+                      </tr>
+                    `
+                      )
+                      .join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+
+        function getTapDelayUs(tapObj, gdDelayUs, gdAligns, i) {
+          const v1 = Number(tapObj?.delay_us);
+          if (isFinite(v1)) {
+            return v1;
+          }
+          if (gdAligns && Array.isArray(gdDelayUs) && isFinite(Number(gdDelayUs[i]))) {
+            return Number(gdDelayUs[i]);
+          }
+          return null;
+        }
+
+        function cableEchoFromDeltaDelayUs(deltaUs, vf) {
+          if (!isNum(deltaUs)) return { meters: null, feet: null };
+          const dt = Math.abs(deltaUs) * 1e-6;
+          const meters = (dt * C_MPS * vf) / 2;
+          const feet = meters * 3.280839895;
+          return { meters, feet };
+        }
+
+        function findStrongestPostTapIndex(taps, mainIdx) {
+          if (!Array.isArray(taps) || !Number.isInteger(mainIdx)) return null;
+          let bestIdx = null;
+          let bestDb = -Infinity;
+
+          for (let i = mainIdx + 1; i < taps.length; i++) {
+            const db = taps[i]?.magnitude_power_dB;
+            if (isNum(db) && db > bestDb) {
+              bestDb = db;
+              bestIdx = i;
+            }
+          }
+
+          return bestIdx;
+        }
+
+        function buildPostTapTable(usKey, usRecord, mainIdx, gdDelayUs, gdAligns, vf) {
+          if (!Number.isInteger(mainIdx)) {
+            return `
+              <div class="posttap-wrap">
+                <div class="section-head">
+                  <div class="section-title">Post-Main Tap Table</div>
+                  <div class="meta mono">No MAIN tap index available.</div>
+                </div>
+              </div>
+            `;
+          }
+
+          const taps = Array.isArray(usRecord?.taps) ? usRecord.taps : [];
+          const mainTapObj = taps[mainIdx] || null;
+
+          const mainDelayUs = getTapDelayUs(mainTapObj, gdDelayUs, gdAligns, mainIdx);
+
+          const rows = [];
+          for (let t = 1; t <= 16; t++) {
+            const idx = mainIdx + t;
+            if (idx >= taps.length) break;
+
+            const tapObj = taps[idx] || {};
+            const tapDelayUs = getTapDelayUs(tapObj, gdDelayUs, gdAligns, idx);
+
+            const deltaUs =
+              isNum(tapDelayUs) && isNum(mainDelayUs) ? tapDelayUs - mainDelayUs : null;
+
+            const echo = cableEchoFromDeltaDelayUs(deltaUs, vf);
+
+            rows.push({
+              T: t,
+              tapDisp: tapDisp(idx),
+              deltaUs,
+              echoM: echo.meters,
+              echoF: echo.feet,
+            });
+          }
+
+          return `
+            <div class="posttap-wrap">
+              <div class="section-head">
+                <div class="section-title">Post-Main Tap Table (T1..T16)</div>
+                <div class="meta mono">
+                  MAIN=${esc(tapDisp(mainIdx))} · VF=${esc(fmt(vf, 2))} · EchoDist uses |Δdelay| vs MAIN (distance = |Δt|·VF·c/2)
+                </div>
+              </div>
+
+              <div class="table-wrap">
+                <table class="tbl posttbl">
+                  <thead>
+                    <tr>
+                      <th class="mono">T</th>
+                      <th class="mono">Tap</th>
+                      <th class="mono">ΔDelay vs MAIN (μs)</th>
+                      <th class="mono">Echo (m)</th>
+                      <th class="mono">Echo (ft)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${
+                      rows.length === 0
+                        ? `
+                          <tr>
+                            <td colspan="5" class="meta mono">No post-main taps available.</td>
+                          </tr>
+                        `
+                        : rows
+                            .map(
+                              (r) => `
+                        <tr>
+                          <td class="mono">${esc(String(r.T))}</td>
+                          <td class="mono">Tap ${esc(String(r.tapDisp))}</td>
+                          <td class="mono">${esc(fmt(r.deltaUs, 5))}</td>
+                          <td class="mono">${esc(fmt(r.echoM, 2))}</td>
+                          <td class="mono">${esc(fmt(r.echoF, 2))}</td>
+                        </tr>
+                      `
+                            )
+                            .join("")
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+
+        function buildChannelPanel(usKey, usRecord) {
+          const taps = Array.isArray(usRecord?.taps) ? usRecord.taps : [];
+          const mainTapIdx = getMainTapIndex(usRecord);
+          const { minDb, maxDb } = getDbRange(taps);
+
+          const fr = usRecord?.metrics?.frequency_response || {};
+          const freqBins = Array.isArray(fr?.frequency_bins) ? fr.frequency_bins : [];
+          const frMagDbNorm = Array.isArray(fr?.magnitude_power_db_normalized)
+            ? fr.magnitude_power_db_normalized
+            : [];
+
+          const gd = usRecord?.group_delay || {};
+          const gdDelayUs = Array.isArray(gd?.delay_us) ? gd.delay_us : [];
+          const gdUs = summarizeArray(gdDelayUs);
+
+          let gdXBins = freqBins;
+          if (!Array.isArray(gdXBins) || gdXBins.length < 2) {
+            const n = gdDelayUs.length;
+            gdXBins = Array.from({ length: n }, (_, i) => (n > 0 ? i / n : 0));
+          }
+
+          const m = usRecord?.metrics || {};
+          const sev = severityFromRatios(m?.main_tap_ratio, m?.non_main_tap_energy_ratio);
+
+          const validCount = taps.reduce((acc, t) => acc + (isNum(t?.magnitude_power_dB) ? 1 : 0), 0);
+
+          const frChart = buildFreqResponseChart(usKey, freqBins, frMagDbNorm);
+          const gdChart = buildGroupDelayChart(usKey, gdXBins, gdDelayUs);
+
+          const mainTapDisp = mainTapIdx === null ? "—" : tapDisp(mainTapIdx);
+
+          const gdAlignsToTaps = Array.isArray(gdDelayUs) && gdDelayUs.length === taps.length;
+
+          const strongestPostIdx = findStrongestPostTapIndex(taps, mainTapIdx);
+
+          const vfRaw = Number(usRecord?.velocity_factor);
+          const vf = isFinite(vfRaw) && vfRaw > 0 && vfRaw < 1.5 ? vfRaw : DEFAULT_VF;
+
+          const postTapTable = buildPostTapTable(usKey, usRecord, mainTapIdx, gdDelayUs, gdAlignsToTaps, vf);
+
+          return `
+            <div class="panel ${esc(sev)}">
+              <div class="panel-head">
+                <div class="panel-title">
+                  <div class="idx">US Index ${esc(String(usKey))}</div>
+                  <div class="meta">
+                    mainTap=${esc(mainTapDisp)} ·
+                    taps=${esc(String(safe(usRecord.num_taps, taps.length)))} ·
+                    tap-dB range=${esc(fmt(minDb, 2))}..${esc(fmt(maxDb, 2))} ·
+                    valid=${esc(String(validCount))}
+                  </div>
+                </div>
+                <div class="meta mono">
+                  GD mean=${esc(fmt(gdUs.mean, 5))}μs · p2p=${esc(fmt(gdUs.p2p, 5))}μs · std=${esc(fmt(gdUs.std, 5))}μs
+                </div>
+              </div>
+
+              <div class="panel-body">
+                <div class="kv">
+                  <div class="kv-row">
+                    <div class="kv-k">mainTapRatio (dB)</div>
+                    <div class="kv-v mono">${esc(fmt(m?.main_tap_ratio, 2))}</div>
+                  </div>
+                  <div class="kv-row">
+                    <div class="kv-k">nonMainEnergy (dB)</div>
+                    <div class="kv-v mono">${esc(fmt(m?.non_main_tap_energy_ratio, 2))}</div>
+                  </div>
+                  <div class="kv-row">
+                    <div class="kv-k">pre/post symmetry (dB)</div>
+                    <div class="kv-v mono">${esc(fmt(m?.pre_post_energy_symmetry_ratio, 2))}</div>
+                  </div>
+                  <div class="kv-row">
+                    <div class="kv-k">header_hex</div>
+                    <div class="kv-v mono">${esc(safe(usRecord.header_hex, ""))}</div>
+                  </div>
+                </div>
+
+                <div class="plot-wrap">
+                  <div class="plot-title">Tap Magnitude Power (dB)</div>
+                  <div class="plot" role="img" aria-label="Tap magnitude power (dB) vertical bargraph">
+                    ${taps
+                      .map((t, i) => {
+                        const db = t?.magnitude_power_dB;
+                        const h = barHeightPct(db, minDb, maxDb);
+                        const isMain = mainTapIdx !== null && i === mainTapIdx;
+                        const isMissing = !isNum(db);
+                        const isPostPeak = strongestPostIdx !== null && i === strongestPostIdx;
+
+                        const deltaTaps =
+                          mainTapIdx === null || !Number.isInteger(mainTapIdx) ? null : i - mainTapIdx;
+
+                        const deltaLabel =
+                          deltaTaps === null
+                            ? "—"
+                            : deltaTaps === 0
+                            ? "0 (MAIN)"
+                            : deltaTaps > 0
+                            ? `+${deltaTaps} (post)`
+                            : `${deltaTaps} (pre)`;
+
+                        const tapDelayUs = getTapDelayUs(t, gdDelayUs, gdAlignsToTaps, i);
+                        const mainDelayUs =
+                          Number.isInteger(mainTapIdx) ? getTapDelayUs(taps[mainTapIdx], gdDelayUs, gdAlignsToTaps, mainTapIdx) : null;
+
+                        const deltaUs =
+                          isNum(tapDelayUs) && isNum(mainDelayUs) ? tapDelayUs - mainDelayUs : null;
+
+                        const echo = cableEchoFromDeltaDelayUs(deltaUs, vf);
+
+                        const tooltip = [
+                          `US ${usKey} · Tap ${tapDisp(i)}${isMain ? " (MAIN)" : ""}${isPostPeak ? " (POST-PEAK)" : ""}`,
+                          `TapIndex(0-based): ${i}`,
+                          `ΔTap from MAIN: ${deltaLabel}`,
+                          `dB: ${fmt(db, 2)}`,
+                          `Mag: ${fmt(Number(t?.magnitude), 2)}`,
+                          `Real/Imag: (${safe(t?.real, "")}, ${safe(t?.imag, "")})`,
+                          `Hex: ${safe(t?.real_hex, "")}/${safe(t?.imag_hex, "")}`,
+                          `Delay (tap)      : ${fmt(tapDelayUs, 5)} μs`,
+                          `ΔDelay vs MAIN   : ${fmt(deltaUs, 5)} μs`,
+                          `Echo distance    : ${fmt(echo.meters, 2)} m · ${fmt(echo.feet, 2)} ft (VF=${fmt(vf, 2)})`,
+                        ].join("\n");
+
+                        return `
+                        <div class="bar-slot" title="${esc(tooltip)}">
+                          <div class="bar ${isMain ? "main" : ""} ${isPostPeak ? "postpeak" : ""} ${isMissing ? "missing" : ""}" style="height:${h.toFixed(
+                            2
+                          )}%"></div>
+                        </div>
+                      `;
+                      })
+                      .join("")}
+                  </div>
+
+                  <div class="axis">
+                    <div class="axis-left mono">${esc(fmt(minDb, 2))} dB</div>
+                    <div class="axis-mid mono">${esc(fmt((minDb + maxDb) / 2, 2))} dB</div>
+                    <div class="axis-right mono">${esc(fmt(maxDb, 2))} dB</div>
+                  </div>
+
+                  <div class="xlabels mono">
+                    <div>Tap 1</div>
+                    <div>Tap ${esc(String(Math.max(1, taps.length)))}</div>
+                  </div>
+
+                  <div class="meta mono">
+                    Legend: MAIN = yellow · POST-PEAK = red (strongest post-main tap).
+                  </div>
+                </div>
+
+                ${postTapTable}
+
+                ${frChart}
+
+                ${gdChart}
+              </div>
+            </div>
+          `;
+        }
+
+        const rowsByKey = buildSummaryRows();
+
+        const template = `
+        <style>
+          :root {
+            --bg: #0b1220;
+            --panel: #0f1a2b;
+            --panel2: #0c1727;
+            --text: #e6edf3;
+            --muted: #94a3b8;
+
+            --accent: #60a5fa;
+            --good: #34d399;
+            --warn: #fbbf24;
+            --bad: #fb7185;
+
+            --border: rgba(148,163,184,0.18);
+            --shadow: rgba(0,0,0,0.35);
+
+            --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+          }
+
+          body {
+            margin: 0;
+            padding: 18px 18px 28px 18px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+          }
+
+          .mono { font-family: var(--mono); }
+          .meta { color: var(--muted); font-size: 12px; }
+          .title { font-size: 18px; font-weight: 750; letter-spacing: 0.2px; }
+          .sub { color: var(--muted); font-size: 12px; }
+
+          .top { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: baseline; margin-bottom: 12px; }
+
+          .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+          .chip {
+            background: rgba(96,165,250,0.14);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            color: var(--text);
+            display: inline-flex;
+            gap: 8px;
+            align-items: baseline;
+          }
+          .chip .k { color: var(--muted); }
+          .chip.good { background: rgba(52,211,153,0.14); }
+          .chip.bad  { background: rgba(251,113,133,0.14); }
+
+          .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+
+          .section { margin-top: 14px; display: grid; gap: 10px; }
+          .section-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; justify-content: space-between; }
+          .section-title { font-size: 13px; font-weight: 750; color: var(--accent); letter-spacing: 0.2px; }
+          .device-info-title { font-size: 16px; font-weight: 850; letter-spacing: 0.15px; }
+
+          .panel {
+            background: linear-gradient(180deg, var(--panel), var(--panel2));
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 10px 24px var(--shadow);
+            overflow: hidden;
+          }
+
+          .panel-head {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            align-items: center;
+            justify-content: space-between;
+          }
+
+          .panel-title { display: grid; gap: 4px; }
+          .idx { font-size: 14px; font-weight: 800; color: var(--accent); }
+
+          .panel-body { padding: 12px 14px 14px 14px; display: grid; gap: 14px; }
+
+          .sev-good { border-left: 4px solid rgba(52,211,153,0.85); }
+          .sev-warn { border-left: 4px solid rgba(251,191,36,0.90); }
+          .sev-bad  { border-left: 4px solid rgba(251,113,133,0.90); }
+          .sev-unk  { border-left: 4px solid rgba(148,163,184,0.35); }
+
+          .kv { display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 10px; }
+          .kv-row {
+            border: 1px solid rgba(148,163,184,0.18);
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,0.03);
+            display: grid;
+            gap: 6px;
+          }
+          .kv-k { color: var(--muted); font-size: 11px; }
+          .kv-v { font-size: 13px; font-weight: 650; }
+
+          .plot-wrap { display: grid; gap: 8px; }
+          .plot-title { font-size: 12px; font-weight: 750; }
+
+          .plot {
+            height: 140px;
+            border-radius: 10px;
+            border: 1px solid rgba(148,163,184,0.18);
+            background: rgba(148,163,184,0.08);
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: 1fr;
+            gap: 2px;
+            align-items: end;
+            padding: 6px;
+            overflow: hidden;
+          }
+
+          .bar-slot { height: 100%; display: flex; align-items: end; }
+
+          .bar {
+            width: 100%;
+            height: 0%;
+            border-radius: 6px 6px 2px 2px;
+            background: linear-gradient(180deg, rgba(96,165,250,0.85), rgba(52,211,153,0.85));
+            box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+            transition: height 120ms ease;
+          }
+
+          .bar.main {
+            background: linear-gradient(180deg, rgba(251,191,36,0.95), rgba(96,165,250,0.75));
+            box-shadow: 0 0 0 2px rgba(251,191,36,0.18) inset, 0 6px 12px rgba(0,0,0,0.25);
+          }
+
+          .bar.postpeak {
+            background: linear-gradient(180deg, rgba(251,113,133,0.95), rgba(251,191,36,0.70));
+            box-shadow: 0 0 0 2px rgba(251,113,133,0.20) inset, 0 6px 12px rgba(0,0,0,0.25);
+          }
+
+          .bar.missing {
+            background: rgba(148,163,184,0.25);
+            box-shadow: none;
+            border-radius: 6px;
+            height: 6px !important;
+          }
+
+          .axis { display: grid; grid-template-columns: 1fr 1fr 1fr; color: var(--muted); font-size: 11px; }
+          .axis-left { text-align: left; }
+          .axis-mid { text-align: center; }
+          .axis-right { text-align: right; }
+          .xlabels { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+
+          .fr-wrap {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.03);
+            padding: 10px;
+            display: grid;
+            gap: 8px;
+          }
+          .fr-head { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: baseline; }
+          .fr-title { font-size: 12px; font-weight: 750; }
+          .fr-meta { font-size: 11px; color: var(--muted); }
+
+          .fr-svg {
+            width: 100%;
+            height: 220px;
+            border-radius: 10px;
+            border: 1px solid rgba(148,163,184,0.18);
+            background: rgba(148,163,184,0.08);
+            overflow: hidden;
+          }
+          .fr-grid { stroke: rgba(148,163,184,0.20); stroke-width: 1; }
+          .fr-axisline { stroke: rgba(148,163,184,0.35); stroke-width: 1.2; }
+          .fr-axis { fill: rgba(148,163,184,0.95); font-size: 11px; font-family: var(--mono); }
+
+          .fr-line { fill: none; stroke: rgba(96,165,250,0.95); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+          .gd-line { fill: none; stroke: rgba(52,211,153,0.95); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+
+          .fr-empty { border: 1px dashed rgba(148,163,184,0.28); border-radius: 10px; padding: 10px; background: rgba(255,255,255,0.02); }
+          .fr-foot { font-size: 11px; }
+
+          .table-wrap { overflow: auto; border: 1px solid rgba(148,163,184,0.18); border-radius: 12px; }
+          .tbl { width: 100%; border-collapse: collapse; min-width: 980px; }
+          .tbl th, .tbl td {
+            padding: 10px 10px;
+            border-bottom: 1px solid rgba(148,163,184,0.14);
+            white-space: nowrap;
+          }
+          .tbl thead th {
+            position: sticky;
+            top: 0;
+            background: rgba(15,26,43,0.92);
+            backdrop-filter: blur(8px);
+            z-index: 1;
+            font-size: 12px;
+            color: rgba(230,237,243,0.95);
+            text-align: left;
+          }
+          .tbl tbody tr:hover { background: rgba(96,165,250,0.08); }
+
+          .posttap-wrap { display: grid; gap: 10px; }
+          .posttbl { min-width: 980px; }
+
+          .topo-wrap {
+            border: 1px solid rgba(148,163,184,0.18);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.02);
+            padding: 12px;
+            overflow: auto;
+          }
+          .topo-svg { width: 100%; max-width: 860px; height: auto; display: block; }
+          .topo-edge { fill: none; stroke: rgba(148,163,184,0.45); stroke-width: 2; }
+          .topo-box { stroke: rgba(148,163,184,0.20); stroke-width: 1.2; }
+          .topo-cm   { fill: rgba(96,165,250,0.14); }
+          .topo-us   { fill: rgba(52,211,153,0.10); }
+          .topo-feat { fill: rgba(251,191,36,0.10); }
+          .topo-title { fill: rgba(230,237,243,0.98); font-size: 15px; font-weight: 820; }
+          .topo-sub { fill: rgba(148,163,184,0.95); font-size: 11px; }
+        </style>
+
+        ${buildDeviceInfoBlock()}
+
+        <div class="top">
+          <div class="title">ATDMA Channel PreEqualization</div>
+          <div class="sub">Topology + tables + per-channel plots (dynamic)</div>
+        </div>
+
+        ${topoSvg(results)}
+
+        ${buildStatsTable(rowsByKey)}
+
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Per-Channel Detail</div>
+          </div>
+
+          <div class="grid">
+            ${usIdxKeys.map((k) => buildChannelPanel(k, results[k] || {})).join("")}
+          </div>
+        </div>
+        `;
+
+        pm.visualizer.set(template, {});
+      })();
+    language: text/javascript
+order: 2000

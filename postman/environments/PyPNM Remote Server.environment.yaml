@@ -1,0 +1,5 @@
+name: PyPNM Remote Server
+values:
+  - key: base_url
+    value: 'http://172.19.8.28:8000'
+    enabled: true

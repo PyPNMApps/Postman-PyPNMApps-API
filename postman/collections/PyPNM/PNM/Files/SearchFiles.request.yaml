@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{pypnm_url}}/docs/pnm/files/searchFiles/{{mac_address}}"
+method: GET
+order: 2000

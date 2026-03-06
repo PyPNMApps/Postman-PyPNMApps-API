@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{pypnm_url}}/docs/pnm/files/download/filename/{{filename}}"
+method: GET
+order: 4000

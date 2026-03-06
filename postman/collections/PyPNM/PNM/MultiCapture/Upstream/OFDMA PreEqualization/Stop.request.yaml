@@ -1,0 +1,5 @@
+$kind: http-request
+url: "{{pypnm_url}}/advance/multi/us/ofdmaPreEqualization/stop/{{ofdma_preeq_mu\
+  lti_operation_id}}"
+method: DELETE
+order: 4000
