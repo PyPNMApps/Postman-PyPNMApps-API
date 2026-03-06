@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{pypnm_url}}/advance/multi/us/ofdmaPreEqualization/status/{{ofdma_preeq_\
+  multi_operation_id}}"
+method: GET
+body:
+  type: json
+  content: ""
+order: 3000

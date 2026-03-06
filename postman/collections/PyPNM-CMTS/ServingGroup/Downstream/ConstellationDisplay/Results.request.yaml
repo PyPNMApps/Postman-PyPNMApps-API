@@ -1,0 +1,386 @@
+$kind: http-request
+url: "{{pypnm_cmts_url}}/cmts/pnm/sg/ds/ofdm/constellationDisplay/results"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"operation\": {\r
+
+    \    \"pnm_capture_operation_id\":
+    \"{{constellation_display_cmts_operation_id}}\"\r
+
+    \  },\r
+
+    \  \"selection\": {\r
+
+    \    \"serving_group_ids\": [],\r
+
+    \    \"channel_ids\": [],\r
+
+    \    \"mac_addresses\": []\r
+
+    \  },\r
+
+    \  \"analysis\": {\r
+
+    \    \"type\": \"basic\"\r
+
+    \  },\r
+
+    \  \"output\": {\r
+
+    \    \"type\": \"json\"\r
+
+    \  }\r
+
+    }\r\n"
+scripts:
+  - type: afterResponse
+    code: >-
+      // Postman Visualizer:
+      PyPNM-CMTS/ServingGroup/Downstream/ConstellationDisplay/Results/basic
+
+      // Last Update: 2026-02-26 14:18:53 MST
+
+
+      const response = pm.response.json();
+
+
+      function n(v) {
+        const x = Number(v);
+        return Number.isFinite(x) ? x : null;
+      }
+
+
+      function fmtDateTime(v) {
+        const x = n(v);
+        if (x == null) return 'N/A';
+        try {
+          return new Date(x * 1000).toISOString().replace('T', ' ').replace('.000Z', ' UTC');
+        } catch (_) {
+          return String(x);
+        }
+      }
+
+
+      function fmtInt(v) {
+        const x = n(v);
+        return x == null ? 'N/A' : String(Math.round(x));
+      }
+
+
+      function summarizeDistinct(values) {
+        const list = Array.from(values || []).filter((v) => v && v !== 'N/A').sort();
+        if (!list.length) return 'N/A';
+        if (list.length === 1) return list[0];
+        return list[0] + ' +' + (list.length - 1);
+      }
+
+
+      function sysDescrSummary(sys) {
+        if (!sys || typeof sys !== 'object') return null;
+        const vendor = sys.VENDOR || 'N/A';
+        const model = sys.MODEL || 'N/A';
+        const sw = sys.SW_REV || 'N/A';
+        const hw = sys.HW_REV || 'N/A';
+        const bootr = sys.BOOTR || 'N/A';
+        return 'VENDOR=' + vendor + ' | MODEL=' + model + ' | SW=' + sw + ' | HW=' + hw + ' | BOOTR=' + bootr;
+      }
+
+
+      function pairsToPoints(list) {
+        if (!Array.isArray(list)) return [];
+        const out = [];
+        for (let i = 0; i < list.length; i += 1) {
+          const pair = list[i];
+          if (!Array.isArray(pair) || pair.length < 2) continue;
+          const x = n(pair[0]);
+          const y = n(pair[1]);
+          if (x == null || y == null) continue;
+          out.push({ x, y });
+        }
+        return out;
+      }
+
+
+      function boundsFromPointSets(pointSets) {
+        let minX = null, maxX = null, minY = null, maxY = null;
+        for (const pts of pointSets || []) {
+          for (const p of pts || []) {
+            const x = n(p && p.x);
+            const y = n(p && p.y);
+            if (x == null || y == null) continue;
+            if (minX == null || x < minX) minX = x;
+            if (maxX == null || x > maxX) maxX = x;
+            if (minY == null || y < minY) minY = y;
+            if (maxY == null || y > maxY) maxY = y;
+          }
+        }
+        if (minX == null || maxX == null || minY == null || maxY == null) {
+          return { minX: -2, maxX: 2, minY: -2, maxY: 2 };
+        }
+        const spanX = Math.max(0.1, maxX - minX);
+        const spanY = Math.max(0.1, maxY - minY);
+        const pad = Math.max(spanX, spanY) * 0.08;
+        const cx = (minX + maxX) / 2;
+        const cy = (minY + maxY) / 2;
+        const half = Math.max(spanX, spanY) / 2 + pad;
+        return { minX: cx - half, maxX: cx + half, minY: cy - half, maxY: cy + half };
+      }
+
+
+      function buildPayload(r) {
+        const results = (r && r.results) || {};
+        const capture = results.capture_details || {};
+        const cmts = results.cmts || {};
+        const servingGroups = Array.isArray(results.serving_groups) ? results.serving_groups : [];
+        const legacyChannels = Array.isArray(results.channels) ? results.channels : [];
+        const channelEntries = [];
+
+        if (servingGroups.length) {
+          for (const sg of servingGroups) {
+            const sgId = sg && sg.service_group_id != null ? sg.service_group_id : 'Unknown';
+            for (const ch of (Array.isArray(sg && sg.channels) ? sg.channels : [])) {
+              channelEntries.push({ service_group_id: sgId, channel: ch || {} });
+            }
+          }
+        } else {
+          for (const ch of legacyChannels) {
+            channelEntries.push({ service_group_id: (ch && ch.service_group_id) ?? 'Unknown', channel: ch || {} });
+          }
+        }
+
+        const sgMap = new Map();
+        let totalModems = 0;
+
+        for (let chIndex = 0; chIndex < channelEntries.length; chIndex += 1) {
+          const entry = channelEntries[chIndex] || {};
+          const ch = entry.channel || {};
+          const cableModems = Array.isArray(ch.cable_modems) ? ch.cable_modems : [];
+
+          for (let mIndex = 0; mIndex < cableModems.length; mIndex += 1) {
+            const modem = cableModems[mIndex] || {};
+            const cd = modem.constellation_display_data || {};
+            const analysis = cd.analysis;
+            if (!analysis || typeof analysis !== 'object') continue;
+
+            const softPoints = pairsToPoints(analysis.soft);
+            const hardPoints = pairsToPoints(analysis.hard);
+            if (!softPoints.length && !hardPoints.length) continue;
+
+            const sys = modem.system_description || (analysis.device_details && analysis.device_details.system_description) || null;
+            const mac = String(modem.mac_address || analysis.mac_address || 'N/A').toUpperCase();
+            const sgId = entry.service_group_id ?? ch.service_group_id ?? 'Unknown';
+            const chanId = analysis.channel_id ?? ch.channel_id ?? ('Unknown-' + (chIndex + 1));
+            const pHeader = analysis.pnm_header || {};
+            const modulationOrder = n(analysis.modulation_order);
+            const symbolCount = n(analysis.num_sample_symbols);
+            const bounds = boundsFromPointSets([softPoints, hardPoints]);
+
+            totalModems += 1;
+            const row = {
+              channel_id: chanId,
+              service_group_id: sgId,
+              mac_address: mac,
+              system_model: sys && sys.MODEL ? sys.MODEL : 'LCPET-3',
+              system_sw: sys && sys.SW_REV ? sys.SW_REV : '1.0.0',
+              sysdescr_hover: sysDescrSummary(sys) || 'No system_description available',
+              capture_time: fmtDateTime(pHeader.capture_time),
+              modulation_order: modulationOrder == null ? 'N/A' : String(modulationOrder),
+              symbol_count: symbolCount == null ? 'N/A' : String(symbolCount),
+              soft_count: String(softPoints.length),
+              hard_count: String(hardPoints.length),
+              combined_label: (sys && sys.MODEL ? sys.MODEL : 'LCPET-3') + ' · ' + mac,
+              soft_points: softPoints,
+              hard_points: hardPoints,
+              chart_id: 'const-cm-' + chIndex + '-' + mIndex,
+              x_min: bounds.minX,
+              x_max: bounds.maxX,
+              y_min: bounds.minY,
+              y_max: bounds.maxY,
+            };
+
+            let sg = sgMap.get(String(sgId));
+            if (!sg) {
+              sg = { service_group_id: sgId, channels: new Map() };
+              sgMap.set(String(sgId), sg);
+            }
+            let cg = sg.channels.get(String(chanId));
+            if (!cg) {
+              cg = { channel_id: chanId, modem_count: 0, rows: [] };
+              sg.channels.set(String(chanId), cg);
+            }
+            cg.modem_count += 1;
+            cg.rows.push(row);
+          }
+        }
+
+        const outServiceGroups = Array.from(sgMap.values()).map((sg, sgIdx) => {
+          const channels = Array.from(sg.channels.values()).map((cg, chIdx) => {
+            cg.rows.sort((a, b) => String(a.mac_address).localeCompare(String(b.mac_address)));
+            const allSoft = cg.rows.flatMap((r) => r.soft_points || []);
+            const allHard = cg.rows.flatMap((r) => r.hard_points || []);
+            const bounds = boundsFromPointSets([allSoft, allHard]);
+            cg.combined_chart_id = 'sg-' + sgIdx + '-ch-' + chIdx + '-combined';
+            cg.combined_title = 'Channel ' + cg.channel_id + ' · Constellation (Soft points)';
+            cg.bounds = bounds;
+            return cg;
+          }).sort((a, b) => String(a.channel_id).localeCompare(String(b.channel_id), undefined, { numeric: true }));
+          return {
+            service_group_id: sg.service_group_id,
+            channel_count: channels.length,
+            modem_count: channels.reduce((acc, c) => acc + c.modem_count, 0),
+            channels,
+          };
+        }).sort((a, b) => String(a.service_group_id).localeCompare(String(b.service_group_id), undefined, { numeric: true }));
+
+        return {
+          title: 'Serving Group Downstream ConstellationDisplay Results',
+          message: (r && r.message) || '',
+          capture_type: capture.capture_type || 'N/A',
+          capture_time: fmtDateTime(capture.capture_time_epoch),
+          cmts_hostname: cmts.cmts_hostname || 'N/A',
+          service_group_count: outServiceGroups.length,
+          channel_count: outServiceGroups.reduce((acc, sg) => acc + sg.channel_count, 0),
+          modem_count: totalModems,
+          service_groups_json: JSON.stringify(outServiceGroups),
+        };
+      }
+
+
+      const payload = buildPayload(response);
+
+
+      const template = `
+
+      <style>
+        :root{color-scheme:light dark;--bg:#0b1222;--panel:rgba(255,255,255,.04);--panel2:rgba(255,255,255,.05);--line:rgba(148,163,184,.25);--text:#e5e7eb;--muted:#94a3b8}
+        @media (prefers-color-scheme: light){:root{--bg:#f8fafc;--panel:#fff;--panel2:#f1f5f9;--line:#dbe2ea;--text:#111827;--muted:#475569}}
+        *{box-sizing:border-box}
+        body{margin:0;padding:18px;color:var(--text);background:radial-gradient(circle at top left, rgba(59,130,246,.14), transparent 45%), var(--bg);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}
+        .wrap{max-width:1600px;margin:0 auto;display:grid;gap:14px}
+        .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+        .title{margin:0;font-size:22px;font-weight:800}.sub{margin-top:6px;color:var(--muted);font-size:13px}
+        .kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+        .kpi{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}.label{color:var(--muted);font-size:12px}.val{margin-top:3px;font-weight:700}
+        .channels-wrap{display:grid;gap:14px}
+        .channel-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:12px;min-width:0;overflow:hidden}
+        .sg-channel-grid{display:grid;grid-template-columns:1fr;gap:12px}
+        .channel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+        .channel-title{margin:0;font-size:18px;font-weight:800}.channel-meta{color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+        .trace-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+        .trace-toggle{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:rgba(255,255,255,.02);font-size:12px;min-width:0}
+        .trace-toggle.all{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.35)} .trace-toggle span{overflow-wrap:anywhere}
+        .chart-box{height:320px;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--panel2);min-width:0}
+        .chart-box.small{height:260px}.chart-box canvas{display:block;width:100%!important;max-width:100%}
+        .cm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0}
+        .cm-card{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:10px;display:grid;gap:8px}
+        .cm-head{text-align:center}
+        .cm-title{margin:0;font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .cm-sub{margin-top:3px;font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+        .cm-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+        .cm-stat{border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center}
+        .slabel{color:var(--muted);font-size:11px}.sval{font-weight:700;font-size:12px;margin-top:2px}
+        .cm-stat.symbols .slabel,.cm-stat.symbols .sval{color:#3b82f6}
+        .empty{color:var(--muted);text-align:center;padding:16px;border:1px dashed var(--line);border-radius:10px}
+        @media (max-width:1280px){.trace-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+        @media (max-width:980px){.trace-grid,.cm-grid{grid-template-columns:1fr}}
+      </style>
+
+      <div class="wrap">
+        <div class="card">
+          <h1 class="title">{{title}}</h1>
+          <div class="sub">CMTS: {{cmts_hostname}} · Capture: {{capture_type}} · Capture Time: {{capture_time}}</div>
+          {{#if message}}<div class="sub">{{message}}</div>{{/if}}
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="label">Service Groups</div><div class="val">{{service_group_count}}</div></div>
+          <div class="kpi"><div class="label">Channels</div><div class="val">{{channel_count}}</div></div>
+          <div class="kpi"><div class="label">Cable Modems</div><div class="val">{{modem_count}}</div></div>
+        </div>
+        <div id="channelsRoot" class="channels-wrap"></div>
+      </div>
+
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+      <script>
+
+      (function(){
+        const serviceGroups = {{{service_groups_json}}};
+        const root = document.getElementById('channelsRoot');
+        if (!root || !Array.isArray(serviceGroups)) return;
+        const darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const axisText = darkMode ? '#ffffff' : '#111827';
+        const gridColor = darkMode ? 'rgba(255,255,255,0.10)' : 'rgba(15,23,42,0.10)';
+        const palette=['#3b82f6','#16a34a','#ef4444','#f59e0b','#06b6d4','#a855f7','#eab308','#f97316','#22c55e','#ec4899','#0ea5e9','#84cc16'];
+
+        function createScatterChart(canvas, datasets, titleText, xTitle, yTitle, bounds){
+          if(!canvas||!window.Chart||!datasets||!datasets.length) return null;
+          return new Chart(canvas,{type:'scatter',data:{datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,parsing:false,plugins:{legend:{display:false},title:titleText?{display:true,text:titleText,color:axisText}:{display:false},tooltip:{callbacks:{label:(ctx)=>'('+ctx.parsed.x.toFixed(3)+', '+ctx.parsed.y.toFixed(3)+')'}}},scales:{x:{type:'linear',title:{display:true,text:xTitle,color:axisText},ticks:{color:axisText,display:false},grid:{display:false,color:gridColor},min:bounds&&bounds.minX,max:bounds&&bounds.maxX},y:{type:'linear',title:{display:true,text:yTitle,color:axisText},ticks:{color:axisText,display:false},grid:{display:false,color:gridColor},min:bounds&&bounds.minY,max:bounds&&bounds.maxY}}}});
+        }
+
+        serviceGroups.forEach((sg)=>{
+          const sgCard=document.createElement('section'); sgCard.className='channel-card';
+          const sgHead=document.createElement('div'); sgHead.className='channel-head';
+          sgHead.innerHTML='<h2 class="channel-title">Service Group '+sg.service_group_id+'</h2><div class="channel-meta">Channels: '+sg.channel_count+' · Cable Modems: '+sg.modem_count+'</div>';
+          const sgGrid=document.createElement('div'); sgGrid.className='sg-channel-grid'; sgCard.appendChild(sgHead); sgCard.appendChild(sgGrid); root.appendChild(sgCard);
+
+          (sg.channels||[]).forEach((ch)=>{
+            const chCard=document.createElement('section'); chCard.className='channel-card';
+            const chHead=document.createElement('div'); chHead.className='channel-head';
+            chHead.innerHTML='<h3 class="channel-title">Channel '+ch.channel_id+'</h3><div class="channel-meta">Cable Modems: '+ch.modem_count+'</div>';
+            chCard.appendChild(chHead);
+
+            const combinedWrap=document.createElement('div'); combinedWrap.className='channel-card'; combinedWrap.style.padding='10px';
+            const combinedHead=document.createElement('div'); combinedHead.className='channel-head';
+            const left=document.createElement('div'); left.style.display='flex'; left.style.flexWrap='wrap'; left.style.gap='8px'; left.style.alignItems='center';
+            const title=document.createElement('div'); title.className='channel-meta'; title.style.fontSize='14px'; title.style.fontWeight='700'; title.style.color='var(--text)'; title.textContent=ch.combined_title;
+            left.appendChild(title);
+            const allLabel=document.createElement('label'); allLabel.className='trace-toggle all'; const allCb=document.createElement('input'); allCb.type='checkbox'; allCb.checked=true; const allTxt=document.createElement('span'); allTxt.textContent='All'; allLabel.appendChild(allCb); allLabel.appendChild(allTxt); left.appendChild(allLabel);
+            const combinedMeta=document.createElement('div'); combinedMeta.className='channel-meta'; combinedMeta.textContent='';
+            combinedHead.appendChild(left); combinedHead.appendChild(combinedMeta); combinedWrap.appendChild(combinedHead);
+            const combinedBox=document.createElement('div'); combinedBox.className='chart-box'; const combinedCanvas=document.createElement('canvas'); combinedCanvas.id=ch.combined_chart_id; combinedBox.appendChild(combinedCanvas); combinedWrap.appendChild(combinedBox);
+            const traceGrid=document.createElement('div'); traceGrid.className='trace-grid'; combinedWrap.appendChild(traceGrid);
+            chCard.appendChild(combinedWrap);
+
+            const cmGrid=document.createElement('div'); cmGrid.className='cm-grid'; chCard.appendChild(cmGrid); sgGrid.appendChild(chCard);
+
+            const combinedDatasets=(ch.rows||[]).map((row,idx)=>({label:row.combined_label,data:row.soft_points||[],showLine:false,pointRadius:0.8,pointHoverRadius:1,pointBackgroundColor:'#3b82f6',pointBorderColor:'#3b82f6'}));
+            const combinedChart=createScatterChart(combinedCanvas, combinedDatasets, null, 'I', 'Q', ch.bounds);
+            const rowToggleCheckboxes=[];
+            (ch.rows||[]).forEach((row,idx)=>{
+              const tLabel=document.createElement('label'); tLabel.className='trace-toggle'; const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=true; const txt=document.createElement('span'); txt.textContent=(row.system_model||'N/A')+' · '+(row.system_sw||'N/A')+' · '+row.mac_address;
+              cb.addEventListener('change',()=>{ if(combinedChart&&combinedChart.data&&combinedChart.data.datasets&&combinedChart.data.datasets[idx]){ combinedChart.data.datasets[idx].hidden=!cb.checked; combinedChart.update('none'); } allCb.checked=rowToggleCheckboxes.every((x)=>x.checked); allCb.indeterminate=!allCb.checked&&rowToggleCheckboxes.some((x)=>x.checked); });
+              tLabel.appendChild(cb); tLabel.appendChild(txt); traceGrid.appendChild(tLabel); rowToggleCheckboxes.push(cb);
+            });
+            allCb.addEventListener('change',()=>{ rowToggleCheckboxes.forEach((cb,i)=>{ cb.checked=allCb.checked; if(combinedChart&&combinedChart.data&&combinedChart.data.datasets&&combinedChart.data.datasets[i]) combinedChart.data.datasets[i].hidden=!allCb.checked; }); allCb.indeterminate=false; if(combinedChart) combinedChart.update('none'); });
+
+            (ch.rows||[]).forEach((row,idx)=>{
+              const cmCard=document.createElement('div'); cmCard.className='cm-card'; cmCard.title=row.sysdescr_hover || 'No system_description available';
+              cmCard.innerHTML='<div class="cm-head"><h4 class="cm-title">'+(row.system_model||'N/A')+' · '+(row.system_sw||'N/A')+' · '+row.mac_address+'</h4><div class="cm-sub">Capture Time: '+row.capture_time+'</div></div>'+
+                '<div class="cm-stats">'+
+                '<div class="cm-stat symbols"><div class="slabel">Symbols</div><div class="sval">'+row.symbol_count+'</div></div>'+
+                '<div class="cm-stat"><div class="slabel">Mod Order</div><div class="sval">'+row.modulation_order+'</div></div>'+
+                '</div>';
+              const cmChartBox=document.createElement('div'); cmChartBox.className='chart-box small'; const cmCanvas=document.createElement('canvas'); cmCanvas.id=row.chart_id; cmChartBox.appendChild(cmCanvas); cmCard.appendChild(cmChartBox);
+              cmGrid.appendChild(cmCard);
+              const cmDatasets=[];
+              if ((row.soft_points||[]).length) cmDatasets.push({label:'',data:row.soft_points,showLine:false,pointRadius:0.8,pointHoverRadius:1,pointBackgroundColor:'#3b82f6',pointBorderColor:'#3b82f6'});
+              if ((row.hard_points||[]).length) cmDatasets.push({label:'',data:row.hard_points,showLine:false,pointRadius:1.2,pointHoverRadius:1.5,pointBackgroundColor:'#3b82f6',pointBorderColor:'#3b82f6'});
+              createScatterChart(cmCanvas, cmDatasets, null, 'I', 'Q', {minX:row.x_min,maxX:row.x_max,minY:row.y_min,maxY:row.y_max});
+            });
+          });
+        });
+
+        if (!serviceGroups.length) { const empty=document.createElement('div'); empty.className='empty'; empty.textContent='No constellation display results found in sample JSON.'; root.appendChild(empty); }
+      })();
+
+      </script>
+
+      `;
+
+
+      pm.visualizer.set(template, payload);
+    language: text/javascript
+order: 4000

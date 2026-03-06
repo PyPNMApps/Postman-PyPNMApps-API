@@ -1,0 +1,729 @@
+$kind: http-request
+url: "{{pypnm_url}}/docs/pnm/us/ofdma/preEqualization/getCapture"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"cable_modem\": {\r
+
+    \    \"mac_address\": \"{{cm_mac_address}}\",\r
+
+    \    \"ip_address\": \"{{cm_ip_address}}\",\r
+
+    \    \"pnm_parameters\": {\r
+
+    \      \"tftp\": {\r
+
+    \        \"ipv4\": \"{{tftp_server_ipv4}}\",\r
+
+    \        \"ipv6\": \"{{tftp_server_ipv6}}\"\r
+
+    \      },\r
+
+    \      \"capture\": {\r
+
+    \        \"channel_ids\": [{{channel_ids}} ]\r
+
+    \      }\r
+
+    \    },\r
+
+    \    \"snmp\": {\r
+
+    \      \"snmpV2C\": {\r
+
+    \        \"community\": \"{{cm_snmp_community_rw}}\"\r
+
+    \      }\r
+
+    \    }\r
+
+    \  },\r
+
+    \  \"analysis\": {\r
+
+    \    \"type\": \"basic\",\r
+
+    \    \"output\": {\r
+
+    \      \"type\": \"json\"\r
+
+    \    },\r
+
+    \    \"plot\": {\r
+
+    \      \"ui\": {\r
+
+    \        \"theme\": \"dark\"\r
+
+    \      }\r
+
+    \    }\r
+
+    \  }\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: |-
+      // Postman Visualizer: SingleCapture/Ofdma-PreEq-GetCapture
+      // Last Update: 2026-02-28 11:31:00 MST
+
+      const template = `
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1e1e1e; color: #e0e0e0; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-bottom: 30px; }
+        h1 { color: #e0e0e0; text-align: center; margin: 0; grid-column: 2; }
+        .capture-time { grid-column: 3; justify-self: end; font-size: 12px; color: #d7deec; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 6px 10px; white-space: nowrap; }
+        .meta-row { display:flex; justify-content:center; flex-wrap:wrap; gap:8px; margin:-14px 0 14px 0; }
+        .meta-pill { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 6px 10px; font-size: 12px; color: #d7deec; }
+        .meta-pill b { color: #9fb4ff; }
+        .status-ok { color: #39c28e; }
+        .status-nok { color: #ff6b6b; }
+        .status-unknown { color: #d7deec; }
+        .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+        .channels-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items:start; }
+        .channel-section { background: #2d2d2d; padding: 18px; margin: 0; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .channel-header { background: linear-gradient(135deg, #2f6db3 0%, #24528a 100%); color: white; padding: 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
+        .device-info-block { background: #343447; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+        .channel-title { font-size: 24px; font-weight: bold; margin: 0; text-align: center; }
+        .channel-subtitle { font-size: 13px; margin: 6px 0 0 0; opacity: 0.92; text-align: center; }
+        .channel-meta-wrap { margin-top: 0; background: rgba(255,255,255,0.08); border-radius: 10px; overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); }
+        .channel-meta-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; padding: 10px 12px; background: rgba(0,0,0,0.18); opacity: 0.95; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .channel-meta-table { width: 100%; border-collapse: collapse; min-width: 680px; }
+        .channel-meta-table th { text-align: left; width: 180px; padding: 9px 12px; font-size: 11px; color: #dbe3ff; border-bottom: 1px solid rgba(255,255,255,0.08); text-transform: uppercase; letter-spacing: 0.45px; }
+        .channel-meta-table td { padding: 10px 12px; font-size: 12px; color: #ffffff; border-bottom: 1px solid rgba(255,255,255,0.08); word-break: break-word; }
+        .channel-meta-table tr:last-child th, .channel-meta-table tr:last-child td { border-bottom: none; }
+        .device-info-table th { width: auto; white-space: nowrap; background: rgba(255,255,255,0.03); }
+        .device-info-table td { white-space: nowrap; }
+        .device-info-table td:nth-child(1),
+        .device-info-table td:nth-child(4),
+        .device-info-table td:nth-child(5),
+        .device-info-table td:nth-child(6) { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+        .device-info-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
+        .channel-info { margin-top: 14px; }
+
+        .series-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin: 10px 0 24px 0; }
+        .series-card { background: #3d3d3d; padding: 16px; border-radius: 8px; border-left: 4px solid #ff6c37; }
+        .series-header { font-size: 18px; font-weight: bold; color: #ff6c37; margin-bottom: 12px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 12px 0 0 0; }
+        .stat-card { background: #2d2d2d; padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .stat-label { font-size: 11px; color: #b0b0b0; text-transform: uppercase; font-weight: 600; }
+        .stat-value { font-size: 18px; font-weight: bold; color: #8b9dff; margin-top: 4px; }
+
+        .chart-container { background: #2d2d2d; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); margin: 18px 0; }
+        .chart-title { font-size: 16px; font-weight: bold; color: #e0e0e0; margin-bottom: 12px; text-align: center; }
+        canvas { max-height: 350px; }
+
+        .echo-table { width: 100%; background: #2d2d2d; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.3); margin: 12px 0 0 0; }
+        .echo-table th { background: #667eea; color: white; padding: 10px; text-align: left; font-size: 13px; }
+        .echo-table td { padding: 10px; border-bottom: 1px solid #3d3d3d; font-size: 13px; color: #e0e0e0; }
+
+        .no-data { text-align: center; padding: 40px; color: #b0b0b0; font-size: 18px; }
+        @media (max-width: 980px) { .channels-grid { grid-template-columns: 1fr; } }
+      </style>
+
+      <div class="container">
+        <div class="header-row">
+      	  <h1>Pre-Equalization Analysis</h1>
+          {{#if captureTime}}<div class="capture-time">Capture Time: {{captureTime}}</div>{{/if}}
+        </div>
+        <div class="meta-row">
+          <div class="meta-pill"><b>Status</b> <span class="{{statusClass}}">{{statusText}}</span></div>
+          <div class="meta-pill"><b>Channels</b> {{channelCount}}</div>
+        </div>
+
+        {{#if channelCount}}
+        <div class="device-info-block">
+          <div class="channel-meta-wrap">
+            <div class="channel-meta-title">Device Info</div>
+            <table class="channel-meta-table device-info-table">
+              <thead>
+                <tr>
+                  <th>MacAddress</th>
+                  <th>Model</th>
+                  <th>Vendor</th>
+                  <th>SW Version</th>
+                  <th>HW Version</th>
+                  <th>Boot ROM</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{pageDevice.macAddress}}</td>
+                  <td>{{pageDevice.deviceInfo.MODEL}}</td>
+                  <td>{{pageDevice.deviceInfo.VENDOR}}</td>
+                  <td>{{pageDevice.deviceInfo.SW_REV}}</td>
+                  <td>{{pageDevice.deviceInfo.HW_REV}}</td>
+                  <td>{{pageDevice.deviceInfo.BOOTR}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {{/if}}
+
+        <div class="channels-grid">
+        {{#each channels}}
+      	    <div class="channel-section">
+      	      <div class="channel-header">
+      	        <div class="channel-info">
+      	          <div class="channel-title">Channel {{channelId}}</div>
+      	          <div class="channel-subtitle">{{subcarrierZeroFreqMHz}} MHz{{#if subcarrierZeroFreqHzLabel}} <span class="mono">({{subcarrierZeroFreqHzLabel}} Hz)</span>{{/if}}</div>
+      	        </div>
+      	      </div>
+
+            <div class="series-wrap">
+              {{#each series}}
+                <div class="series-card">
+      	            <div class="series-header">{{versionLabel}}</div>
+
+                  <div class="stats-grid">
+                    <div class="stat-card">
+                      <div class="stat-label">Mean (dB)</div>
+                      <div class="stat-value">{{stats.mean}}</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-label">Median (dB)</div>
+                      <div class="stat-value">{{stats.median}}</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-label">Std Dev</div>
+                      <div class="stat-value">{{stats.std}}</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-label">Power</div>
+                      <div class="stat-value">{{stats.power}}</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-label">Peak-to-Peak</div>
+                      <div class="stat-value">{{stats.peakToPeak}}</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-label">Crest Factor</div>
+                      <div class="stat-value">{{stats.crestFactor}}</div>
+                    </div>
+                  </div>
+
+                  {{#if echoes.length}}
+                    <div class="chart-title" style="margin-top: 14px;">Echo Analysis</div>
+                    <table class="echo-table">
+                      <thead>
+                        <tr>
+                          <th>Bin Index</th>
+                          <th>Time (μs)</th>
+                          <th>Amplitude</th>
+                          <th>Distance (m)</th>
+                          <th>Distance (ft)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {{#each echoes}}
+                          <tr>
+                            <td>{{binIndex}}</td>
+                            <td>{{time}}</td>
+                            <td>{{amplitude}}</td>
+                            <td>{{distanceM}}</td>
+                            <td>{{distanceFt}}</td>
+                          </tr>
+                        {{/each}}
+                      </tbody>
+                    </table>
+                  {{/if}}
+                </div>
+              {{/each}}
+            </div>
+
+            <div class="chart-container">
+              <div class="chart-title">Estimated Frequency Response</div>
+              <canvas id="chanest-{{channelId}}"></canvas>
+            </div>
+
+            <div class="chart-container">
+              <div class="chart-title">Pre-EQ Magnitude Response</div>
+              <canvas id="magnitude-{{channelId}}"></canvas>
+            </div>
+
+            <div class="chart-container">
+              <div class="chart-title">Group Delay (Overlay: Current vs Last Update)</div>
+              <canvas id="groupdelay-{{channelId}}"></canvas>
+            </div>
+          </div>
+        {{/each}}
+        </div>
+
+        {{#unless channels.length}}
+          <div class="no-data">No data available to display</div>
+        {{/unless}}
+      </div>
+
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+      <script>
+      pm.getData(function(err, data) {
+        if (err || !data || !data.channels) return;
+
+        const darkModeOptions = {
+          responsive: true,
+          maintainAspectRatio: true,
+          legend: {
+            display: true,
+            labels: { fontColor: '#e0e0e0', fontSize: 12 }
+          },
+          scales: {
+            xAxes: [{
+              ticks: { fontColor: '#b0b0b0', maxTicksLimit: 10 },
+              gridLines: { color: '#3d3d3d', zeroLineColor: '#5d5d5d' },
+              scaleLabel: { display: true, fontColor: '#e0e0e0', labelString: 'Frequency (MHz)' }
+            }],
+            yAxes: [{
+              ticks: { fontColor: '#b0b0b0' },
+              gridLines: { color: '#3d3d3d', zeroLineColor: '#5d5d5d' },
+              scaleLabel: { display: true, fontColor: '#e0e0e0' }
+            }]
+          },
+          tooltips: {
+            backgroundColor: '#2d2d2d',
+            titleFontColor: '#e0e0e0',
+            bodyFontColor: '#e0e0e0',
+            borderColor: '#667eea',
+            borderWidth: 1
+          },
+          elements: { line: { tension: 0 } }
+        };
+
+        function normalizeLabelValue(value) {
+          return value === undefined || value === null ? '' : String(value);
+        }
+
+        function buildAlignedDatasetValues(labels, seriesLabels, seriesValues) {
+          const out = Array(labels.length).fill(null);
+          if (!Array.isArray(seriesLabels) || !Array.isArray(seriesValues)) return out;
+
+          const valueByLabel = new Map();
+          const count = Math.min(seriesLabels.length, seriesValues.length);
+          for (let i = 0; i < count; i++) {
+            const key = normalizeLabelValue(seriesLabels[i]);
+            if (!key) continue;
+            const value = seriesValues[i];
+            valueByLabel.set(key, (typeof value === 'number' && isFinite(value)) ? value : null);
+          }
+
+          for (let i = 0; i < labels.length; i++) {
+            const key = normalizeLabelValue(labels[i]);
+            if (valueByLabel.has(key)) out[i] = valueByLabel.get(key);
+          }
+          return out;
+        }
+
+        function buildMasterLabels(seriesList) {
+          const labelSet = new Set();
+          (Array.isArray(seriesList) ? seriesList : []).forEach(s => {
+            (Array.isArray(s.frequencies) ? s.frequencies : []).forEach(label => {
+              const key = normalizeLabelValue(label);
+              if (key) labelSet.add(key);
+            });
+          });
+
+          return Array.from(labelSet).sort((a, b) => {
+            const an = Number(a);
+            const bn = Number(b);
+            if (isFinite(an) && isFinite(bn)) return an - bn;
+            return a.localeCompare(b);
+          });
+        }
+
+        function seriesStyle(version) {
+          // Deterministic styling: v6 (blue), v7 (orange), fallback (gray)
+          if (String(version) === '6') {
+            return { borderColor: '#4fc3f7', backgroundColor: 'rgba(79, 195, 247, 0.08)' };
+          }
+          if (String(version) === '7') {
+            return { borderColor: '#ff6c37', backgroundColor: 'rgba(255, 108, 55, 0.08)' };
+          }
+          return { borderColor: '#b0b0b0', backgroundColor: 'rgba(176, 176, 176, 0.06)' };
+        }
+
+        function chanEstStyle(version) {
+          // Deterministic styling for channel estimate overlays.
+          if (String(version) === '6') {
+            return { borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.05)' };
+          }
+          if (String(version) === '7') {
+            return { borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.05)' };
+          }
+          return { borderColor: '#c084fc', backgroundColor: 'rgba(192, 132, 252, 0.05)' };
+        }
+
+        function pnnVersionLabel(version) {
+          if (String(version) === '6') return 'Upstream Pre-Equalizer Coefficients';
+          if (String(version) === '7') return 'Upstream Pre-Equalizer Coefficients (Last Update)';
+          return 'Pre-Equalizer Data (Version ' + version + ')';
+        }
+
+        data.channels.forEach(channel => {
+          const magCanvas = document.getElementById('magnitude-' + channel.channelId);
+          const estCanvas = document.getElementById('chanest-' + channel.channelId);
+          const gdCanvas  = document.getElementById('groupdelay-' + channel.channelId);
+          if (!magCanvas || !estCanvas || !gdCanvas) return;
+
+          const series = Array.isArray(channel.series) ? channel.series.slice(0) : [];
+          if (!series.length) return;
+
+          const labels = buildMasterLabels(series);
+          if (!labels.length) return;
+
+          const magDatasets = [];
+          const estDatasets = [];
+          series.forEach(s => {
+            const magSt = seriesStyle(s.version);
+            magDatasets.push({
+              label: pnnVersionLabel(s.version),
+              data: buildAlignedDatasetValues(labels, s.frequencies, s.magnitudes),
+              borderColor: magSt.borderColor,
+              backgroundColor: magSt.backgroundColor,
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: false
+            });
+          });
+
+          const primarySeries = series.find(s => String(s.version) !== '7') || series[0];
+          if (primarySeries) {
+            const primaryMagStyle = seriesStyle(primarySeries.version);
+            estDatasets.push({
+              label: 'Pre-EQ Magnitude',
+              data: buildAlignedDatasetValues(labels, primarySeries.frequencies, primarySeries.magnitudes),
+              borderColor: primaryMagStyle.borderColor,
+              backgroundColor: primaryMagStyle.backgroundColor,
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: false
+            });
+
+            if (Array.isArray(primarySeries.chanEstimates) && primarySeries.chanEstimates.length) {
+              const primaryEstStyle = chanEstStyle(primarySeries.version);
+              estDatasets.push({
+                label: 'Estimated Frequency Response',
+                data: buildAlignedDatasetValues(labels, primarySeries.frequencies, primarySeries.chanEstimates),
+                borderColor: primaryEstStyle.borderColor,
+                backgroundColor: primaryEstStyle.backgroundColor,
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false
+              });
+            }
+          }
+
+          const gdDatasets = series.map(s => {
+            const st = seriesStyle(s.version);
+            return {
+              label: pnnVersionLabel(s.version),
+              data: buildAlignedDatasetValues(labels, s.frequencies, s.groupDelays),
+              borderColor: st.borderColor,
+              backgroundColor: st.backgroundColor,
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: true
+            };
+          });
+
+          new Chart(magCanvas, {
+            type: 'line',
+            data: { labels: labels, datasets: magDatasets },
+            options: {
+              ...darkModeOptions,
+              scales: {
+                ...darkModeOptions.scales,
+                yAxes: [{
+                  ...darkModeOptions.scales.yAxes[0],
+                  scaleLabel: { display: true, fontColor: '#e0e0e0', labelString: 'Pre-EQ Magnitude (dB)' }
+                }]
+              }
+            }
+          });
+
+          if (estDatasets.length) {
+            new Chart(estCanvas, {
+              type: 'line',
+              data: { labels: labels, datasets: estDatasets },
+              options: {
+                ...darkModeOptions,
+                scales: {
+                  ...darkModeOptions.scales,
+                  yAxes: [{
+                    ...darkModeOptions.scales.yAxes[0],
+                    scaleLabel: { display: true, fontColor: '#e0e0e0', labelString: 'Estimated Frequency Response (dB)' }
+                  }]
+                }
+              }
+            });
+          }
+
+          new Chart(gdCanvas, {
+            type: 'line',
+            data: { labels: labels, datasets: gdDatasets },
+            options: {
+              ...darkModeOptions,
+              scales: {
+                ...darkModeOptions.scales,
+                yAxes: [{
+                  ...darkModeOptions.scales.yAxes[0],
+                  scaleLabel: { display: true, fontColor: '#e0e0e0', labelString: 'Group Delay' }
+                }]
+              }
+            }
+          });
+        });
+      });
+      </script>
+      `;
+
+      function constructVisualizerPayload() {
+        let resp = {};
+        try {
+          resp = pm.response.json();
+        } catch (e) {
+          return {
+            channels: [],
+            captureTime: null,
+            channelCount: 0,
+            pageDevice: {
+              macAddress: 'N/A',
+              deviceInfo: { MODEL: 'LCPET-3', VENDOR: 'LANCity', SW_REV: '1.0.0', HW_REV: '1.0', BOOTR: 'NONE' }
+            },
+            statusText: 'N/A',
+            statusClass: 'status-unknown'
+          };
+        }
+
+        const analysis = (resp && resp.data && Array.isArray(resp.data.analysis)) ? resp.data.analysis : [];
+        if (!analysis.length) return { channels: [] };
+
+        const channelMap = new Map();
+
+        function toFixedOrNA(v, digits) {
+          if (typeof v !== 'number' || !isFinite(v)) return 'N/A';
+          return v.toFixed(digits);
+        }
+
+        function toMHzFixedOrNA(v, digits) {
+          if (typeof v !== 'number' || !isFinite(v)) return 'N/A';
+          return (v / 1000000).toFixed(digits);
+        }
+
+        function sanitizeMac(value, fallback) {
+          var fb = (fallback === undefined || fallback === null) ? 'N/A' : fallback;
+          if (value === undefined || value === null) return fb;
+          var text = String(value).trim();
+          if (!text) return fb;
+          var compact = text.replace(/[^0-9a-f]/gi, '').toLowerCase();
+          if (compact.length !== 12) return text;
+          if (text.indexOf(':') !== -1) return compact.match(/.{1,2}/g).join(':');
+          if (text.indexOf('-') !== -1) return compact.match(/.{1,2}/g).join('-');
+          if (text.indexOf('_') !== -1) return compact.match(/.{1,2}/g).join('_');
+          return compact;
+        }
+
+        function isPresent(value) {
+          return value !== undefined && value !== null && String(value).trim() !== '';
+        }
+
+        function formatCaptureTime(raw) {
+          if (raw === undefined || raw === null || raw === '') return null;
+          if (typeof raw === 'number' && isFinite(raw)) {
+            var ms = raw > 1e12 ? raw : raw * 1000;
+            var d = new Date(ms);
+            if (isNaN(d.getTime())) return null;
+            return d.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+          }
+          var n = Number(raw);
+          if (!isNaN(n) && isFinite(n)) return formatCaptureTime(n);
+          var d2 = new Date(raw);
+          if (isNaN(d2.getTime())) return String(raw);
+          return d2.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+        }
+
+        function pnnVersionLabel(version) {
+          if (String(version) === '6') return 'Upstream Pre-Equalizer Coefficients';
+          if (String(version) === '7') return 'Upstream Pre-Equalizer Coefficients (Last Update)';
+          return 'Pre-Equalizer Data (Version ' + version + ')';
+        }
+
+        function toDeviceInfoRecord(value) {
+          const out = {
+            MODEL: 'LCPET-3',
+            VENDOR: 'LANCity',
+            SW_REV: '1.0.0',
+            HW_REV: '1.0',
+            BOOTR: 'NONE'
+          };
+          if (!value) return out;
+
+          if (typeof value === 'string') {
+            if (isPresent(value)) out.MODEL = value.trim();
+            return out;
+          }
+          if (typeof value !== 'object') return out;
+
+          Object.keys(out).forEach(key => {
+            const v = value[key];
+            if (isPresent(v)) out[key] = String(v).trim();
+          });
+          return out;
+        }
+
+        analysis.forEach(item => {
+          const channelId = item.channel_id;
+          if (channelId === undefined || channelId === null) return;
+
+      	    const sanitizedMac = sanitizeMac(item.mac_address, 'N/A');
+      	    const subcarrierZeroFreq = (item.subcarrier_zero_frequency !== undefined && item.subcarrier_zero_frequency !== null)
+      	      ? item.subcarrier_zero_frequency
+      	      : 'N/A';
+      	    const subcarrierZeroFreqMHz = toMHzFixedOrNA(item.subcarrier_zero_frequency, 3);
+      	    const deviceInfo = toDeviceInfoRecord(
+      	      item.device_details && item.device_details.system_description
+      	    );
+
+      	    if (!channelMap.has(channelId)) {
+      	      channelMap.set(channelId, {
+      	        channelId: channelId,
+      	        macAddress: sanitizedMac,
+      	        subcarrierZeroFreq: subcarrierZeroFreq,
+      	        subcarrierZeroFreqMHz: subcarrierZeroFreqMHz,
+      	        subcarrierZeroFreqHzLabel: (typeof item.subcarrier_zero_frequency === 'number' && isFinite(item.subcarrier_zero_frequency))
+      	          ? String(item.subcarrier_zero_frequency)
+      	          : '',
+      	        deviceInfo: deviceInfo,
+      	        series: []
+      	      });
+      	    }
+
+          const channelRecord = channelMap.get(channelId);
+          if ((!isPresent(channelRecord.macAddress) || channelRecord.macAddress === 'N/A') && sanitizedMac !== 'N/A') {
+            channelRecord.macAddress = sanitizedMac;
+          }
+      	    if ((channelRecord.subcarrierZeroFreq === undefined || channelRecord.subcarrierZeroFreq === null || channelRecord.subcarrierZeroFreq === 'N/A')
+      	      && subcarrierZeroFreq !== 'N/A') {
+      	      channelRecord.subcarrierZeroFreq = subcarrierZeroFreq;
+      	      channelRecord.subcarrierZeroFreqMHz = subcarrierZeroFreqMHz;
+      	      channelRecord.subcarrierZeroFreqHzLabel = (typeof item.subcarrier_zero_frequency === 'number' && isFinite(item.subcarrier_zero_frequency))
+      	        ? String(item.subcarrier_zero_frequency)
+      	        : '';
+      	    }
+      	    if (channelRecord.deviceInfo) {
+      	      ['MODEL', 'VENDOR', 'SW_REV', 'HW_REV', 'BOOTR'].forEach(key => {
+      	        if (channelRecord.deviceInfo[key] === 'N/A' && deviceInfo[key] !== 'N/A') {
+      	          channelRecord.deviceInfo[key] = deviceInfo[key];
+      	        }
+      	      });
+      	    }
+
+          const ver = item.pnm_header && item.pnm_header.file_type_version !== undefined
+            ? item.pnm_header.file_type_version
+            : 'N/A';
+
+          const freqHz = item.carrier_values && Array.isArray(item.carrier_values.frequency)
+            ? item.carrier_values.frequency
+            : [];
+
+          const frequencies = freqHz.map(f => {
+            if (typeof f !== 'number' || !isFinite(f)) return 'N/A';
+            return (f / 1000000).toFixed(3);
+          });
+
+          const magnitudes = item.carrier_values && Array.isArray(item.carrier_values.magnitudes)
+            ? item.carrier_values.magnitudes
+            : [];
+
+          const chanEstimates = item.carrier_values && Array.isArray(item.carrier_values.chan_est)
+            ? item.carrier_values.chan_est
+            : (item.carrier_values && Array.isArray(item.carrier_values.channel_estimate_magnitude_db)
+              ? item.carrier_values.channel_estimate_magnitude_db
+              : []);
+
+          const groupDelays = item.carrier_values
+            && item.carrier_values.group_delay
+            && Array.isArray(item.carrier_values.group_delay.magnitude)
+              ? item.carrier_values.group_delay.magnitude
+              : [];
+
+          const stats = item.signal_statistics || {};
+          const echoesRaw = item.echo && item.echo.report && Array.isArray(item.echo.report.echoes)
+            ? item.echo.report.echoes
+            : [];
+
+          const echoes = echoesRaw.map(echo => ({
+            binIndex: echo.bin_index,
+            time: (typeof echo.time_s === 'number' ? (echo.time_s * 1000000).toFixed(4) : 'N/A'),
+            amplitude: (typeof echo.amplitude === 'number' ? echo.amplitude.toFixed(6) : 'N/A'),
+            distanceM: (typeof echo.distance_m === 'number' ? echo.distance_m.toFixed(2) : 'N/A'),
+            distanceFt: (typeof echo.distance_ft === 'number' ? echo.distance_ft.toFixed(2) : 'N/A')
+          }));
+
+      	    channelRecord.series.push({
+      	      version: ver,
+      	      versionLabel: pnnVersionLabel(ver),
+      	      frequencies: frequencies,
+            magnitudes: magnitudes,
+            chanEstimates: chanEstimates,
+            groupDelays: groupDelays,
+            stats: {
+              mean: toFixedOrNA(stats.mean, 3),
+              median: toFixedOrNA(stats.median, 3),
+              std: toFixedOrNA(stats.std, 3),
+              power: toFixedOrNA(stats.power, 3),
+              peakToPeak: toFixedOrNA(stats.peak_to_peak, 3),
+              crestFactor: toFixedOrNA(stats.crest_factor, 3)
+            },
+            echoes: echoes
+          });
+        });
+
+        const channels = Array.from(channelMap.values()).map(ch => {
+          ch.series.sort((a, b) => {
+            const av = Number(a.version);
+            const bv = Number(b.version);
+            if (isFinite(av) && isFinite(bv)) return av - bv;
+            if (isFinite(av)) return -1;
+            if (isFinite(bv)) return 1;
+            return String(a.version).localeCompare(String(b.version));
+          });
+          return ch;
+        });
+
+        channels.sort((a, b) => {
+          const an = Number(a.channelId);
+          const bn = Number(b.channelId);
+          if (isFinite(an) && isFinite(bn)) return an - bn;
+          if (isFinite(an)) return -1;
+          if (isFinite(bn)) return 1;
+          return String(a.channelId).localeCompare(String(b.channelId));
+        });
+
+        var captureTime = null;
+        for (var i = 0; i < analysis.length; i++) {
+          if (!analysis[i] || !analysis[i].pnm_header) continue;
+          captureTime = formatCaptureTime(analysis[i].pnm_header.capture_time);
+          if (captureTime) break;
+        }
+
+        const pageDevice = channels.length ? { macAddress: channels[0].macAddress, deviceInfo: channels[0].deviceInfo } : { macAddress: 'N/A', deviceInfo: { MODEL:'LCPET-3', VENDOR:'LANCity', SW_REV:'1.0.0', HW_REV:'1.0', BOOTR:'NONE' } };
+        const statusVal = (resp && resp.status !== undefined && resp.status !== null) ? resp.status : 'N/A';
+        const statusClass = statusVal === 0 ? 'status-ok' : (statusVal === 'N/A' ? 'status-unknown' : 'status-nok');
+        return {
+          channels,
+          captureTime,
+          channelCount: channels.length,
+          pageDevice,
+          statusText: statusVal === 0 ? 'OK' : String(statusVal),
+          statusClass: statusClass
+        };
+      }
+
+      pm.visualizer.set(template, constructVisualizerPayload());
+    language: text/javascript
+order: 3000

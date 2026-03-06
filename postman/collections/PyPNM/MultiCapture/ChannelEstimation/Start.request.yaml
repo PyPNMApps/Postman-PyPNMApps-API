@@ -1,0 +1,99 @@
+$kind: http-request
+url: "{{pypnm_url}}/advance/multi/ds/channelEstimation/start"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"cable_modem\": {\r
+
+    \        \"mac_address\": \"{{cm_mac_address}}\",\r
+
+    \        \"ip_address\": \"{{cm_ip_address}}\",\r
+
+    \        \"pnm_parameters\": {\r
+
+    \            \"tftp\": {\r
+
+    \                \"ipv4\": \"{{tftp_server_ipv4}}\",\r
+
+    \                \"ipv6\": \"{{tftp_server_ipv6}}\"\r
+
+    \            },\r
+
+    \            \"capture\": {\r
+
+    \                \"channel_ids\": [\r
+
+    \                    {{channel_ids}}\r
+
+    \                ]\r
+
+    \            }\r
+
+    \        },\r
+
+    \        \"snmp\": {\r
+
+    \            \"snmpV2C\": {\r
+
+    \                \"community\": \"{{cm_snmp_community_rw}}\"\r
+
+    \            }\r
+
+    \        }\r
+
+    \    },\r
+
+    \    \"capture\": {\r
+
+    \        \"parameters\": {\r
+
+    \            \"measurement_duration\": 300,\r
+
+    \            \"sample_interval\": 1\r
+
+    \        }\r
+
+    \    },\r
+
+    \    \"measure\": {\r
+
+    \        \"mode\": 0\r
+
+    \    }\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: >
+      let json;
+
+
+      pm.test('Response is valid JSON', function () {
+        pm.response.to.be.json;
+        json = pm.response.json();
+      });
+
+
+      pm.test('Status code is 200', function () {
+        pm.response.to.have.status(200);
+      });
+
+
+      pm.test('operation_id exists and is a non-empty string', function () {
+        const body = json || pm.response.json();
+        const opId = body?.operation_id || body?.operation?.operation_id || body?.data?.operation_id;
+
+        pm.expect(opId, 'operation_id').to.be.a('string');
+        pm.expect(opId.trim().length, 'operation_id non-empty').to.be.greaterThan(0);
+
+        try { pm.collectionVariables.set('chan_est_multi_operation_id', opId); }
+        catch (e) { pm.environment.set('chan_est_multi_operation_id', opId); }
+
+        // Backward compatibility with existing analysis requests
+        try { pm.collectionVariables.set('op_id', opId); }
+        catch (e) { pm.environment.set('op_id', opId); }
+      });
+    language: text/javascript
+order: 1000

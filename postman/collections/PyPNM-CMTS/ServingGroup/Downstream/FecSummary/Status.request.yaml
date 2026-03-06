@@ -1,0 +1,11 @@
+$kind: http-request
+url: "{{pypnm_cmts_url}}/cmts/pnm/sg/ds/ofdm/fecSummary/status"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"pnm_capture_operation_id\": \"{{fec_summary_cmts_operation_id}}\"\r
+
+    }"
+order: 2000

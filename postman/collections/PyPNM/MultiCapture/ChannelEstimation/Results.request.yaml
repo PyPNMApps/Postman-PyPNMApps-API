@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{pypnm_url}}/advance/multi/ds/channelEstimation/results/{{chan_est_multi\
+  _operation_id}}"
+method: GET
+body:
+  type: json
+  content: ""
+order: 2000

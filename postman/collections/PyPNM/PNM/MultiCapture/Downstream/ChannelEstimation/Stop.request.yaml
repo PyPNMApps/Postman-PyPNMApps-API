@@ -1,0 +1,5 @@
+$kind: http-request
+url: "{{pypnm_url}}/advance/multi/ds/channelEstimation/stop/{{chan_est_multi_op\
+  eration_id}}"
+method: DELETE
+order: 4000

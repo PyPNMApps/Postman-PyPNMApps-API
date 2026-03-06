@@ -1,0 +1,27 @@
+$kind: http-request
+url: "{{pypnm_url}}/docs/if31/us/ofdma/channel/stats"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"cable_modem\": {\r
+
+    \    \"mac_address\": \"{{cm_mac_address}}\",\r
+
+    \    \"ip_address\": \"{{cm_ip_address}}\",\r
+
+    \    \"snmp\": {\r
+
+    \      \"snmpV2C\": {\r
+
+    \        \"community\": \"{{cm_snmp_community_rw}}\"\r
+
+    \      }\r
+
+    \    }\r
+
+    \  }\r
+
+    }"
+order: 1000

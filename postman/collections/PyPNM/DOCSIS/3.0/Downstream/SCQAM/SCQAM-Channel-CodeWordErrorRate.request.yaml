@@ -1,0 +1,33 @@
+$kind: http-request
+url: "{{pypnm_url}}/docs/if30/ds/scqam/chan/codewordErrorRate"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"cable_modem\": {\r
+
+    \    \"mac_address\": \"{{cm_mac_address}}\",\r
+
+    \    \"ip_address\": \"{{cm_ip_address}}\",\r
+
+    \    \"snmp\": {\r
+
+    \      \"snmpV2C\": {\r
+
+    \        \"community\": \"{{cm_snmp_community_rw}}\"\r
+
+    \      }\r
+
+    \    }\r
+
+    \  },\r
+
+    \  \"capture_parameters\": {\r
+
+    \    \"sample_time_elapsed\": 5\r
+
+    \  }\r
+
+    }"
+order: 1000

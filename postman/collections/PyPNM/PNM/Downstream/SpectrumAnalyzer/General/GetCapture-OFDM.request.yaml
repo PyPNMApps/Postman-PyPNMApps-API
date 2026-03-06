@@ -1,0 +1,87 @@
+$kind: http-request
+url: "{{pypnm_url}}/docs/pnm/ds/spectrumAnalyzer/getCapture/ofdm"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"cable_modem\": {\r
+
+    \        \"mac_address\": \"{{cm_mac_address}}\",\r
+
+    \        \"ip_address\": \"{{cm_ip_address}}\",\r
+
+    \        \"pnm_parameters\": {\r
+
+    \            \"tftp\": {\r
+
+    \                \"ipv4\": \"{{tftp_server_ipv4}}\",\r
+
+    \                \"ipv6\": \"{{tftp_server_ipv6}}\"\r
+
+    \            },\r
+
+    \            \"capture\": {\r
+
+    \                \"channel_ids\": []\r
+
+    \            }\r
+
+    \        },\r
+
+    \        \"snmp\": {\r
+
+    \            \"snmpV2C\": {\r
+
+    \                \"community\": \"{{cm_snmp_community_rw}}\"\r
+
+    \            }\r
+
+    \        }\r
+
+    \    },\r
+
+    \    \"analysis\": {\r
+
+    \        \"type\": \"basic\",\r
+
+    \        \"output\": {\r
+
+    \            \"type\": \"json\"\r
+
+    \        },\r
+
+    \        \"plot\": {\r
+
+    \            \"ui\": {\r
+
+    \                \"theme\": \"dark\"\r
+
+    \            }\r
+
+    \        },\r
+
+    \        \"spectrum_analysis\": {\r
+
+    \            \"moving_average\": {\r
+
+    \                \"points\": 10\r
+
+    \            }\r
+
+    \        }\r
+
+    \    },\r
+
+    \    \"capture_parameters\": {\r
+
+    \        \"number_of_averages\": 10,\r
+
+    \        \"resolution_bandwidth_hz\": 25000,\r
+
+    \        \"spectrum_retrieval_type\": 1\r
+
+    \    }\r
+
+    }"
+order: 4000
