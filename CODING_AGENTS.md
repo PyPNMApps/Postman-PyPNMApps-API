@@ -71,6 +71,8 @@
 - For channel-related multi-channel visuals, include the channel count in the combined graph title (for example `All Channels (N)`).
 - Do not add a separate `Analysis Summary` block when it only repeats channel count/status; surface channel count in the combined graph title and keep status elsewhere only when needed.
 - Multi-channel combined graphs should line up all channels by frequency in a single graph.
+- For any frequency-type graph (US and DS), show frequency range and spacing at the channel/group header level and do not repeat frequency range text inside each per-modem/per-card graph (avoid redundant per-card frequency metadata).
+- For QAM order labels, use `QX` display format (for example `Q4096`) in UI text, chart axes, legends, tooltips, and summaries; do not display raw keys such as `qam_4096`.
 
 ## Visual Color Rules (Required)
 
