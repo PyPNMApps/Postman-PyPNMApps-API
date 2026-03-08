@@ -39,9 +39,10 @@
 - Start new visual work from `visual/templates/Postman-Visualizer-SectionTemplate.md` and build the page section-by-section from that scaffold.
 - Do not manually edit generated visual docs (`docs/visual/`, `docs/visual-previews/`); regenerate from `visual/`.
 - No comments in visual code/templates unless explicitly requested.
-- Required exception: every visual script must begin with a two-line header comment in this format:
+- Required exception: every visual script must begin with a three-line header comment in this format:
 - `// Postman Visualizer: <<Description of Visual >>`
 - `// Last Update: <<Date and Time>>`
+- `// Visual Constraints: Follow canonical visual rules in CODING_AGENTS.md.`
 - No emoji in visual UI labels, titles, legends, table headers, axis labels, or status text unless explicitly requested.
 - At the top of each visual HTML file, maintain the visual rules/constraints and indicate that `CODING_AGENTS.md` defines the canonical rules so they are not forgotten.
 - Do not scatter magic numbers through visual HTML/script logic. Put tunable constants in a clearly named `TUNING` section near the top of the visual (for example chart heights, tick limits, sampling caps, render-bin caps, animation timings).
@@ -65,6 +66,8 @@
 - For `Moving Avg` overlays, use the same base color as `Actual` with a dashed line style.
 - Avoid redundant repetition of values already shown in `Device Info` (for example, do not repeat `MacAddress` in the channel header if it is already in the device table).
 - If `system_description` is missing/partial, render `N/A` for missing fields instead of vendor-specific fallback values.
+- Never hardcode vendor/model/firmware fallback values in visualizer runtime logic.
+- PyPNM generic placeholder values are for fixture JSON only and must not be used as runtime script fallbacks.
 - JSON responses may contain multiple upstream/downstream channels; each channel must render as its own graph for the selected graph type.
 - For multi-channel visuals with repeated per-channel panels/boxes, default to a 2-column layout (max 2 per row) with a 1-column fallback on narrower widths.
 - For channel-related multi-channel visuals, place the combined graph at the top and per-channel graphs below it.
@@ -91,3 +94,27 @@
 - Regression / trend / fitted reference lines must use a high-contrast color distinct from waveform traces (prefer dashed).
 - Default regression/reference line color: white.
 - If white reduces readability against the chart/waveform palette, use a dark red contrast line (for example `#c62828`) or another clearly contrasting color and document the choice in the visual remarks.
+
+## Postman Request YAML Guardrails (Required)
+
+- Use this top-level key order for every `*.request.yaml`:
+- `$kind`, `url`, `method`, `body`, `scripts`, `order`
+- Keep `language: text/javascript` present under every script entry.
+- Keep `order` unique among sibling requests in the same folder.
+- Request URL must use `{{variable}}` base prefix (no hardcoded host/base).
+- JSON bodies must use the repo escaped multi-line body style used by existing request files in that folder.
+
+### New Endpoint Workflow (Do This Every Time)
+
+- Create the new request YAML with the correct endpoint body and variable names.
+- Add a temporary visualizer stub header that matches the visual path.
+- Run `tools/postman/sync_visualizers.py --update` to copy script content from `visual/` 1:1.
+- Do not hand-edit long synced script blocks in YAML unless explicitly required; fix the source HTML in `visual/` and re-sync.
+
+### Post-Sync Verification Checklist
+
+- Confirm the script header has all 3 required lines.
+- Confirm canonical dark-blue palette is present (page `#141821`, panel `#1b2332`).
+- Confirm `language: text/javascript` is present.
+- Confirm sibling `order` remains unique.
+- If any check fails, fix source visual and rerun sync before commit.
