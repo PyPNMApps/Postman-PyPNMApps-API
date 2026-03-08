@@ -72,3 +72,12 @@ The visual HTML templates in `visual/` are example visualizers for Postman Visua
 
 - Example MAC and `system_description` values are sanitized to generic placeholders.
 - See `docs/tools.md` for the sanitize tool that enforces this.
+
+## MultiCapture RxMER Echo Detection 1
+
+For `visual/PyPNM/MultiCapture/RxMER/Ofdm-RxMER-Analysis-Echo-Detection-1.html`:
+
+- Top chart shows all channels aligned by frequency using `rxmer.avg`.
+- Each channel card shows one RxMER Avg graph.
+- Echo details are shown in an echo table directly under each channel graph.
+- Echo status may show `Echo Detected`, `Standing Wave Likely`, or `No Echo Detected`.

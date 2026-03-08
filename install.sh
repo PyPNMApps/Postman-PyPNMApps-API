@@ -5,6 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="${ROOT_DIR}/.venv"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 OS_MODE="windows"
+VENV_PYTHON=""
+VENV_PIP=""
 
 usage() {
   cat <<'USAGE'
@@ -57,8 +59,19 @@ if [ ! -d "${VENV_DIR}" ]; then
   "${PYTHON_BIN}" -m venv "${VENV_DIR}"
 fi
 
-"${VENV_DIR}/bin/python" -m pip install --upgrade pip setuptools wheel
-"${VENV_DIR}/bin/pip" install -e "${ROOT_DIR}[dev]"
+if [ -x "${VENV_DIR}/bin/python" ]; then
+  VENV_PYTHON="${VENV_DIR}/bin/python"
+  VENV_PIP="${VENV_DIR}/bin/pip"
+elif [ -x "${VENV_DIR}/Scripts/python.exe" ]; then
+  VENV_PYTHON="${VENV_DIR}/Scripts/python.exe"
+  VENV_PIP="${VENV_DIR}/Scripts/pip.exe"
+else
+  echo "ERROR: Could not find venv Python in ${VENV_DIR}/bin or ${VENV_DIR}/Scripts" >&2
+  exit 1
+fi
+
+"${VENV_PYTHON}" -m pip install --upgrade pip setuptools wheel
+"${VENV_PIP}" install -e "${ROOT_DIR}[dev]"
 
 print_windows_examples() {
   echo "Windows (PowerShell) commands (default examples):"
