@@ -105,6 +105,11 @@ values:
     enabled: true
     type: default
     description: ''
+  - key: rxmer_analysis_echo_detection_1
+    value: ''
+    enabled: true
+    type: default
+    description: ''
   - key: chan_est_group_delay
     value: ''
     enabled: true
