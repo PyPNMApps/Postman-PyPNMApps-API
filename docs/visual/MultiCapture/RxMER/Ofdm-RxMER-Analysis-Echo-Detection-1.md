@@ -330,17 +330,23 @@ pm.getData(function (err, value) {
 
 ````json
 {
+    "system_description": {
+        "HW_REV": "1.0",
+        "VENDOR": "LANCity",
+        "BOOTR": "NONE",
+        "SW_REV": "1.0.0",
+        "MODEL": "LCPET-3"
+    },
     "status": 0,
     "message": "Analysis ECHO_REFLECTION_1 completed for group c30d86d0ef3f4b18",
     "device": {
-        "mac_address": "38:ad:2b:3e:86:54",
+        "mac_address": "aa:bb:cc:dd:ee:ff",
         "system_description": {
-            "HW_REV": "1A",
-            "VENDOR": "Hitron Technologies",
-            "BOOTR": "2022.01-MXL-v-4.0.357",
-            "SW_REV": "8.4.0.0.1b2",
-            "MODEL": "CODA60",
-            "is_empty": false
+            "HW_REV": "1.0",
+            "VENDOR": "LANCity",
+            "BOOTR": "NONE",
+            "SW_REV": "1.0.0",
+            "MODEL": "LCPET-3"
         }
     },
     "data": {
