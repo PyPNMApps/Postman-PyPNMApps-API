@@ -16,611 +16,476 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 
 ````html
 // Postman Visualizer: DOCSIS-General/InterfaceStats
-// Last Update: 2026-02-25 06:01:33 MST
-
-// Postman "Tests" tab script
-// Renders: (1) readable tables (zebra + sticky headers + pills) and (2) SVG topology
-// Assumes the response body is the PyPNM JSON you shared.
+// Last Update: 2026-03-09 10:20:00 MST
+// Visual Constraints: Follow canonical visual rules in CODING_AGENTS.md.
 
 (function () {
-  const payload = pm.response.json();
+  const response = pm.response.json() || {};
 
-  function esc(v) {
-    if (v === null || v === undefined) {
-      return "";
-    }
-    return String(v)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+  function safeText(v) {
+    if (v === undefined || v === null) return 'N/A';
+    const s = String(v).trim();
+    return s ? s : 'N/A';
+  }
+
+  function n(v) {
+    const x = Number(v);
+    return Number.isFinite(x) ? x : null;
+  }
+
+  function sanitizeMac(value) {
+    const raw = safeText(value);
+    if (raw === 'N/A') return raw;
+    const compact = raw.replace(/[^0-9a-f]/gi, '').toLowerCase();
+    if (compact.length !== 12) return raw.toLowerCase();
+    return compact.match(/.{1,2}/g).join(':');
+  }
+
+  function adminOper(v) {
+    const x = n(v);
+    if (x === 1) return 'up';
+    if (x === 2) return 'down';
+    if (x === 3) return 'testing';
+    return 'unknown';
   }
 
   function fmtInt(v) {
-    if (v === null || v === undefined || v === "") {
-      return "";
-    }
-    const n = Number(v);
-    if (!Number.isFinite(n)) {
-      return String(v);
-    }
-    return Math.trunc(n).toLocaleString("en-US");
+    const x = n(v);
+    if (x === null) return 'N/A';
+    return Math.trunc(x).toLocaleString('en-US');
   }
 
-  function toAdminOper(v) {
-    if (v === 1) {
-      return "up";
-    }
-    if (v === 2) {
-      return "down";
-    }
-    if (v === 3) {
-      return "testing";
-    }
-    return "unknown";
+  function fmtBps(v) {
+    const x = n(v);
+    if (x === null || x <= 0) return 'N/A';
+    if (x >= 1e9) return (x / 1e9).toFixed(2) + ' Gbps';
+    if (x >= 1e6) return (x / 1e6).toFixed(2) + ' Mbps';
+    if (x >= 1e3) return (x / 1e3).toFixed(2) + ' Kbps';
+    return String(Math.round(x)) + ' bps';
   }
 
-  function pickIfName(item) {
-    const ifx = item && item.ifXEntry ? item.ifXEntry : null;
-    if (ifx && typeof ifx.ifName === "string" && ifx.ifName.length > 0) {
-      return ifx.ifName;
-    }
-    return "";
-  }
-
-  function normalizeRow(item) {
-    const ife = item && item.ifEntry ? item.ifEntry : {};
-    const ifx = item && item.ifXEntry ? item.ifXEntry : null;
-
-    const ifIndex = ife.ifIndex ?? "";
-    const ifDescr = ife.ifDescr ?? "";
-    const ifType = ife.ifType ?? "";
-    const ifSpeed = ife.ifSpeed ?? "";
-    const ifInOctets = ife.ifInOctets ?? "";
-    const ifOutOctets = ife.ifOutOctets ?? "";
-
-    const admin = toAdminOper(ife.ifAdminStatus);
-    const oper = toAdminOper(ife.ifOperStatus);
-
-    const ifHighSpeed = ifx && ifx.ifHighSpeed !== null && ifx.ifHighSpeed !== undefined ? ifx.ifHighSpeed : "";
-
+  function normalizeItem(item) {
+    const ife = item && item.ifEntry && typeof item.ifEntry === 'object' ? item.ifEntry : {};
+    const ifx = item && item.ifXEntry && typeof item.ifXEntry === 'object' ? item.ifXEntry : {};
     return {
-      ifIndex,
-      ifName: pickIfName(item),
-      ifDescr,
-      ifType,
-      admin,
-      oper,
-      speed_bps: ifSpeed,
-      highSpeed_mbps: ifHighSpeed,
-      inOctets: ifInOctets,
-      outOctets: ifOutOctets
+      ifIndex: safeText(ife.ifIndex),
+      ifName: safeText(ifx.ifName),
+      ifDescr: safeText(ife.ifDescr),
+      ifType: safeText(ife.ifType),
+      admin: adminOper(ife.ifAdminStatus),
+      oper: adminOper(ife.ifOperStatus),
+      speedBps: n(ife.ifSpeed),
+      highSpeedMbps: n(ifx.ifHighSpeed),
+      inOctets: n(ifx.ifHCInOctets) !== null ? n(ifx.ifHCInOctets) : n(ife.ifInOctets),
+      outOctets: n(ifx.ifHCOutOctets) !== null ? n(ifx.ifHCOutOctets) : n(ife.ifOutOctets)
     };
   }
 
-  function sumAgg(rows) {
-    let inOctets = 0;
-    let outOctets = 0;
+  function classifyGroup(key) {
+    const k = String(key || '').toLowerCase();
+    if (k.includes('downstream')) return { direction: 'DS', color: 'ds' };
+    if (k.includes('upstream')) return { direction: 'US', color: 'us' };
+    if (k.includes('maclayer')) return { direction: 'MAC', color: 'mac' };
+    return { direction: 'GEN', color: 'gen' };
+  }
 
-    for (const r of rows) {
-      const inV = Number(r.inOctets);
-      const outV = Number(r.outOctets);
+  function titleForKey(key) {
+    const map = {
+      docsCableMaclayer: 'DOCSIS MAC Layer',
+      docsOfdmDownstream: 'OFDM Downstream',
+      docsCableDownstream: 'SCQAM Downstream',
+      docsOfdmaUpstream: 'OFDMA Upstream',
+      docsCableUpstream: 'SCQAM Upstream'
+    };
+    return map[key] || key;
+  }
 
-      if (Number.isFinite(inV)) {
-        inOctets += inV;
-      }
-      if (Number.isFinite(outV)) {
-        outOctets += outV;
-      }
-    }
+  const results = response && typeof response.results === 'object' ? response.results : {};
+  const groups = Object.keys(results)
+    .filter((k) => Array.isArray(results[k]))
+    .map((key) => {
+      const rows = results[key].map(normalizeItem);
+      const upCount = rows.filter((r) => r.oper === 'up').length;
+      const downCount = rows.filter((r) => r.oper === 'down').length;
+      let inOctets = 0;
+      let outOctets = 0;
+      let maxSpeed = 0;
+      rows.forEach((r) => {
+        if (r.inOctets !== null) inOctets += r.inOctets;
+        if (r.outOctets !== null) outOctets += r.outOctets;
+        if (r.speedBps !== null && r.speedBps > maxSpeed) maxSpeed = r.speedBps;
+      });
+      const cls = classifyGroup(key);
+      return {
+        key,
+        title: titleForKey(key),
+        direction: cls.direction,
+        color: cls.color,
+        rows,
+        count: rows.length,
+        upCount,
+        downCount,
+        inOctets,
+        outOctets,
+        maxSpeed
+      };
+    })
+    .filter((g) => g.count > 0)
+    .sort((a, b) => a.title.localeCompare(b.title));
 
+  const totalInterfaces = groups.reduce((s, g) => s + g.count, 0);
+  const totalUp = groups.reduce((s, g) => s + g.upCount, 0);
+  const totalDown = groups.reduce((s, g) => s + g.downCount, 0);
+
+  const device = response && typeof response.device === 'object' ? response.device : {};
+  const sys = device && typeof device.system_description === 'object' ? device.system_description : {};
+  const deviceInfo = {
+    macAddress: sanitizeMac(device.mac_address),
+    model: safeText(sys.MODEL),
+    vendor: safeText(sys.VENDOR),
+    swVersion: safeText(sys.SW_REV),
+    hwVersion: safeText(sys.HW_REV),
+    bootRom: safeText(sys.BOOTR)
+  };
+
+  function buildTreeData() {
     return {
-      count: rows.length,
-      inOctets,
-      outOctets
+      name: 'Device ' + deviceInfo.macAddress,
+      subtitle: 'DOCSIS Interface Stats',
+      kind: 'root',
+      children: groups.map((g) => ({
+        name: g.direction + ' ' + g.title,
+        subtitle: 'Interfaces (' + g.count + ') · Up (' + g.upCount + ') · Down (' + g.downCount + ')',
+        kind: g.color,
+        children: g.rows.slice(0, 150).map((r) => ({
+          name: 'if' + r.ifIndex + ' ' + r.ifName,
+          subtitle: r.ifDescr + ' · ' + safeText(r.oper) + ' · ' + fmtBps(r.speedBps),
+          kind: r.oper === 'up' ? 'ok' : (r.oper === 'down' ? 'nok' : 'gen')
+        }))
+      }))
     };
   }
 
-  function getInterfaces(key) {
-    const arr = payload && payload.results && Array.isArray(payload.results[key]) ? payload.results[key] : [];
-    return arr.map(normalizeRow);
-  }
+  const treeData = buildTreeData();
 
-  function buildGroups() {
-    const groups = [];
+  const template = `
+  <style>
+    body { background:#141821; color:#e7edf8; font-family:Arial,sans-serif; margin:0; padding:16px; }
+    .wrap { max-width:1600px; margin:0 auto; display:grid; gap:12px; }
+    .card { background:#1b2332; border:1px solid rgba(255,255,255,0.09); border-radius:10px; padding:14px; }
+    .title { margin:0 0 8px 0; color:#f3f6ff; text-align:center; font-size:20px; font-weight:700; }
+    .meta { color:#dbe3ff; font-size:12px; text-align:center; }
 
-    const docsCableMaclayer = getInterfaces("docsCableMaclayer");
-    const docsOfdmDownstream = getInterfaces("docsOfdmDownstream");
-    const docsCableDownstream = getInterfaces("docsCableDownstream");
-    const docsOfdmaUpstream = getInterfaces("docsOfdmaUpstream");
-    const docsCableUpstream = getInterfaces("docsCableUpstream");
+    .kpis { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; margin-top:10px; }
+    .kpi { background:#202938; border:1px solid rgba(255,255,255,0.10); border-radius:8px; padding:8px; }
+    .kpi .label { font-size:11px; color:#dbe3ff; }
+    .kpi .value { font-size:14px; color:#f3f6ff; font-weight:700; margin-top:4px; }
 
-    groups.push({
-      key: "docsCableMaclayer",
-      title: "DOCSIS MAC Layer (docsCableMaclayer)",
-      rows: docsCableMaclayer
-    });
+    .device-title { margin:0 0 8px 0; font-size:16px; color:#9ec0ff; font-weight:700; }
+    .tbl-wrap { border:1px solid rgba(255,255,255,0.10); border-radius:8px; overflow:auto; }
+    table { width:100%; border-collapse:collapse; min-width:860px; }
+    th, td { padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.10); font-size:12px; text-align:left; }
+    th { background:#202938; color:#dbe3ff; }
+    td { color:#f3f6ff; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
-    groups.push({
-      key: "docsOfdmDownstream",
-      title: "OFDM Downstream (docsOfdmDownstream)",
-      rows: docsOfdmDownstream
-    });
+    .tree-head { color:#9ec0ff; font-size:14px; font-weight:700; margin-bottom:8px; }
+    .tree-note { color:#dbe3ff; font-size:12px; margin-bottom:8px; }
+    .tree-wrap { border:1px solid rgba(255,255,255,0.10); border-radius:8px; overflow:auto; background:#202938; }
 
-    groups.push({
-      key: "docsCableDownstream",
-      title: "SC-QAM Downstream (docsCableDownstream)",
-      rows: docsCableDownstream
-    });
+    .group-title { margin:0 0 8px 0; color:#9ec0ff; font-size:16px; font-weight:700; }
+    .group-title.ds { color:#5a6fd8; }
+    .group-title.us { color:#39c28e; }
+    .group-title.mac { color:#f1c40f; }
 
-    groups.push({
-      key: "docsOfdmaUpstream",
-      title: "OFDMA Upstream (docsOfdmaUpstream)",
-      rows: docsOfdmaUpstream
-    });
+    .tree-svg .node text { font-size:12px; fill:#e7edf8; }
 
-    groups.push({
-      key: "docsCableUpstream",
-      title: "SC-QAM Upstream (docsCableUpstream)",
-      rows: docsCableUpstream
-    });
-
-    for (const g of groups) {
-      g.agg = sumAgg(g.rows);
+    @media (max-width:1100px) {
+      .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
     }
+  </style>
 
-    return groups.filter((g) => g.rows.length > 0);
-  }
-
-  function maxSpeedBps(rows) {
-    let max = 0;
-    for (const r of rows) {
-      const n = Number(r.speed_bps);
-      if (Number.isFinite(n) && n > max) {
-        max = n;
-      }
-    }
-    return max;
-  }
-
-  function humanBps(bps) {
-    const n = Number(bps);
-    if (!Number.isFinite(n) || n <= 0) {
-      return "";
-    }
-    const kb = 1000;
-    const mb = 1000 * kb;
-    const gb = 1000 * mb;
-
-    if (n >= gb) {
-      return `${(n / gb).toFixed(2)} Gbps`;
-    }
-    if (n >= mb) {
-      return `${(n / mb).toFixed(2)} Mbps`;
-    }
-    if (n >= kb) {
-      return `${(n / kb).toFixed(2)} Kbps`;
-    }
-    return `${n.toFixed(0)} bps`;
-  }
-
-  function svgTopology(groups) {
-    const mac = payload.device && payload.device.mac_address ? String(payload.device.mac_address) : "unknown";
-
-    const macLayer = groups.find((g) => g.key === "docsCableMaclayer");
-    const ofdmDs = groups.find((g) => g.key === "docsOfdmDownstream");
-    const scqamDs = groups.find((g) => g.key === "docsCableDownstream");
-    const ofdmaUs = groups.find((g) => g.key === "docsOfdmaUpstream");
-    const scqamUs = groups.find((g) => g.key === "docsCableUpstream");
-
-    const summaryNodes = [];
-    if (ofdmDs) {
-      summaryNodes.push({
-        id: "OFDM_DS",
-        title: "OFDM Downstream",
-        detail: [
-          `count: ${ofdmDs.agg.count}`,
-          `max speed: ${humanBps(maxSpeedBps(ofdmDs.rows))}`,
-          `in: ${fmtInt(ofdmDs.agg.inOctets)}`,
-          `out: ${fmtInt(ofdmDs.agg.outOctets)}`
-        ]
-      });
-    }
-    if (scqamDs) {
-      summaryNodes.push({
-        id: "SCQAM_DS",
-        title: "SC-QAM Downstream",
-        detail: [
-          `count: ${scqamDs.agg.count}`,
-          `max speed: ${humanBps(maxSpeedBps(scqamDs.rows))}`,
-          `in: ${fmtInt(scqamDs.agg.inOctets)}`,
-          `out: ${fmtInt(scqamDs.agg.outOctets)}`
-        ]
-      });
-    }
-    if (ofdmaUs) {
-      summaryNodes.push({
-        id: "OFDMA_US",
-        title: "OFDMA Upstream",
-        detail: [
-          `count: ${ofdmaUs.agg.count}`,
-          `max speed: ${humanBps(maxSpeedBps(ofdmaUs.rows))}`,
-          `in: ${fmtInt(ofdmaUs.agg.inOctets)}`,
-          `out: ${fmtInt(ofdmaUs.agg.outOctets)}`
-        ]
-      });
-    }
-    if (scqamUs) {
-      summaryNodes.push({
-        id: "SCQAM_US",
-        title: "SC-QAM Upstream",
-        detail: [
-          `count: ${scqamUs.agg.count}`,
-          `max speed: ${humanBps(maxSpeedBps(scqamUs.rows))}`,
-          `in: ${fmtInt(scqamUs.agg.inOctets)}`,
-          `out: ${fmtInt(scqamUs.agg.outOctets)}`
-        ]
-      });
-    }
-
-    const width = 1200;
-    const pad = 24;
-
-    const boxW = 320;
-    const boxH = 92;
-
-    const cmX = (width - boxW) / 2;
-    const cmY = 20;
-
-    const macX = (width - boxW) / 2;
-    const macY = cmY + 120;
-
-    const cols = Math.max(summaryNodes.length, 1);
-    const gap = 16;
-    const totalRowW = cols * boxW + (cols - 1) * gap;
-    const startX = (width - totalRowW) / 2;
-    const rowY = macY + 140;
-
-    const height = rowY + 140;
-
-    function rect(x, y, w, h) {
-      return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14" ry="14"></rect>`;
-    }
-
-    function textBlock(x, y, lines) {
-      const lineH = 16;
-      const safe = lines.map((l) => esc(l));
-      return safe
-        .map((l, i) => `<text x="${x}" y="${y + i * lineH}" font-size="13">${l}</text>`)
-        .join("");
-    }
-
-    function centerLine(x1, y1, x2, y2) {
-      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="2"></line>`;
-    }
-
-    let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
-
-    // CM box
-    svg += rect(cmX, cmY, boxW, boxH);
-    svg += textBlock(cmX + 16, cmY + 30, ["CM", mac]);
-
-    // RF MAC box
-    svg += rect(macX, macY, boxW, boxH);
-    if (macLayer && macLayer.rows.length > 0) {
-      const r0 = macLayer.rows[0];
-      svg += textBlock(macX + 16, macY + 30, [
-        "RF MAC",
-        `ifIndex: ${r0.ifIndex}`,
-        r0.ifName ? `ifName: ${r0.ifName}` : "ifName: (none)"
-      ]);
-    } else {
-      svg += textBlock(macX + 16, macY + 30, ["RF MAC", "not present"]);
-    }
-
-    // CM -> RF MAC line
-    svg += centerLine(cmX + boxW / 2, cmY + boxH, macX + boxW / 2, macY);
-
-    // Summary nodes
-    for (let i = 0; i < summaryNodes.length; i++) {
-      const n = summaryNodes[i];
-      const x = startX + i * (boxW + gap);
-      const y = rowY;
-
-      svg += rect(x, y, boxW, boxH);
-      svg += textBlock(x + 16, y + 28, [n.title, ...n.detail.slice(0, 3)]);
-      svg += centerLine(macX + boxW / 2, macY + boxH, x + boxW / 2, y);
-    }
-
-    svg += `</svg>`;
-    return svg;
-  }
-
-  const renderedGroups = buildGroups();
-  const diagramSvg = svgTopology(renderedGroups);
-
-  pm.visualizer.set(
-    `
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <style>
-      :root{
-        --bg: #0b1220;
-        --panel: #0f1a2b;
-        --panel2: #0c1727;
-        --text: #e5e7eb;
-        --muted: #9aa7b6;
-        --border: #1f2a3a;
-        --header: #122037;
-        --rowA: rgba(255,255,255,0.03);
-        --rowB: rgba(255,255,255,0.06);
-        --hover: rgba(255,255,255,0.10);
-        --accent: #93c5fd;
-        --good: #34d399;
-        --warn: #fbbf24;
-        --bad:  #fb7185;
-      }
-
-      body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        margin: 16px;
-        background: var(--bg);
-        color: var(--text);
-      }
-
-      h1 { font-size: 18px; margin: 0 0 10px 0; color: var(--text); }
-      h2 { font-size: 14px; margin: 18px 0 10px 0; color: var(--text); }
-
-      .meta { display: grid; grid-template-columns: 160px 1fr; gap: 6px 10px; max-width: 1100px; }
-      .card {
-        background: linear-gradient(180deg, var(--panel), var(--panel2));
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 12px;
-        margin-top: 12px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-      }
-
-      .muted { color: var(--muted); }
-      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-
-      .pill {
-        display: inline-block;
-        padding: 2px 10px;
-        border-radius: 999px;
-        font-size: 12px;
-        border: 1px solid var(--border);
-        background: rgba(255,255,255,0.04);
-        color: var(--text);
-      }
-
-      .pill.good { border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.12); color: var(--good); }
-      .pill.warn { border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.12); color: var(--warn); }
-      .pill.bad  { border-color: rgba(251,113,133,0.35); background: rgba(251,113,133,0.12); color: var(--bad); }
-
-      .svgWrap {
-        overflow: auto;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 10px;
-        background: rgba(255,255,255,0.02);
-      }
-
-      .tableWrap {
-        overflow: auto;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        background: rgba(255,255,255,0.02);
-      }
-
-      table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        font-size: 12px;
-        min-width: 980px;
-      }
-
-      thead th {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-        background: var(--header);
-        color: var(--text);
-        text-align: left;
-        padding: 9px 10px;
-        border-bottom: 1px solid var(--border);
-        white-space: nowrap;
-      }
-
-      tbody td {
-        padding: 7px 10px;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-        vertical-align: top;
-      }
-
-      tbody tr:nth-child(odd)  td { background: var(--rowA); }
-      tbody tr:nth-child(even) td { background: var(--rowB); }
-
-      tbody tr:hover td { background: var(--hover); }
-
-      .num { text-align: right; font-variant-numeric: tabular-nums; }
-      .nowrap { white-space: nowrap; }
-      .tag { color: var(--accent); }
-
-      .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
-      .legend .pill { font-size: 11px; }
-
-      /* SVG inherits dark theme */
-      svg rect { fill: rgba(255,255,255,0.04) !important; stroke: rgba(255,255,255,0.18) !important; }
-      svg text { fill: var(--text) !important; }
-      svg line { stroke: rgba(255,255,255,0.35) !important; }
-    </style>
-  </head>
-  <body>
-    <h1>PyPNM Interface Statistics</h1>
-
-
+  <div class="wrap">
     <div class="card">
-      <h2>Device Info</h2>
-      <div class="meta">
-        <div class="muted">MacAddress</div><div class="mono">{{device.mac_address}}</div>
-        <div class="muted">Model</div><div>{{device.system_description.MODEL}}</div>
-        <div class="muted">Vendor</div><div>{{device.system_description.VENDOR}}</div>
-        <div class="muted">SW Version</div><div class="mono">{{device.system_description.SW_REV}}</div>
-        <div class="muted">HW Version</div><div class="mono">{{device.system_description.HW_REV}}</div>
-        <div class="muted">Boot ROM</div><div class="mono">{{device.system_description.BOOTR}}</div>
+      <h1 class="title">DOCSIS Interface Stats</h1>
+      <div class="meta">Status: {{status}} · {{message}}</div>
+      <div class="kpis">
+        <div class="kpi"><div class="label">Interface Groups</div><div class="value">{{groupCount}}</div></div>
+        <div class="kpi"><div class="label">Interfaces</div><div class="value">{{totalInterfaces}}</div></div>
+        <div class="kpi"><div class="label">Oper Up</div><div class="value">{{totalUp}}</div></div>
+        <div class="kpi"><div class="label">Oper Down</div><div class="value">{{totalDown}}</div></div>
       </div>
     </div>
 
     <div class="card">
-      <div class="meta">
-        <div class="muted">mac_address</div><div class="mono">{{mac_address}}</div>
-        <div class="muted">status</div><div><span class="pill">{{status}}</span></div>
-        <div class="muted">message</div><div>{{message}}</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Topology</h2>
-      <div class="muted">SVG is supported directly in Postman Visualizer (no Mermaid dependency).</div>
-      <div class="svgWrap">{{{diagramSvg}}}</div>
-    </div>
-
-    <div class="card">
-      <h2>Rollups</h2>
-      <div class="tableWrap">
+      <h2 class="device-title">Device Info</h2>
+      <div class="tbl-wrap">
         <table>
           <thead>
-            <tr>
-              <th>Group</th>
-              <th class="num">Count</th>
-              <th class="num">Total InOctets</th>
-              <th class="num">Total OutOctets</th>
-              <th class="num">Max ifSpeed</th>
-            </tr>
+            <tr><th>MacAddress</th><th>Model</th><th>Vendor</th><th>SW Version</th><th>HW Version</th><th>Boot ROM</th></tr>
           </thead>
           <tbody>
-            {{#groups}}
             <tr>
-              <td>{{title}}</td>
-              <td class="num mono">{{agg.count}}</td>
-              <td class="num mono">{{agg.inOctets}}</td>
-              <td class="num mono">{{agg.outOctets}}</td>
-              <td class="num mono">{{agg.maxSpeedHuman}}</td>
+              <td class="mono">{{deviceInfo.macAddress}}</td>
+              <td>{{deviceInfo.model}}</td>
+              <td>{{deviceInfo.vendor}}</td>
+              <td class="mono">{{deviceInfo.swVersion}}</td>
+              <td class="mono">{{deviceInfo.hwVersion}}</td>
+              <td class="mono">{{deviceInfo.bootRom}}</td>
             </tr>
-            {{/groups}}
           </tbody>
         </table>
       </div>
     </div>
 
-    {{#groups}}
     <div class="card">
-      <h2>{{title}}</h2>
-      <div class="legend">
-        <span class="pill good">oper up</span>
-        <span class="pill bad">oper down</span>
-        <span class="pill warn">admin down</span>
-        <span class="pill">unknown</span>
-      </div>
+      <div class="tree-head">Graphical Topology</div>
+      <div class="tree-note">Click nodes to collapse or expand branches.</div>
+      <div id="topologyTree" class="tree-wrap"></div>
+    </div>
 
-      <div class="tableWrap">
+    <div class="card">
+      <h2 class="device-title">Group Summary</h2>
+      <div class="tbl-wrap">
         <table>
           <thead>
-            <tr>
-              <th class="nowrap">ifIndex</th>
-              <th class="nowrap">ifName</th>
-              <th>ifDescr</th>
-              <th class="nowrap">ifType</th>
-              <th class="nowrap">Admin</th>
-              <th class="nowrap">Oper</th>
-              <th class="num nowrap">ifSpeed (bps)</th>
-              <th class="num nowrap">ifHighSpeed (Mbps)</th>
-              <th class="num nowrap">InOctets</th>
-              <th class="num nowrap">OutOctets</th>
-            </tr>
+            <tr><th>Group</th><th>Direction</th><th>Interfaces</th><th>Up</th><th>Down</th><th>In Octets</th><th>Out Octets</th><th>Max Speed</th></tr>
           </thead>
-          <tbody>
-            {{#rows}}
-            <tr>
-              <td class="mono nowrap">{{ifIndex}}</td>
-              <td class="mono nowrap tag">{{ifName}}</td>
-              <td>{{ifDescr}}</td>
-              <td class="mono nowrap">{{ifType}}</td>
-              <td class="mono nowrap">{{{adminPill}}}</td>
-              <td class="mono nowrap">{{{operPill}}}</td>
-              <td class="mono num nowrap">{{speed_bps}}</td>
-              <td class="mono num nowrap">{{highSpeed_mbps}}</td>
-              <td class="mono num nowrap">{{inOctets}}</td>
-              <td class="mono num nowrap">{{outOctets}}</td>
-            </tr>
-            {{/rows}}
-          </tbody>
+          <tbody id="summaryRows"></tbody>
         </table>
       </div>
     </div>
-    {{/groups}}
-  </body>
-</html>
-`,
-    {
-      mac_address: ((payload.device || {}).mac_address) ?? "",
-      status: String(payload.status ?? ""),
-      message: payload.message ?? "",
-      device: {
-        mac_address: ((payload.device || {}).mac_address) ?? "N/A",
-        system_description: {
-          MODEL: ((((payload.device || {}).system_description) || {}).MODEL) ?? "N/A",
-          VENDOR: ((((payload.device || {}).system_description) || {}).VENDOR) ?? "N/A",
-          SW_REV: ((((payload.device || {}).system_description) || {}).SW_REV) ?? "N/A",
-          HW_REV: ((((payload.device || {}).system_description) || {}).HW_REV) ?? "N/A",
-          BOOTR: ((((payload.device || {}).system_description) || {}).BOOTR) ?? "N/A"
+
+    <div id="groupTables"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script>
+    (function () {
+      const treeData = {{{treeJson}}};
+      const groups = {{{groupsJson}}};
+
+      const summaryRoot = document.getElementById('summaryRows');
+      const groupRoot = document.getElementById('groupTables');
+
+      function esc(v) {
+        if (v === undefined || v === null) return 'N/A';
+        return String(v)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function nodeColor(kind) {
+        if (kind === 'ds') return '#5a6fd8';
+        if (kind === 'us') return '#39c28e';
+        if (kind === 'mac') return '#f1c40f';
+        if (kind === 'ok') return '#39c28e';
+        if (kind === 'nok') return '#c62828';
+        if (kind === 'root') return '#9ec0ff';
+        return '#94a3b8';
+      }
+
+      function renderTree(data) {
+        const host = document.getElementById('topologyTree');
+        if (!host || !window.d3 || !data) return;
+        host.innerHTML = '';
+
+        const d3 = window.d3;
+        const width = Math.max(1300, host.clientWidth || 1300);
+        const dx = 22;
+        const dy = 260;
+        const tree = d3.tree().nodeSize([dx, dy]);
+        const diagonal = d3.linkHorizontal().x(function (d) { return d.y; }).y(function (d) { return d.x; });
+
+        const root = d3.hierarchy(data);
+        root.x0 = dx;
+        root.y0 = 0;
+        let i = 0;
+        root.descendants().forEach(function (d) {
+          d.id = i++;
+          d._children = d.children;
+          if (d.depth > 1) d.children = null;
+        });
+
+        const svg = d3.create('svg')
+          .attr('class', 'tree-svg')
+          .attr('width', width)
+          .attr('height', dx)
+          .attr('viewBox', [-40, -20, width, dx])
+          .style('font', '12px Arial');
+
+        const gLink = svg.append('g').attr('fill', 'none').attr('stroke', 'rgba(255,255,255,0.20)').attr('stroke-width', 1.2);
+        const gNode = svg.append('g').attr('cursor', 'pointer').attr('pointer-events', 'all');
+
+        function update(source) {
+          const duration = 220;
+          const nodes = root.descendants().reverse();
+          const links = root.links();
+          tree(root);
+
+          let left = root;
+          let right = root;
+          root.eachBefore(function (node) {
+            if (node.x < left.x) left = node;
+            if (node.x > right.x) right = node;
+          });
+
+          const height = right.x - left.x + dx * 2;
+          const transition = svg.transition().duration(duration)
+            .attr('height', height)
+            .attr('viewBox', [-40, left.x - dx, width, height]);
+
+          const node = gNode.selectAll('g').data(nodes, function (d) { return d.id; });
+
+          const nodeEnter = node.enter().append('g')
+            .attr('transform', function () { return 'translate(' + source.y0 + ',' + source.x0 + ')'; })
+            .attr('fill-opacity', 0)
+            .attr('stroke-opacity', 0)
+            .on('click', function (event, d) {
+              d.children = d.children ? null : d._children;
+              update(d);
+            });
+
+          nodeEnter.append('circle')
+            .attr('r', 5)
+            .attr('fill', function (d) { return d._children ? nodeColor(d.data.kind) : '#1b2332'; })
+            .attr('stroke', function (d) { return nodeColor(d.data.kind); })
+            .attr('stroke-width', 1.5);
+
+          nodeEnter.append('text')
+            .attr('dy', '0.31em')
+            .attr('x', function (d) { return d._children ? -10 : 10; })
+            .attr('text-anchor', function (d) { return d._children ? 'end' : 'start'; })
+            .text(function (d) {
+              const name = d && d.data && d.data.name ? String(d.data.name) : 'N/A';
+              const subtitle = d && d.data && d.data.subtitle ? String(d.data.subtitle) : '';
+              return subtitle ? (name + ' · ' + subtitle) : name;
+            });
+
+          node.merge(nodeEnter).transition(transition)
+            .attr('transform', function (d) { return 'translate(' + d.y + ',' + d.x + ')'; })
+            .attr('fill-opacity', 1)
+            .attr('stroke-opacity', 1);
+
+          node.merge(nodeEnter).select('circle')
+            .attr('fill', function (d) { return d._children ? nodeColor(d.data.kind) : '#1b2332'; })
+            .attr('stroke', function (d) { return nodeColor(d.data.kind); });
+
+          node.exit().transition(transition).remove()
+            .attr('transform', function () { return 'translate(' + source.y + ',' + source.x + ')'; })
+            .attr('fill-opacity', 0)
+            .attr('stroke-opacity', 0);
+
+          const link = gLink.selectAll('path').data(links, function (d) { return d.target.id; });
+
+          const linkEnter = link.enter().append('path')
+            .attr('d', function () {
+              const o = { x: source.x0, y: source.y0 };
+              return diagonal({ source: o, target: o });
+            });
+
+          link.merge(linkEnter).transition(transition).attr('d', diagonal);
+
+          link.exit().transition(transition).remove().attr('d', function () {
+            const o = { x: source.x, y: source.y };
+            return diagonal({ source: o, target: o });
+          });
+
+          root.eachBefore(function (d) {
+            d.x0 = d.x;
+            d.y0 = d.y;
+          });
         }
-      },
-      diagramSvg,
-      groups: renderedGroups.map((g) => {
-        const maxBps = maxSpeedBps(g.rows);
-        return {
-          title: g.title,
-          agg: {
-            count: g.agg.count,
-            inOctets: fmtInt(g.agg.inOctets),
-            outOctets: fmtInt(g.agg.outOctets),
-            maxSpeedHuman: humanBps(maxBps)
-          },
-          rows: g.rows.map((r) => {
-            const admin = String(r.admin ?? "").toLowerCase();
-            const oper = String(r.oper ?? "").toLowerCase();
 
-            const adminClass =
-              admin.includes("down") ? "warn" :
-              admin.includes("up") ? "good" : "";
+        update(root);
+        host.appendChild(svg.node());
+      }
 
-            const operClass =
-              oper.includes("down") ? "bad" :
-              oper.includes("up") ? "good" : "";
+      renderTree(treeData);
 
-            return {
-              ifIndex: r.ifIndex,
-              ifName: esc(r.ifName),
-              ifDescr: esc(r.ifDescr),
-              ifType: r.ifType,
-              adminPill: `<span class="pill ${adminClass}">${esc(r.admin ?? "")}</span>`,
-              operPill: `<span class="pill ${operClass}">${esc(r.oper ?? "")}</span>`,
-              speed_bps: fmtInt(r.speed_bps),
-              highSpeed_mbps: fmtInt(r.highSpeed_mbps),
-              inOctets: fmtInt(r.inOctets),
-              outOctets: fmtInt(r.outOctets)
-            };
-          })
-        };
-      })
-    }
-  );
+      if (summaryRoot && Array.isArray(groups)) {
+        summaryRoot.innerHTML = groups.map(function (g) {
+          return '<tr>' +
+            '<td>' + esc(g.title) + '</td>' +
+            '<td>' + esc(g.direction) + '</td>' +
+            '<td>' + esc(g.count) + '</td>' +
+            '<td>' + esc(g.upCount) + '</td>' +
+            '<td>' + esc(g.downCount) + '</td>' +
+            '<td class="mono">' + esc(g.inOctetsFmt) + '</td>' +
+            '<td class="mono">' + esc(g.outOctetsFmt) + '</td>' +
+            '<td>' + esc(g.maxSpeedFmt) + '</td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      if (groupRoot && Array.isArray(groups)) {
+        groupRoot.innerHTML = groups.map(function (g) {
+          return '<section class="card">' +
+            '<h2 class="group-title ' + esc(g.color) + '">' + esc(g.title) + ' · Interfaces (' + esc(g.count) + ')</h2>' +
+            '<div class="tbl-wrap">' +
+              '<table>' +
+                '<thead><tr><th>ifIndex</th><th>ifName</th><th>ifDescr</th><th>ifType</th><th>Admin</th><th>Oper</th><th>Speed</th><th>In Octets</th><th>Out Octets</th></tr></thead>' +
+                '<tbody>' +
+                  g.rows.map(function (r) {
+                    return '<tr>' +
+                      '<td class="mono">' + esc(r.ifIndex) + '</td>' +
+                      '<td class="mono">' + esc(r.ifName) + '</td>' +
+                      '<td>' + esc(r.ifDescr) + '</td>' +
+                      '<td class="mono">' + esc(r.ifType) + '</td>' +
+                      '<td>' + esc(r.admin) + '</td>' +
+                      '<td>' + esc(r.oper) + '</td>' +
+                      '<td>' + esc(r.speedFmt) + '</td>' +
+                      '<td class="mono">' + esc(r.inOctetsFmt) + '</td>' +
+                      '<td class="mono">' + esc(r.outOctetsFmt) + '</td>' +
+                    '</tr>';
+                  }).join('') +
+                '</tbody>' +
+              '</table>' +
+            '</div>' +
+          '</section>';
+        }).join('');
+      }
+    })();
+  </script>
+  `;
+
+  const groupsView = groups.map((g) => ({
+    title: g.title,
+    direction: g.direction,
+    color: g.color,
+    count: g.count,
+    upCount: g.upCount,
+    downCount: g.downCount,
+    inOctetsFmt: fmtInt(g.inOctets),
+    outOctetsFmt: fmtInt(g.outOctets),
+    maxSpeedFmt: fmtBps(g.maxSpeed),
+    rows: g.rows.map((r) => ({
+      ifIndex: r.ifIndex,
+      ifName: r.ifName,
+      ifDescr: r.ifDescr,
+      ifType: r.ifType,
+      admin: r.admin,
+      oper: r.oper,
+      speedFmt: fmtBps(r.speedBps),
+      inOctetsFmt: fmtInt(r.inOctets),
+      outOctetsFmt: fmtInt(r.outOctets)
+    }))
+  }));
+
+  pm.visualizer.set(template, {
+    status: response && response.status !== undefined ? String(response.status) : 'N/A',
+    message: safeText(response && response.message),
+    groupCount: groupsView.length,
+    totalInterfaces: totalInterfaces,
+    totalUp: totalUp,
+    totalDown: totalDown,
+    deviceInfo: deviceInfo,
+    groupsJson: JSON.stringify(groupsView),
+    treeJson: JSON.stringify(treeData)
+  });
 })();
 ````
 </details>
@@ -630,23 +495,17 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 
 ````json
 {
-    "system_description": {
-        "HW_REV": "1.0",
-        "VENDOR": "LANCity",
-        "BOOTR": "NONE",
-        "SW_REV": "1.0.0",
-        "MODEL": "LCPET-3"
-    },
     "status": 0,
     "message": "Interface statistics retrieved successfully",
     "device": {
-        "mac_address": "aa:bb:cc:dd:ee:ff",
+        "mac_address": "38:ad:2b:3e:86:54",
         "system_description": {
-            "HW_REV": "1.0",
-            "VENDOR": "LANCity",
-            "BOOTR": "NONE",
-            "SW_REV": "1.0.0",
-            "MODEL": "LCPET-3"
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "2022.01-MXL-v-4.0.357",
+            "SW_REV": "8.4.0.0.1b2",
+            "MODEL": "CODA60",
+            "is_empty": false
         }
     },
     "results": {
@@ -658,18 +517,18 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifType": 127,
                     "ifMtu": 1522,
                     "ifSpeed": 0,
-                    "ifPhysAddress": "0xaabbccddeeff",
+                    "ifPhysAddress": "0x38ad2b3e8654",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 103260367,
-                    "ifInUcastPkts": 883230,
+                    "ifInOctets": 306683388,
+                    "ifInUcastPkts": 112383,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
                     "ifInErrors": 0,
                     "ifInUnknownProtos": 0,
-                    "ifOutOctets": 836578788,
-                    "ifOutUcastPkts": 4168953,
+                    "ifOutOctets": 7062572,
+                    "ifOutUcastPkts": 36560,
                     "ifOutNUcastPkts": null,
                     "ifOutDiscards": 0,
                     "ifOutErrors": 0,
@@ -678,18 +537,18 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                 },
                 "ifXEntry": {
                     "ifName": "cni0",
-                    "ifInMulticastPkts": 77229,
-                    "ifInBroadcastPkts": 0,
-                    "ifOutMulticastPkts": 1627684,
-                    "ifOutBroadcastPkts": 1144240,
-                    "ifHCInOctets": 103260367,
-                    "ifHCInUcastPkts": 883230,
-                    "ifHCInMulticastPkts": 77229,
-                    "ifHCInBroadcastPkts": 0,
-                    "ifHCOutOctets": 836578788,
-                    "ifHCOutUcastPkts": 4168953,
-                    "ifHCOutMulticastPkts": 1627684,
-                    "ifHCOutBroadcastPkts": 1144240,
+                    "ifInMulticastPkts": 2065,
+                    "ifInBroadcastPkts": 3287808,
+                    "ifOutMulticastPkts": 4,
+                    "ifOutBroadcastPkts": 229,
+                    "ifHCInOctets": 306683388,
+                    "ifHCInUcastPkts": 112383,
+                    "ifHCInMulticastPkts": 2065,
+                    "ifHCInBroadcastPkts": 3287808,
+                    "ifHCOutOctets": 7062572,
+                    "ifHCOutUcastPkts": 36560,
+                    "ifHCOutMulticastPkts": 4,
+                    "ifHCOutBroadcastPkts": 229,
                     "ifLinkUpDownTrapEnable": 1,
                     "ifHighSpeed": 0,
                     "ifPromiscuousMode": true,
@@ -702,6 +561,147 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
         "docsCableDownstream": [
             {
                 "ifEntry": {
+                    "ifIndex": 49,
+                    "ifDescr": "RF Downstream Interface 2",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 748,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch3",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 748,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 50,
+                    "ifDescr": "RF Downstream Interface 3",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 59919479,
+                    "ifInOctets": 748,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch4",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 748,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 51,
+                    "ifDescr": "RF Downstream Interface 4",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 60492105,
+                    "ifInOctets": 748,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch5",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 748,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
                     "ifIndex": 52,
                     "ifDescr": "RF Downstream Interface 5",
                     "ifType": 128,
@@ -710,8 +710,8 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 379209,
+                    "ifLastChange": 59155597,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -731,7 +731,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 379209,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -757,8 +757,8 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 376004,
+                    "ifLastChange": 59918364,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -778,7 +778,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 376004,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -805,7 +805,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 380949,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -825,7 +825,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 380949,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -852,7 +852,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 375724,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -872,7 +872,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 375724,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -899,7 +899,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 400854,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -919,7 +919,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 400854,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -946,7 +946,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 395616,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -966,7 +966,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 395616,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -993,7 +993,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 374273,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1013,7 +1013,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 374273,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1040,7 +1040,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 374920,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1060,7 +1060,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 374920,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1087,7 +1087,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 384196,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1107,7 +1107,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 384196,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1134,7 +1134,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 397060,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1154,7 +1154,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 397060,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1181,7 +1181,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 406780,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1201,7 +1201,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 407975,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1228,7 +1228,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 383335,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1248,7 +1248,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 383335,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1275,7 +1275,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 380483,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1295,7 +1295,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 380483,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1322,7 +1322,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 388793,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1342,7 +1342,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 388793,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1369,7 +1369,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 401326,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1389,7 +1389,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 401326,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1416,7 +1416,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 386874,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1436,7 +1436,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 386874,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1463,7 +1463,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 393602,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1483,7 +1483,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 393602,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1510,7 +1510,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 397842,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1530,7 +1530,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 397842,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1557,7 +1557,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 386026,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1577,7 +1577,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 386026,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1604,7 +1604,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 384162,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1624,7 +1624,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 384162,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1651,7 +1651,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 376878,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1671,7 +1671,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 376878,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1698,7 +1698,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 373095,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1718,7 +1718,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 373095,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1745,7 +1745,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 403849,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1765,7 +1765,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 403849,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1792,7 +1792,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 373456,
+                    "ifInOctets": 748,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1812,7 +1812,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 373456,
+                    "ifHCInOctets": 748,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1839,7 +1839,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 381817,
+                    "ifInOctets": 1165,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1859,7 +1859,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 381817,
+                    "ifHCInOctets": 1165,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1886,7 +1886,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 376856,
+                    "ifInOctets": 1165,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1906,7 +1906,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 376856,
+                    "ifHCInOctets": 1165,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1933,7 +1933,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 383530,
+                    "ifInOctets": 1165,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1953,242 +1953,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 383530,
-                    "ifHCInUcastPkts": 0,
-                    "ifHCInMulticastPkts": 0,
-                    "ifHCInBroadcastPkts": 0,
-                    "ifHCOutOctets": 0,
-                    "ifHCOutUcastPkts": 0,
-                    "ifHCOutMulticastPkts": 0,
-                    "ifHCOutBroadcastPkts": 0,
-                    "ifLinkUpDownTrapEnable": 2,
-                    "ifHighSpeed": 43,
-                    "ifPromiscuousMode": true,
-                    "ifConnectorPresent": true,
-                    "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
-                }
-            },
-            {
-                "ifEntry": {
-                    "ifIndex": 79,
-                    "ifDescr": "RF Downstream Interface 32",
-                    "ifType": 128,
-                    "ifMtu": 1764,
-                    "ifSpeed": 42884296,
-                    "ifPhysAddress": "",
-                    "ifAdminStatus": 1,
-                    "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 395454,
-                    "ifInUcastPkts": 0,
-                    "ifInNUcastPkts": null,
-                    "ifInDiscards": 0,
-                    "ifInErrors": 0,
-                    "ifInUnknownProtos": 0,
-                    "ifOutOctets": 0,
-                    "ifOutUcastPkts": 0,
-                    "ifOutNUcastPkts": null,
-                    "ifOutDiscards": 0,
-                    "ifOutErrors": 0,
-                    "ifOutQLen": null,
-                    "ifSpecific": null
-                },
-                "ifXEntry": {
-                    "ifName": "dsch33",
-                    "ifInMulticastPkts": 0,
-                    "ifInBroadcastPkts": 0,
-                    "ifOutMulticastPkts": 0,
-                    "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 395454,
-                    "ifHCInUcastPkts": 0,
-                    "ifHCInMulticastPkts": 0,
-                    "ifHCInBroadcastPkts": 0,
-                    "ifHCOutOctets": 0,
-                    "ifHCOutUcastPkts": 0,
-                    "ifHCOutMulticastPkts": 0,
-                    "ifHCOutBroadcastPkts": 0,
-                    "ifLinkUpDownTrapEnable": 2,
-                    "ifHighSpeed": 43,
-                    "ifPromiscuousMode": true,
-                    "ifConnectorPresent": true,
-                    "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
-                }
-            },
-            {
-                "ifEntry": {
-                    "ifIndex": 112,
-                    "ifDescr": "RF Downstream Interface 33",
-                    "ifType": 128,
-                    "ifMtu": 1764,
-                    "ifSpeed": 42884296,
-                    "ifPhysAddress": "",
-                    "ifAdminStatus": 1,
-                    "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 382089,
-                    "ifInUcastPkts": 0,
-                    "ifInNUcastPkts": null,
-                    "ifInDiscards": 0,
-                    "ifInErrors": 0,
-                    "ifInUnknownProtos": 0,
-                    "ifOutOctets": 0,
-                    "ifOutUcastPkts": 0,
-                    "ifOutNUcastPkts": null,
-                    "ifOutDiscards": 0,
-                    "ifOutErrors": 0,
-                    "ifOutQLen": null,
-                    "ifSpecific": null
-                },
-                "ifXEntry": {
-                    "ifName": "dsch34",
-                    "ifInMulticastPkts": 0,
-                    "ifInBroadcastPkts": 0,
-                    "ifOutMulticastPkts": 0,
-                    "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 382089,
-                    "ifHCInUcastPkts": 0,
-                    "ifHCInMulticastPkts": 0,
-                    "ifHCInBroadcastPkts": 0,
-                    "ifHCOutOctets": 0,
-                    "ifHCOutUcastPkts": 0,
-                    "ifHCOutMulticastPkts": 0,
-                    "ifHCOutBroadcastPkts": 0,
-                    "ifLinkUpDownTrapEnable": 2,
-                    "ifHighSpeed": 43,
-                    "ifPromiscuousMode": true,
-                    "ifConnectorPresent": true,
-                    "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
-                }
-            },
-            {
-                "ifEntry": {
-                    "ifIndex": 113,
-                    "ifDescr": "RF Downstream Interface 34",
-                    "ifType": 128,
-                    "ifMtu": 1764,
-                    "ifSpeed": 42884296,
-                    "ifPhysAddress": "",
-                    "ifAdminStatus": 1,
-                    "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 363986,
-                    "ifInUcastPkts": 0,
-                    "ifInNUcastPkts": null,
-                    "ifInDiscards": 0,
-                    "ifInErrors": 0,
-                    "ifInUnknownProtos": 0,
-                    "ifOutOctets": 0,
-                    "ifOutUcastPkts": 0,
-                    "ifOutNUcastPkts": null,
-                    "ifOutDiscards": 0,
-                    "ifOutErrors": 0,
-                    "ifOutQLen": null,
-                    "ifSpecific": null
-                },
-                "ifXEntry": {
-                    "ifName": "dsch35",
-                    "ifInMulticastPkts": 0,
-                    "ifInBroadcastPkts": 0,
-                    "ifOutMulticastPkts": 0,
-                    "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 363986,
-                    "ifHCInUcastPkts": 0,
-                    "ifHCInMulticastPkts": 0,
-                    "ifHCInBroadcastPkts": 0,
-                    "ifHCOutOctets": 0,
-                    "ifHCOutUcastPkts": 0,
-                    "ifHCOutMulticastPkts": 0,
-                    "ifHCOutBroadcastPkts": 0,
-                    "ifLinkUpDownTrapEnable": 2,
-                    "ifHighSpeed": 43,
-                    "ifPromiscuousMode": true,
-                    "ifConnectorPresent": true,
-                    "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
-                }
-            },
-            {
-                "ifEntry": {
-                    "ifIndex": 114,
-                    "ifDescr": "RF Downstream Interface 35",
-                    "ifType": 128,
-                    "ifMtu": 1764,
-                    "ifSpeed": 42884296,
-                    "ifPhysAddress": "",
-                    "ifAdminStatus": 1,
-                    "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 378053,
-                    "ifInUcastPkts": 0,
-                    "ifInNUcastPkts": null,
-                    "ifInDiscards": 0,
-                    "ifInErrors": 0,
-                    "ifInUnknownProtos": 0,
-                    "ifOutOctets": 0,
-                    "ifOutUcastPkts": 0,
-                    "ifOutNUcastPkts": null,
-                    "ifOutDiscards": 0,
-                    "ifOutErrors": 0,
-                    "ifOutQLen": null,
-                    "ifSpecific": null
-                },
-                "ifXEntry": {
-                    "ifName": "dsch36",
-                    "ifInMulticastPkts": 0,
-                    "ifInBroadcastPkts": 0,
-                    "ifOutMulticastPkts": 0,
-                    "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 378053,
-                    "ifHCInUcastPkts": 0,
-                    "ifHCInMulticastPkts": 0,
-                    "ifHCInBroadcastPkts": 0,
-                    "ifHCOutOctets": 0,
-                    "ifHCOutUcastPkts": 0,
-                    "ifHCOutMulticastPkts": 0,
-                    "ifHCOutBroadcastPkts": 0,
-                    "ifLinkUpDownTrapEnable": 2,
-                    "ifHighSpeed": 43,
-                    "ifPromiscuousMode": true,
-                    "ifConnectorPresent": true,
-                    "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
-                }
-            },
-            {
-                "ifEntry": {
-                    "ifIndex": 115,
-                    "ifDescr": "RF Downstream Interface 36",
-                    "ifType": 128,
-                    "ifMtu": 1764,
-                    "ifSpeed": 42884296,
-                    "ifPhysAddress": "",
-                    "ifAdminStatus": 1,
-                    "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 13497,
-                    "ifInUcastPkts": 0,
-                    "ifInNUcastPkts": null,
-                    "ifInDiscards": 0,
-                    "ifInErrors": 0,
-                    "ifInUnknownProtos": 0,
-                    "ifOutOctets": 0,
-                    "ifOutUcastPkts": 0,
-                    "ifOutNUcastPkts": null,
-                    "ifOutDiscards": 0,
-                    "ifOutErrors": 0,
-                    "ifOutQLen": null,
-                    "ifSpecific": null
-                },
-                "ifXEntry": {
-                    "ifName": "dsch37",
-                    "ifInMulticastPkts": 0,
-                    "ifInBroadcastPkts": 0,
-                    "ifOutMulticastPkts": 0,
-                    "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 13497,
+                    "ifHCInOctets": 1165,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -2212,7 +1977,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifDescr": "RF Upstream Interface 1",
                     "ifType": 129,
                     "ifMtu": 1764,
-                    "ifSpeed": 7680000,
+                    "ifSpeed": 30720000,
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
@@ -2223,7 +1988,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInDiscards": 0,
                     "ifInErrors": 0,
                     "ifInUnknownProtos": 0,
-                    "ifOutOctets": 6336,
+                    "ifOutOctets": 1542043,
                     "ifOutUcastPkts": 0,
                     "ifOutNUcastPkts": null,
                     "ifOutDiscards": 0,
@@ -2239,7 +2004,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifDescr": "RF Upstream Interface 2",
                     "ifType": 129,
                     "ifMtu": 1764,
-                    "ifSpeed": 7680000,
+                    "ifSpeed": 30720000,
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
@@ -2250,7 +2015,61 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInDiscards": 0,
                     "ifInErrors": 0,
                     "ifInUnknownProtos": 0,
-                    "ifOutOctets": 0,
+                    "ifOutOctets": 1586244,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": null
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 82,
+                    "ifDescr": "RF Upstream Interface 3",
+                    "ifType": 129,
+                    "ifMtu": 1764,
+                    "ifSpeed": 30720000,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 0,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 1594504,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": null
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 83,
+                    "ifDescr": "RF Upstream Interface 4",
+                    "ifType": 129,
+                    "ifMtu": 1764,
+                    "ifSpeed": 30720000,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 0,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 1640532,
                     "ifOutUcastPkts": 0,
                     "ifOutNUcastPkts": null,
                     "ifOutDiscards": 0,
@@ -2268,12 +2087,12 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifDescr": "RF Downstream Interface",
                     "ifType": 277,
                     "ifMtu": 1764,
-                    "ifSpeed": 2093258880,
+                    "ifSpeed": 1779270016,
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 657126077,
+                    "ifInOctets": 1289946665,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -2293,7 +2112,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 657126077,
+                    "ifHCInOctets": 1289946665,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -2302,7 +2121,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifHCOutMulticastPkts": 0,
                     "ifHCOutBroadcastPkts": 0,
                     "ifLinkUpDownTrapEnable": 2,
-                    "ifHighSpeed": 2093,
+                    "ifHighSpeed": 1779,
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
@@ -2315,12 +2134,12 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifDescr": "RF Downstream Interface 1",
                     "ifType": 277,
                     "ifMtu": 1764,
-                    "ifSpeed": 2093258880,
+                    "ifSpeed": 1779270016,
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 191038414,
+                    "ifInOctets": 320780935,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -2340,7 +2159,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 191038414,
+                    "ifHCInOctets": 320780935,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -2349,148 +2168,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifHCOutMulticastPkts": 0,
                     "ifHCOutBroadcastPkts": 0,
                     "ifLinkUpDownTrapEnable": 2,
-                    "ifHighSpeed": 2093,
-                    "ifPromiscuousMode": true,
-                    "ifConnectorPresent": true,
-                    "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
-                }
-            },
-            {
-                "ifEntry": {
-                    "ifIndex": 49,
-                    "ifDescr": "RF Downstream Interface 2",
-                    "ifType": 277,
-                    "ifMtu": 1764,
-                    "ifSpeed": 2093258880,
-                    "ifPhysAddress": "",
-                    "ifAdminStatus": 1,
-                    "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 191056443,
-                    "ifInUcastPkts": 0,
-                    "ifInNUcastPkts": null,
-                    "ifInDiscards": 0,
-                    "ifInErrors": 0,
-                    "ifInUnknownProtos": 0,
-                    "ifOutOctets": 0,
-                    "ifOutUcastPkts": 0,
-                    "ifOutNUcastPkts": null,
-                    "ifOutDiscards": 0,
-                    "ifOutErrors": 0,
-                    "ifOutQLen": null,
-                    "ifSpecific": null
-                },
-                "ifXEntry": {
-                    "ifName": "dsch3",
-                    "ifInMulticastPkts": 0,
-                    "ifInBroadcastPkts": 0,
-                    "ifOutMulticastPkts": 0,
-                    "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 191057211,
-                    "ifHCInUcastPkts": 0,
-                    "ifHCInMulticastPkts": 0,
-                    "ifHCInBroadcastPkts": 0,
-                    "ifHCOutOctets": 0,
-                    "ifHCOutUcastPkts": 0,
-                    "ifHCOutMulticastPkts": 0,
-                    "ifHCOutBroadcastPkts": 0,
-                    "ifLinkUpDownTrapEnable": 2,
-                    "ifHighSpeed": 2093,
-                    "ifPromiscuousMode": true,
-                    "ifConnectorPresent": true,
-                    "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
-                }
-            },
-            {
-                "ifEntry": {
-                    "ifIndex": 50,
-                    "ifDescr": "RF Downstream Interface 3",
-                    "ifType": 277,
-                    "ifMtu": 1764,
-                    "ifSpeed": 2093258880,
-                    "ifPhysAddress": "",
-                    "ifAdminStatus": 1,
-                    "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 144976763,
-                    "ifInUcastPkts": 0,
-                    "ifInNUcastPkts": null,
-                    "ifInDiscards": 0,
-                    "ifInErrors": 0,
-                    "ifInUnknownProtos": 0,
-                    "ifOutOctets": 0,
-                    "ifOutUcastPkts": 0,
-                    "ifOutNUcastPkts": null,
-                    "ifOutDiscards": 0,
-                    "ifOutErrors": 0,
-                    "ifOutQLen": null,
-                    "ifSpecific": null
-                },
-                "ifXEntry": {
-                    "ifName": "dsch4",
-                    "ifInMulticastPkts": 0,
-                    "ifInBroadcastPkts": 0,
-                    "ifOutMulticastPkts": 0,
-                    "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 144976763,
-                    "ifHCInUcastPkts": 0,
-                    "ifHCInMulticastPkts": 0,
-                    "ifHCInBroadcastPkts": 0,
-                    "ifHCOutOctets": 0,
-                    "ifHCOutUcastPkts": 0,
-                    "ifHCOutMulticastPkts": 0,
-                    "ifHCOutBroadcastPkts": 0,
-                    "ifLinkUpDownTrapEnable": 2,
-                    "ifHighSpeed": 2093,
-                    "ifPromiscuousMode": true,
-                    "ifConnectorPresent": true,
-                    "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
-                }
-            },
-            {
-                "ifEntry": {
-                    "ifIndex": 51,
-                    "ifDescr": "RF Downstream Interface 4",
-                    "ifType": 277,
-                    "ifMtu": 1764,
-                    "ifSpeed": 1744382336,
-                    "ifPhysAddress": "",
-                    "ifAdminStatus": 1,
-                    "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 144982736,
-                    "ifInUcastPkts": 0,
-                    "ifInNUcastPkts": null,
-                    "ifInDiscards": 0,
-                    "ifInErrors": 0,
-                    "ifInUnknownProtos": 0,
-                    "ifOutOctets": 0,
-                    "ifOutUcastPkts": 0,
-                    "ifOutNUcastPkts": null,
-                    "ifOutDiscards": 0,
-                    "ifOutErrors": 0,
-                    "ifOutQLen": null,
-                    "ifSpecific": null
-                },
-                "ifXEntry": {
-                    "ifName": "dsch5",
-                    "ifInMulticastPkts": 0,
-                    "ifInBroadcastPkts": 0,
-                    "ifOutMulticastPkts": 0,
-                    "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 144982736,
-                    "ifHCInUcastPkts": 0,
-                    "ifHCInMulticastPkts": 0,
-                    "ifHCInBroadcastPkts": 0,
-                    "ifHCOutOctets": 0,
-                    "ifHCOutUcastPkts": 0,
-                    "ifHCOutMulticastPkts": 0,
-                    "ifHCOutBroadcastPkts": 0,
-                    "ifLinkUpDownTrapEnable": 2,
-                    "ifHighSpeed": 1744,
+                    "ifHighSpeed": 1779,
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
@@ -2505,7 +2183,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifDescr": "RF Upstream Interface",
                     "ifType": 278,
                     "ifMtu": 1764,
-                    "ifSpeed": 641923128,
+                    "ifSpeed": 846746232,
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
@@ -2516,7 +2194,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInDiscards": 0,
                     "ifInErrors": 0,
                     "ifInUnknownProtos": 0,
-                    "ifOutOctets": 926578412,
+                    "ifOutOctets": 1545656,
                     "ifOutUcastPkts": 0,
                     "ifOutNUcastPkts": null,
                     "ifOutDiscards": 0,
@@ -2528,11 +2206,11 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
             },
             {
                 "ifEntry": {
-                    "ifIndex": 82,
-                    "ifDescr": "RF Upstream Interface 3",
+                    "ifIndex": 84,
+                    "ifDescr": "RF Upstream Interface 5",
                     "ifType": 278,
                     "ifMtu": 1764,
-                    "ifSpeed": 1034937288,
+                    "ifSpeed": 381580920,
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
@@ -2543,7 +2221,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifInDiscards": 0,
                     "ifInErrors": 0,
                     "ifInUnknownProtos": 0,
-                    "ifOutOctets": 472821801,
+                    "ifOutOctets": 1427173,
                     "ifOutUcastPkts": 0,
                     "ifOutNUcastPkts": null,
                     "ifOutDiscards": 0,
