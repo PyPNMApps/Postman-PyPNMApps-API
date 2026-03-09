@@ -1,6 +1,6 @@
 [project]
 name = "postman-pypnmapps-api-tools"
-version = "0.1.71"
+version = "0.1.72"
 description = "Local tooling for Postman PyPNMApps API repository sanitization tasks"
 requires-python = ">=3.10"
 dependencies = []
