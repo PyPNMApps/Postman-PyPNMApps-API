@@ -50,19 +50,19 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 
 ````json
 {
-  "status": 0,
-  "message": "Stub sample for /cmts/servingGroup/operations/get/cableModems",
-  "cmts": {
-    "serving_group": {
-      "id": []
-    }
-  },
-  "refresh": {
-    "mode": "none",
-    "wait_for_cache": false,
-    "timeout_seconds": 8
-  },
-  "data": []
+    "status": 0,
+    "message": "Stub sample for /cmts/servingGroup/operations/get/cableModems",
+    "cmts": {
+        "serving_group": {
+            "id": []
+        }
+    },
+    "refresh": {
+        "mode": "none",
+        "wait_for_cache": false,
+        "timeout_seconds": 8
+    },
+    "data": []
 }
 ````
 </details>

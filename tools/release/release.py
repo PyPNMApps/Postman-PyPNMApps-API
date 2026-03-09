@@ -127,6 +127,8 @@ def run_quality_gates(root: Path) -> None:
 
     visual_docs_script = root / "tools" / "docs" / "build_visual_docs.py"
     if visual_docs_script.exists():
+        print("[update] visual docs generated output")
+        run([python_bin, str(visual_docs_script)])
         print("[check] visual docs generated output")
         run([python_bin, str(visual_docs_script), "--check"])
 

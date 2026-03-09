@@ -50,11 +50,11 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 
 ````json
 {
-  "status": 0,
-  "message": "Stub sample for /cmts/servingGroup/operations/get/status",
-  "data": {
-    "operations": []
-  }
+    "status": 0,
+    "message": "Stub sample for /cmts/servingGroup/operations/get/status",
+    "data": {
+        "operations": []
+    }
 }
 ````
 </details>
