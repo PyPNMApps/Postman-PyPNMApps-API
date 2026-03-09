@@ -124,7 +124,7 @@ else
 fi
 echo "========================================"
 
-if git diff --quiet && git diff --cached --quiet; then
+if [[ -z "$(git status --porcelain)" ]]; then
   echo "No changes to commit."
   exit 0
 fi
