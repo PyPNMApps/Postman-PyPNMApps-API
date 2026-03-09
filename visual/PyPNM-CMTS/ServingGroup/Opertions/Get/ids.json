@@ -1,0 +1,7 @@
+{
+  "status": 0,
+  "message": "Stub sample for /cmts/servingGroup/operations/get/ids",
+  "data": {
+    "ids": []
+  }
+}

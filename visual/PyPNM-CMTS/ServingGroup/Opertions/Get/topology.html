@@ -1,0 +1,403 @@
+// Postman Visualizer: PyPNM-CMTS/ServingGroup/Opertions/Get/topology
+// Last Update: 2026-03-08 20:45:00 MST
+// Visual Constraints: Follow canonical visual rules in CODING_AGENTS.md.
+
+(function () {
+  const response = pm.response.json();
+
+  function safeText(v) {
+    if (v === undefined || v === null) return 'N/A';
+    const s = String(v).trim();
+    return s ? s : 'N/A';
+  }
+
+  function n(v) {
+    const x = Number(v);
+    return Number.isFinite(x) ? x : null;
+  }
+
+  function fmtUtc(epochSec) {
+    const x = n(epochSec);
+    if (x === null) return 'N/A';
+    const d = new Date(x * 1000);
+    if (!Number.isFinite(d.getTime())) return 'N/A';
+    const p = (y) => String(y).padStart(2, '0');
+    return d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds()) + ' UTC';
+  }
+
+  function sanitizeMac(value) {
+    const raw = safeText(value);
+    if (raw === 'N/A') return raw;
+    const compact = raw.replace(/[^0-9a-f]/gi, '').toLowerCase();
+    if (compact.length !== 12) return raw.toLowerCase();
+    return compact.match(/.{1,2}/g).join(':');
+  }
+
+  function sortByLowerHz(a, b) {
+    const al = n(a && a.lower_frequency_hz);
+    const bl = n(b && b.lower_frequency_hz);
+    if (al !== null && bl !== null) return al - bl;
+    const ai = n(a && a.channel_id);
+    const bi = n(b && b.channel_id);
+    if (ai !== null && bi !== null) return ai - bi;
+    return String(safeText(a && a.channel_id)).localeCompare(String(safeText(b && b.channel_id)), undefined, { numeric: true });
+  }
+
+  function bucketChannels(groups) {
+    return groups.map((g) => {
+      const channels = (g && g.channels && typeof g.channels === 'object') ? g.channels : {};
+      const ds = (channels.ds && typeof channels.ds === 'object') ? channels.ds : {};
+      const us = (channels.us && typeof channels.us === 'object') ? channels.us : {};
+
+      const dsScQam = Array.isArray(ds.sc_qam) ? ds.sc_qam.slice().sort(sortByLowerHz) : [];
+      const dsOfdm = Array.isArray(ds.ofdm) ? ds.ofdm.slice().sort(sortByLowerHz) : [];
+      const usScQam = Array.isArray(us.sc_qam) ? us.sc_qam.slice().sort(sortByLowerHz) : [];
+      const usOfdma = Array.isArray(us.ofdma) ? us.ofdma.slice().sort(sortByLowerHz) : [];
+
+      const modemMap = (g && g.modems && typeof g.modems === 'object' && !Array.isArray(g.modems)) ? g.modems : {};
+      const modemRows = Object.keys(modemMap).map((mac) => {
+        const m = modemMap[mac] && typeof modemMap[mac] === 'object' ? modemMap[mac] : {};
+        const sys = m && typeof m.sysdescr === 'object' ? m.sysdescr : {};
+        return {
+          mac: sanitizeMac(mac),
+          model: safeText(sys.MODEL),
+          vendor: safeText(sys.VENDOR),
+          sw: safeText(sys.SW_REV),
+          hw: safeText(sys.HW_REV),
+          bootr: safeText(sys.BOOTR)
+        };
+      }).sort((a, b) => String(a.mac).localeCompare(String(b.mac)));
+
+      return {
+        sgId: safeText(g && g.sg_id),
+        dsChSetId: safeText(g && g.ds_ch_set_id),
+        usChSetId: safeText(g && g.us_ch_set_id),
+        modemCount: n(g && g.modem_count) !== null ? n(g && g.modem_count) : modemRows.length,
+        successCount: n(g && g.success_count) !== null ? n(g && g.success_count) : 0,
+        failureCount: n(g && g.failure_count) !== null ? n(g && g.failure_count) : 0,
+        dsScQam,
+        dsOfdm,
+        usScQam,
+        usOfdma,
+        modemRows
+      };
+    });
+  }
+
+  function channelNode(label, ch) {
+    const rawType = ch && ch.channel_type ? String(ch.channel_type).toLowerCase() : '';
+    const cf = n(ch && ch.center_frequency_hz);
+    const lo = n(ch && ch.lower_frequency_hz);
+    const hi = n(ch && ch.upper_frequency_hz);
+    const bw = n(ch && ch.channel_width_hz);
+    const id = safeText(ch && ch.channel_id);
+    let subtitle = 'CF: ' + (cf !== null ? (Math.round(cf / 1e6) + ' MHz') : 'N/A') + (bw !== null ? (' · BW: ' + Math.round(bw / 1e6) + ' MHz') : '');
+    if (rawType === 'ofdm' || rawType === 'ofdma') {
+      const range = (lo !== null && hi !== null) ? (Math.round(lo / 1e6) + ' - ' + Math.round(hi / 1e6) + ' MHz') : 'N/A';
+      subtitle = 'Range: ' + range + (bw !== null ? (' · BW: ' + Math.round(bw / 1e6) + ' MHz') : '');
+    }
+    return {
+      name: label + ' ' + id,
+      subtitle,
+      kind: label.startsWith('DS') ? 'ds' : 'us'
+    };
+  }
+
+  function buildTree(mapped) {
+    return {
+      name: 'CMTS',
+      subtitle: 'Serving Group Topology',
+      kind: 'root',
+      children: mapped.map((g) => {
+        const dsChildren = [];
+        if (g.dsScQam.length) dsChildren.push({ name: 'DS SCQAM', kind: 'ds', children: g.dsScQam.map((ch) => channelNode('DS', ch)) });
+        if (g.dsOfdm.length) dsChildren.push({ name: 'DS OFDM', kind: 'ds', children: g.dsOfdm.map((ch) => channelNode('DS', ch)) });
+
+        const usChildren = [];
+        if (g.usScQam.length) usChildren.push({ name: 'US SCQAM', kind: 'us', children: g.usScQam.map((ch) => channelNode('US', ch)) });
+        if (g.usOfdma.length) usChildren.push({ name: 'US OFDMA', kind: 'us', children: g.usOfdma.map((ch) => channelNode('US', ch)) });
+
+        const modelBuckets = {};
+        g.modemRows.forEach((m) => {
+          const model = safeText(m && m.model);
+          if (!modelBuckets[model]) modelBuckets[model] = [];
+          modelBuckets[model].push(m);
+        });
+
+        const modemChildren = Object.keys(modelBuckets)
+          .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+          .map((model) => {
+            const list = modelBuckets[model]
+              .slice()
+              .sort((a, b) => String(a.mac).localeCompare(String(b.mac)));
+            return {
+              name: model,
+              subtitle: 'Modem (' + String(list.length) + ')',
+              kind: 'modem',
+              children: list.slice(0, 120).map((m) => ({
+                name: m.mac,
+                subtitle: m.sw,
+                kind: 'modem'
+              }))
+            };
+          });
+
+        return {
+          name: 'SG ' + g.sgId,
+          subtitle: 'DS set ' + g.dsChSetId + ' · US set ' + g.usChSetId,
+          kind: 'sg',
+          children: [
+            { name: 'Downstream', kind: 'ds', children: dsChildren.length ? dsChildren : [{ name: 'No DS channels', kind: 'empty' }] },
+            { name: 'Upstream', kind: 'us', children: usChildren.length ? usChildren : [{ name: 'No US channels', kind: 'empty' }] },
+            { name: 'Cable Modems (' + g.modemCount + ')', kind: 'modem', children: modemChildren.length ? modemChildren : [{ name: 'No modems', kind: 'empty' }] }
+          ]
+        };
+      })
+    };
+  }
+
+  const groups = Array.isArray(response && response.groups) ? response.groups : [];
+  const mapped = bucketChannels(groups);
+  const tree = buildTree(mapped);
+
+  const template = `
+  <style>
+    body { background:#141821; color:#e7edf8; font-family:Arial,sans-serif; margin:0; padding:16px; }
+    .wrap { max-width:1600px; margin:0 auto; display:grid; gap:12px; }
+    .card { background:#1b2332; border:1px solid rgba(255,255,255,0.09); border-radius:10px; padding:14px; }
+    .title { margin:0 0 8px 0; color:#f3f6ff; text-align:center; font-size:20px; font-weight:700; }
+    .meta { color:#dbe3ff; font-size:12px; text-align:center; }
+    .kpis { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; margin-top:10px; }
+    .kpi { background:#202938; border:1px solid rgba(255,255,255,0.10); border-radius:8px; padding:8px; }
+    .kpi .label { font-size:11px; color:#dbe3ff; }
+    .kpi .value { font-size:14px; color:#f3f6ff; font-weight:700; margin-top:4px; }
+
+    .tree-wrap { border:1px solid rgba(255,255,255,0.10); border-radius:8px; overflow:auto; background:#202938; }
+    .tree-head { color:#9ec0ff; font-size:14px; font-weight:700; margin-bottom:8px; }
+    .tree-note { color:#dbe3ff; font-size:12px; margin-bottom:8px; }
+
+    .sg-grid { display:grid; grid-template-columns:1fr; gap:12px; }
+    .sg-title { margin:0 0 8px 0; color:#9ec0ff; font-size:17px; font-weight:700; }
+    .sg-meta { color:#dbe3ff; font-size:12px; margin-bottom:10px; }
+
+    .tbl-wrap { margin-top:10px; border:1px solid rgba(255,255,255,0.10); border-radius:8px; overflow:auto; }
+    table { width:100%; border-collapse:collapse; min-width:860px; }
+    th, td { padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.10); font-size:12px; text-align:left; }
+    th { background:#202938; color:#dbe3ff; }
+    td { color:#f3f6ff; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    .empty { color:#dbe3ff; font-size:12px; padding:8px 0; }
+
+    .tree-svg .link { fill:none; stroke:rgba(255,255,255,0.20); stroke-width:1.2px; }
+    .tree-svg .node circle { stroke-width:1.5px; }
+    .tree-svg .node text { font-size:12px; fill:#e7edf8; }
+    .tree-svg .node .sub { font-size:10px; fill:#dbe3ff; }
+
+    @media (max-width:1100px) {
+      .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+  </style>
+
+  <div class="wrap">
+    <div class="card">
+      <h1 class="title">Serving Group Operations Get Topology</h1>
+      <div class="meta">POST /cmts/servingGroup/operations/get/topology · Capture Time: {{captureTime}}</div>
+      <div class="kpis">
+        <div class="kpi"><div class="label">Status</div><div class="value">{{status}}</div></div>
+        <div class="kpi"><div class="label">Resolved SG IDs</div><div class="value">{{resolvedCount}}</div></div>
+        <div class="kpi"><div class="label">Missing SG IDs</div><div class="value">{{missingCount}}</div></div>
+        <div class="kpi"><div class="label">Groups</div><div class="value">{{groupCount}}</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tree-head">Graphical Topology</div>
+      <div class="tree-note">Click nodes to collapse/expand branches.</div>
+      <div id="topologyTree" class="tree-wrap"></div>
+    </div>
+
+    <div class="sg-grid" id="sgRoot"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script>
+    (function () {
+      const groups = {{{groupsJson}}};
+      const treeData = {{{treeJson}}};
+      const root = document.getElementById('sgRoot');
+      if (!root || !Array.isArray(groups)) return;
+
+      function renderTree(data) {
+        const host = document.getElementById('topologyTree');
+        if (!host || !window.d3 || !data) return;
+        host.innerHTML = '';
+
+        const d3 = window.d3;
+        const width = Math.max(1200, host.clientWidth || 1200);
+        const dx = 22;
+        const dy = 220;
+        const tree = d3.tree().nodeSize([dx, dy]);
+        const diagonal = d3.linkHorizontal().x(function (d) { return d.y; }).y(function (d) { return d.x; });
+
+        const root = d3.hierarchy(data);
+        root.x0 = dx;
+        root.y0 = 0;
+        let i = 0;
+
+        root.descendants().forEach(function (d) {
+          d.id = i++;
+          d._children = d.children;
+          if (d.depth > 1) d.children = null;
+        });
+
+        const svg = d3.create('svg')
+          .attr('class', 'tree-svg')
+          .attr('width', width)
+          .attr('height', dx)
+          .attr('viewBox', [-40, -20, width, dx])
+          .style('font', '12px Arial');
+
+        const gLink = svg.append('g').attr('fill', 'none').attr('stroke', 'rgba(255,255,255,0.2)').attr('stroke-opacity', 1).attr('stroke-width', 1.2);
+        const gNode = svg.append('g').attr('cursor', 'pointer').attr('pointer-events', 'all');
+
+        function nodeColor(kind) {
+          if (kind === 'ds') return '#5a6fd8';
+          if (kind === 'us') return '#39c28e';
+          if (kind === 'modem') return '#f1c40f';
+          if (kind === 'sg') return '#9ec0ff';
+          if (kind === 'root') return '#c62828';
+          return '#94a3b8';
+        }
+
+        function update(source) {
+          const duration = 220;
+          const nodes = root.descendants().reverse();
+          const links = root.links();
+          tree(root);
+
+          let left = root;
+          let right = root;
+          root.eachBefore(function (node) {
+            if (node.x < left.x) left = node;
+            if (node.x > right.x) right = node;
+          });
+
+          const height = right.x - left.x + dx * 2;
+
+          const transition = svg.transition().duration(duration)
+            .attr('height', height)
+            .attr('viewBox', [-40, left.x - dx, width, height]);
+
+          const node = gNode.selectAll('g').data(nodes, function (d) { return d.id; });
+
+          const nodeEnter = node.enter().append('g')
+            .attr('transform', function () { return 'translate(' + source.y0 + ',' + source.x0 + ')'; })
+            .attr('fill-opacity', 0)
+            .attr('stroke-opacity', 0)
+            .on('click', function (event, d) {
+              d.children = d.children ? null : d._children;
+              update(d);
+            });
+
+          nodeEnter.append('circle')
+            .attr('r', 5)
+            .attr('fill', function (d) { return d._children ? nodeColor(d.data.kind) : '#1b2332'; })
+            .attr('stroke', function (d) { return nodeColor(d.data.kind); });
+
+          nodeEnter.append('text')
+            .attr('dy', '0.31em')
+            .attr('x', function (d) { return d._children ? -10 : 10; })
+            .attr('text-anchor', function (d) { return d._children ? 'end' : 'start'; })
+            .text(function (d) {
+              const name = d && d.data && d.data.name ? String(d.data.name) : 'N/A';
+              const subtitle = d && d.data && d.data.subtitle ? String(d.data.subtitle) : '';
+              return subtitle ? (name + ' · ' + subtitle) : name;
+            });
+
+          const nodeUpdate = node.merge(nodeEnter).transition(transition)
+            .attr('transform', function (d) { return 'translate(' + d.y + ',' + d.x + ')'; })
+            .attr('fill-opacity', 1)
+            .attr('stroke-opacity', 1);
+
+          node.merge(nodeEnter).select('circle')
+            .attr('fill', function (d) { return d._children ? nodeColor(d.data.kind) : '#1b2332'; })
+            .attr('stroke', function (d) { return nodeColor(d.data.kind); });
+
+          node.exit().transition(transition).remove()
+            .attr('transform', function () { return 'translate(' + source.y + ',' + source.x + ')'; })
+            .attr('fill-opacity', 0)
+            .attr('stroke-opacity', 0);
+
+          const link = gLink.selectAll('path').data(links, function (d) { return d.target.id; });
+
+          const linkEnter = link.enter().append('path')
+            .attr('d', function () {
+              const o = { x: source.x0, y: source.y0 };
+              return diagonal({ source: o, target: o });
+            });
+
+          link.merge(linkEnter).transition(transition).attr('d', diagonal);
+
+          link.exit().transition(transition).remove().attr('d', function () {
+            const o = { x: source.x, y: source.y };
+            return diagonal({ source: o, target: o });
+          });
+
+          root.eachBefore(function (d) {
+            d.x0 = d.x;
+            d.y0 = d.y;
+          });
+        }
+
+        update(root);
+        host.appendChild(svg.node());
+      }
+
+      renderTree(treeData);
+
+      groups.forEach(function (g) {
+        const card = document.createElement('section');
+        card.className = 'card';
+        card.innerHTML = '' +
+          '<h2 class="sg-title">Serving Group ' + g.sgId + '</h2>' +
+          '<div class="sg-meta">DS Set: ' + g.dsChSetId + ' · US Set: ' + g.usChSetId + ' · Modems: ' + g.modemCount + ' · Success: ' + g.successCount + ' · Failure: ' + g.failureCount + '</div>';
+
+        const tableWrap = document.createElement('div');
+        tableWrap.className = 'tbl-wrap';
+        tableWrap.innerHTML = '' +
+          '<table>' +
+            '<thead><tr><th>MacAddress</th><th>Model</th><th>Vendor</th><th>SW Version</th><th>HW Version</th><th>Boot ROM</th></tr></thead>' +
+            '<tbody>' +
+              (g.modemRows.length
+                ? g.modemRows.map(function (m) {
+                    return '<tr>' +
+                      '<td class="mono">' + m.mac + '</td>' +
+                      '<td>' + m.model + '</td>' +
+                      '<td>' + m.vendor + '</td>' +
+                      '<td class="mono">' + m.sw + '</td>' +
+                      '<td class="mono">' + m.hw + '</td>' +
+                      '<td class="mono">' + m.bootr + '</td>' +
+                    '</tr>';
+                  }).join('')
+                : '<tr><td colspan="6">No cable modems in response</td></tr>') +
+            '</tbody>' +
+          '</table>';
+
+        card.appendChild(tableWrap);
+        root.appendChild(card);
+      });
+    })();
+  </script>
+  `;
+
+  pm.visualizer.set(template, {
+    status: response && response.status !== undefined ? String(response.status) : 'N/A',
+    captureTime: fmtUtc(response && response.timestamp),
+    resolvedCount: Array.isArray(response && response.resolved_sg_ids) ? response.resolved_sg_ids.length : 0,
+    missingCount: Array.isArray(response && response.missing_sg_ids) ? response.missing_sg_ids.length : 0,
+    groupCount: mapped.length,
+    groupsJson: JSON.stringify(mapped),
+    treeJson: JSON.stringify(tree)
+  });
+})();

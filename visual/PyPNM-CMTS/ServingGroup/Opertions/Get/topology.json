@@ -1,0 +1,784 @@
+{
+  "status": 0,
+  "message": "",
+  "timestamp": 1773023407,
+  "requested_sg_ids": [],
+  "resolved_sg_ids": [
+    1
+  ],
+  "missing_sg_ids": [],
+  "groups": [
+    {
+      "sg_id": 1,
+      "ds_ch_set_id": 256,
+      "us_ch_set_id": 256,
+      "channels": {
+        "ds": {
+          "sc_qam": [
+            {
+              "channel_id": 1,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 519000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 516000000,
+              "upper_frequency_hz": 522000000
+            },
+            {
+              "channel_id": 2,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 525000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 522000000,
+              "upper_frequency_hz": 528000000
+            },
+            {
+              "channel_id": 3,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 531000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 528000000,
+              "upper_frequency_hz": 534000000
+            },
+            {
+              "channel_id": 4,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 537000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 534000000,
+              "upper_frequency_hz": 540000000
+            },
+            {
+              "channel_id": 5,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 543000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 540000000,
+              "upper_frequency_hz": 546000000
+            },
+            {
+              "channel_id": 6,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 549000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 546000000,
+              "upper_frequency_hz": 552000000
+            },
+            {
+              "channel_id": 7,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 555000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 552000000,
+              "upper_frequency_hz": 558000000
+            },
+            {
+              "channel_id": 8,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 561000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 558000000,
+              "upper_frequency_hz": 564000000
+            },
+            {
+              "channel_id": 9,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 567000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 564000000,
+              "upper_frequency_hz": 570000000
+            },
+            {
+              "channel_id": 10,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 573000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 570000000,
+              "upper_frequency_hz": 576000000
+            },
+            {
+              "channel_id": 11,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 579000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 576000000,
+              "upper_frequency_hz": 582000000
+            },
+            {
+              "channel_id": 12,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 585000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 582000000,
+              "upper_frequency_hz": 588000000
+            },
+            {
+              "channel_id": 13,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 591000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 588000000,
+              "upper_frequency_hz": 594000000
+            },
+            {
+              "channel_id": 14,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 597000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 594000000,
+              "upper_frequency_hz": 600000000
+            },
+            {
+              "channel_id": 15,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 603000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 600000000,
+              "upper_frequency_hz": 606000000
+            },
+            {
+              "channel_id": 16,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 609000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 606000000,
+              "upper_frequency_hz": 612000000
+            },
+            {
+              "channel_id": 17,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 615000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 612000000,
+              "upper_frequency_hz": 618000000
+            },
+            {
+              "channel_id": 18,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 621000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 618000000,
+              "upper_frequency_hz": 624000000
+            },
+            {
+              "channel_id": 19,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 627000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 624000000,
+              "upper_frequency_hz": 630000000
+            },
+            {
+              "channel_id": 20,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 633000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 630000000,
+              "upper_frequency_hz": 636000000
+            },
+            {
+              "channel_id": 21,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 639000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 636000000,
+              "upper_frequency_hz": 642000000
+            },
+            {
+              "channel_id": 22,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 645000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 642000000,
+              "upper_frequency_hz": 648000000
+            },
+            {
+              "channel_id": 23,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 651000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 648000000,
+              "upper_frequency_hz": 654000000
+            },
+            {
+              "channel_id": 24,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 657000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 654000000,
+              "upper_frequency_hz": 660000000
+            },
+            {
+              "channel_id": 25,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 663000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 660000000,
+              "upper_frequency_hz": 666000000
+            },
+            {
+              "channel_id": 26,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 669000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 666000000,
+              "upper_frequency_hz": 672000000
+            },
+            {
+              "channel_id": 27,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 675000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 672000000,
+              "upper_frequency_hz": 678000000
+            },
+            {
+              "channel_id": 28,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 681000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 678000000,
+              "upper_frequency_hz": 684000000
+            },
+            {
+              "channel_id": 29,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 687000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 684000000,
+              "upper_frequency_hz": 690000000
+            },
+            {
+              "channel_id": 30,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 693000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 690000000,
+              "upper_frequency_hz": 696000000
+            },
+            {
+              "channel_id": 31,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 699000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 696000000,
+              "upper_frequency_hz": 702000000
+            },
+            {
+              "channel_id": 32,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 705000000,
+              "channel_width_hz": 6000000,
+              "lower_frequency_hz": 702000000,
+              "upper_frequency_hz": 708000000
+            }
+          ],
+          "ofdm": [
+            {
+              "channel_id": 33,
+              "channel_type": "ofdm",
+              "plc_frequency_hz": 725800000,
+              "channel_width_hz": 206700000,
+              "lower_frequency_hz": 693250000,
+              "upper_frequency_hz": 899950000
+            },
+            {
+              "channel_id": 34,
+              "channel_type": "ofdm",
+              "plc_frequency_hz": 497800000,
+              "channel_width_hz": 206700000,
+              "lower_frequency_hz": 297250000,
+              "upper_frequency_hz": 503950000
+            }
+          ],
+          "counts": [
+            {
+              "channel_id": 1,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 2,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 3,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 4,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 5,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 6,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 7,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 8,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 9,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 10,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 11,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 12,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 13,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 14,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 15,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 16,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 17,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 18,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 19,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 20,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 21,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 22,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 23,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 24,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 25,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 26,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 27,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 28,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 29,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 30,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 31,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 32,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 33,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 34,
+              "modem_count": 0
+            }
+          ],
+          "set_counts": [
+            {
+              "ch_set_id": 16777217,
+              "modem_count": 21
+            },
+            {
+              "ch_set_id": 16777220,
+              "modem_count": 1
+            },
+            {
+              "ch_set_id": 16777222,
+              "modem_count": 1
+            }
+          ]
+        },
+        "us": {
+          "sc_qam": [
+            {
+              "channel_id": 1,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 17200000,
+              "channel_width_hz": 6400000,
+              "lower_frequency_hz": 14000000,
+              "upper_frequency_hz": 20400000
+            },
+            {
+              "channel_id": 2,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 23600000,
+              "channel_width_hz": 6400000,
+              "lower_frequency_hz": 20400000,
+              "upper_frequency_hz": 26800000
+            },
+            {
+              "channel_id": 3,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 30000000,
+              "channel_width_hz": 6400000,
+              "lower_frequency_hz": 26800000,
+              "upper_frequency_hz": 33200000
+            },
+            {
+              "channel_id": 4,
+              "channel_type": "sc_qam",
+              "center_frequency_hz": 36400000,
+              "channel_width_hz": 6400000,
+              "lower_frequency_hz": 33200000,
+              "upper_frequency_hz": 39600000
+            }
+          ],
+          "ofdma": [
+            {
+              "channel_id": 25,
+              "channel_type": "ofdma",
+              "channel_width_hz": 43000000,
+              "lower_frequency_hz": 42000000,
+              "upper_frequency_hz": 85000000
+            },
+            {
+              "channel_id": 26,
+              "channel_type": "ofdma",
+              "channel_width_hz": 95000000,
+              "lower_frequency_hz": 108000000,
+              "upper_frequency_hz": 203000000
+            }
+          ],
+          "counts": [
+            {
+              "channel_id": 1,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 2,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 3,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 4,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 25,
+              "modem_count": 0
+            },
+            {
+              "channel_id": 26,
+              "modem_count": 0
+            }
+          ],
+          "set_counts": [
+            {
+              "ch_set_id": 16777217,
+              "modem_count": 10
+            },
+            {
+              "ch_set_id": 16777218,
+              "modem_count": 12
+            },
+            {
+              "ch_set_id": 16777219,
+              "modem_count": 1
+            }
+          ]
+        }
+      },
+      "modem_count": 23,
+      "success_count": 23,
+      "failure_count": 0,
+      "modems": {
+        "1c:ab:c0:9d:d6:00": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "mango-1.6.5-ge4b629a1",
+            "SW_REV": "4.5.11.26b1",
+            "MODEL": "CGNM-SHW",
+            "is_empty": false
+          }
+        },
+        "20:6a:94:34:63:f4": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.727888.R.2304181116",
+            "SW_REV": "7.3.5.3.3b2",
+            "MODEL": "EN2251-RES",
+            "is_empty": false
+          }
+        },
+        "20:6a:94:d7:d3:60": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGR2.86C.610248.R.2210181404",
+            "SW_REV": "7.3.5.3.1b5",
+            "MODEL": "CODA5814Q",
+            "is_empty": false
+          }
+        },
+        "38:ad:2b:3e:86:54": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "2022.01-MXL-v-4.0.357",
+            "SW_REV": "8.4.0.0.1b2",
+            "MODEL": "CODA60",
+            "is_empty": false
+          }
+        },
+        "38:ad:2b:3e:87:7c": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "2022.01-MXL-v-4.0.369.F",
+            "SW_REV": "8.5.0.0.5b4",
+            "MODEL": "CODA60V",
+            "is_empty": false
+          }
+        },
+        "60:6c:63:f4:64:f8": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.727888.R.2305250917.F",
+            "SW_REV": "7.3.5.3.2b1",
+            "MODEL": "CODA56",
+            "is_empty": false
+          }
+        },
+        "74:9b:e8:72:7a:54": {
+          "sysdescr": {
+            "HW_REV": "0.65",
+            "VENDOR": "Hitron Technologies Inc.",
+            "BOOTR": "NONE",
+            "SW_REV": "7.2.4.0.3.b5",
+            "MODEL": "ODIN-1112",
+            "is_empty": false
+          }
+        },
+        "84:0b:7c:0b:e5:48": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.727889.R.2402291559.F",
+            "SW_REV": "7.3.5.3U8-UNI-CTR",
+            "MODEL": "EN2251",
+            "is_empty": false
+          }
+        },
+        "90:aa:c3:4b:75:60": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.668728.R.2407251438",
+            "SW_REV": "7.3.5.3.1b5",
+            "MODEL": "CODA-4589-RES",
+            "is_empty": false
+          }
+        },
+        "90:aa:c3:8a:bd:18": {
+          "sysdescr": {
+            "HW_REV": "2A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.727888.R.2305251031.F",
+            "SW_REV": "7.3.5.3.2b2",
+            "MODEL": "CODA",
+            "is_empty": false
+          }
+        },
+        "90:aa:c3:c9:d0:d0": {
+          "sysdescr": {
+            "HW_REV": "0A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.635901.R.2008260951",
+            "SW_REV": "7.2.4.5.1b6",
+            "MODEL": "CGNDP3M",
+            "is_empty": false
+          }
+        },
+        "b0:f5:30:b7:76:30": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "2022.01-MXL-v-4.0.369",
+            "SW_REV": "8.5.0.0.1b5",
+            "MODEL": "CODA6021U",
+            "is_empty": false
+          }
+        },
+        "dc:36:0c:79:e0:36": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.727888.R.2305250917.F",
+            "SW_REV": "7.3.5.3.2b1",
+            "MODEL": "CODA56",
+            "is_empty": false
+          }
+        },
+        "dc:36:0c:79:f1:8c": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.727888.R.2304140934.F",
+            "SW_REV": "7.3.5.3.2b1",
+            "MODEL": "CODA56",
+            "is_empty": false
+          }
+        },
+        "dc:36:0c:ee:ce:e0": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGR2.86C.703059.R.2405091611",
+            "SW_REV": "7.3.5.3.1b5",
+            "MODEL": "CODA5834",
+            "is_empty": false
+          }
+        },
+        "f8:1d:0f:cd:a0:f0": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.597968.R.1811011626",
+            "SW_REV": "7.1.1.2.5b3",
+            "MODEL": "CODA-4589-RES",
+            "is_empty": false
+          }
+        },
+        "f8:34:5a:53:27:48": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.727888.R.2304181538.F",
+            "SW_REV": "7.3.5.3.2b3",
+            "MODEL": "CODA-57-RES",
+            "is_empty": false
+          }
+        },
+        "f8:34:5a:7f:d6:80": {
+          "sysdescr": {
+            "HW_REV": "1C",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGR2.86C.668728.R.2206081646",
+            "SW_REV": "7.3.5.3.1b5",
+            "MODEL": "CODA-5810",
+            "is_empty": false
+          }
+        },
+        "f8:34:5a:80:84:12": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.727888.R.2304181538",
+            "SW_REV": "7.3.5.3.2b3",
+            "MODEL": "CODA-56-RES",
+            "is_empty": false
+          }
+        },
+        "f8:34:5a:83:35:34": {
+          "sysdescr": {
+            "HW_REV": "2A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.727888.R.2304181116",
+            "SW_REV": "7.3.5.3.3b2",
+            "MODEL": "EN2251-HSP",
+            "is_empty": false
+          }
+        },
+        "fc:77:7b:11:8f:da": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.727888.R.2304181538",
+            "SW_REV": "7.3.5.3.3b2",
+            "MODEL": "CODA-57-RES",
+            "is_empty": false
+          }
+        },
+        "fc:77:7b:ca:7b:10": {
+          "sysdescr": {
+            "HW_REV": "2A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGM2.86C.635901.R.2008260951",
+            "SW_REV": "7.2.4.5.1b8",
+            "MODEL": "CGNDP3M",
+            "is_empty": false
+          }
+        },
+        "fc:77:7b:cc:04:b0": {
+          "sysdescr": {
+            "HW_REV": "1A",
+            "VENDOR": "Hitron Technologies",
+            "BOOTR": "CGR2.86C.610248.R.2210181404",
+            "SW_REV": "7.3.5.3.1b3",
+            "MODEL": "CODA5610Q",
+            "is_empty": false
+          }
+        }
+      },
+      "metadata": {
+        "snapshot_time_epoch": 1773023367.02929,
+        "age_seconds": 40.27694034576416,
+        "last_heavy_refresh_epoch": 1773023367.02929,
+        "last_light_refresh_epoch": 1773023367.02929,
+        "refresh_state": "OK",
+        "last_error": null
+      }
+    }
+  ]
+}

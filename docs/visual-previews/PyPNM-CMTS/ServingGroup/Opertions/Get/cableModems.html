@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyPNM-CMTS / ServingGroup / Opertions / Get / cableModems</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 12px;
+      background: #f8fafc;
+      color: #111827;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .frame {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .error {
+      white-space: pre-wrap;
+      color: #fecaca;
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      padding: 8px;
+      border-radius: 6px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #0f172a;
+        color: #e5e7eb;
+      }
+      .frame {
+        background: #111827;
+        border-color: #374151;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/handlebars@4.7.8/dist/handlebars.min.js"></script>
+</head>
+<body>
+  <div id="app" class="frame"></div>
+  <script>
+  (function() {
+    const sampleData = {"status": 0, "message": "Stub sample for /cmts/servingGroup/operations/get/cableModems", "cmts": {"serving_group": {"id": []}}, "refresh": {"mode": "none", "wait_for_cache": false, "timeout_seconds": 8}, "data": []};
+    const visualSource = "// Postman Visualizer: PyPNM-CMTS/ServingGroup/Opertions/Get/cableModems\n// Last Update: 2026-03-08 20:05:00 MST\n// Visual Constraints: Follow canonical visual rules in CODING_AGENTS.md.\n\n(function () {\n  const response = pm.response.json();\n\n  const template = `\n  <style>\n    body { background:#141821; color:#e7edf8; font-family:Arial,sans-serif; margin:0; padding:16px; }\n    .wrap { max-width:1600px; margin:0 auto; }\n    .card { background:#1b2332; border:1px solid rgba(255,255,255,0.09); border-radius:10px; padding:14px; }\n    .title { margin:0 0 8px 0; color:#f3f6ff; text-align:center; font-size:20px; font-weight:700; }\n    .meta { color:#dbe3ff; font-size:12px; margin-bottom:10px; text-align:center; }\n    pre { margin:0; padding:10px; border-radius:6px; background:#1a1a1a; border:1px solid #4d4d4d; overflow:auto; font-size:12px; }\n  </style>\n  <div class=\"wrap\">\n    <div class=\"card\">\n      <h1 class=\"title\">Serving Group Operations Get Cable Modems</h1>\n      <div class=\"meta\">POST /cmts/servingGroup/operations/get/cableModems</div>\n      <pre>{{raw}}</pre>\n    </div>\n  </div>\n  `;\n\n  pm.visualizer.set(template, { raw: JSON.stringify(response, null, 2) });\n})();\n";
+    const app = document.getElementById("app");
+    let visualizerData = sampleData;
+    let lastTemplate = null;
+
+    function showError(prefix, err) {
+      const msg = String(err && err.stack || err);
+      app.innerHTML = '<div class="error">' + prefix + '\n' + msg + '</div>';
+    }
+
+    async function executeRenderedScripts(root) {
+      const scripts = Array.from(root.querySelectorAll("script"));
+      for (const oldScript of scripts) {
+        const newScript = document.createElement("script");
+        for (const attr of oldScript.attributes) {
+          newScript.setAttribute(attr.name, attr.value);
+        }
+        const parent = oldScript.parentNode;
+        if (!parent) continue;
+
+        if (oldScript.src) {
+          await new Promise((resolve, reject) => {
+            newScript.onload = resolve;
+            newScript.onerror = function() {
+              reject(new Error('Failed to load script: ' + oldScript.src));
+            };
+            parent.replaceChild(newScript, oldScript);
+          });
+          continue;
+        }
+
+        newScript.textContent = oldScript.textContent;
+        parent.replaceChild(newScript, oldScript);
+      }
+    }
+
+    function renderTemplate(template, data) {
+      lastTemplate = template;
+      visualizerData = data == null ? sampleData : data;
+      try {
+        const looksLikeHandlebars =
+          typeof template === "string" &&
+          template.indexOf("{") !== -1 &&
+          template.indexOf("}") !== -1;
+        if (window.Handlebars && looksLikeHandlebars) {
+          const compiled = window.Handlebars.compile(template);
+          app.innerHTML = compiled(visualizerData);
+          void executeRenderedScripts(app).catch((err) => showError('Rendered script execution error', err));
+        } else if (typeof template === "string") {
+          app.innerHTML = template;
+          void executeRenderedScripts(app).catch((err) => showError('Rendered script execution error', err));
+        } else {
+          app.textContent = String(template);
+        }
+      } catch (err) {
+        showError('Template render error', err);
+      }
+    }
+
+    function makeKVStore() {
+      const store = Object.create(null);
+      return {
+        get: function(key) { return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : undefined; },
+        set: function(key, value) { store[key] = value; return value; },
+        unset: function(key) { delete store[key]; }
+      };
+    }
+
+    window.pm = {
+      response: {
+        json: function() { return sampleData; },
+        text: function() { return JSON.stringify(sampleData); }
+      },
+      request: {
+        body: {
+          raw: "{}"
+        }
+      },
+      environment: makeKVStore(),
+      globals: makeKVStore(),
+      variables: makeKVStore(),
+      getData: function(cb) {
+        if (typeof cb === "function") cb(null, visualizerData);
+      },
+      visualizer: {
+        set: function(template, data) {
+          renderTemplate(template, data);
+        }
+      }
+    };
+
+    window.console = window.console || { log(){}, warn(){}, error(){} };
+    window.addEventListener('error', function(ev) {
+      if (ev && ev.error) showError('Window error', ev.error);
+    });
+    window.addEventListener('unhandledrejection', function(ev) {
+      showError('Unhandled promise rejection', ev && ev.reason);
+    });
+
+    if (sampleData && typeof sampleData === 'object' && sampleData.__error__) {
+      app.innerHTML = '<div class="error">Preview unavailable\nInvalid sample JSON fixture\n' + String(sampleData.__error__) + '</div>';
+      return;
+    }
+
+    try {
+      const fn = new Function(visualSource);
+      fn();
+      if (!lastTemplate && !app.innerHTML.trim()) {
+        app.innerHTML = '<div class="error">No visualizer output produced. The script may require unsupported Postman APIs.</div>';
+      }
+    } catch (err) {
+      showError('Script execution error', err);
+    }
+  })();
+  </script>
+</body>
+</html>
