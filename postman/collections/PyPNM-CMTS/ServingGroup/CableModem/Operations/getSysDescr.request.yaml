@@ -15,33 +15,19 @@ body:
 
     \    \"cable_modem\": {\r
 
-    \      \"mac_address\": [{{mac_addresses}}],\r
-
-    \      \"snmp\": {\r
-
-    \        \"snmpV2C\": {\r
-
-    \          \"community\": \"{{cm_snmp_community_rw}}\"\r
-
-    \        }\r
-
-    \      }\r
+    \      \"mac_address\": [{{mac_addresses}}]\r
 
     \    }\r
 
     \  },\r
 
-    \  \"execution\": {\r
+    \  \"poll\": {\r
 
-    \    \"max_workers\": 16,\r
+    \    \"source\": \"cache\",\r
 
-    \    \"retry_count\": 3,\r
+    \    \"wait_for_cache\": false,\r
 
-    \    \"retry_delay_seconds\": 5,\r
-
-    \    \"per_modem_timeout_seconds\": 30,\r
-
-    \    \"overall_timeout_seconds\": 120\r
+    \    \"timeout_seconds\": 8\r
 
     \  }\r
 
