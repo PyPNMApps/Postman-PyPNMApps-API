@@ -2,79 +2,30 @@
     "status": 0,
     "message": "Interface statistics retrieved successfully",
     "device": {
-        "mac_address": "38:ad:2b:3e:86:54",
+        "mac_address": "b0:f5:30:b7:76:30",
         "system_description": {
             "HW_REV": "1A",
             "VENDOR": "Hitron Technologies",
-            "BOOTR": "2022.01-MXL-v-4.0.357",
-            "SW_REV": "8.4.0.0.1b2",
+            "BOOTR": "2022.01-MXL-v-4.0.369",
+            "SW_REV": "8.5.0.0.1b4",
             "MODEL": "CODA60",
             "is_empty": false
         }
     },
     "results": {
-        "docsCableMaclayer": [
+        "ethernetCsmacd": [
             {
                 "ifEntry": {
-                    "ifIndex": 2,
-                    "ifDescr": "RF MAC Interface",
-                    "ifType": 127,
-                    "ifMtu": 1522,
-                    "ifSpeed": 0,
-                    "ifPhysAddress": "0x38ad2b3e8654",
-                    "ifAdminStatus": 1,
-                    "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 306683388,
-                    "ifInUcastPkts": 112383,
-                    "ifInNUcastPkts": null,
-                    "ifInDiscards": 0,
-                    "ifInErrors": 0,
-                    "ifInUnknownProtos": 0,
-                    "ifOutOctets": 7062572,
-                    "ifOutUcastPkts": 36560,
-                    "ifOutNUcastPkts": null,
-                    "ifOutDiscards": 0,
-                    "ifOutErrors": 0,
-                    "ifOutQLen": null,
-                    "ifSpecific": null
-                },
-                "ifXEntry": {
-                    "ifName": "cni0",
-                    "ifInMulticastPkts": 2065,
-                    "ifInBroadcastPkts": 3287808,
-                    "ifOutMulticastPkts": 4,
-                    "ifOutBroadcastPkts": 229,
-                    "ifHCInOctets": 306683388,
-                    "ifHCInUcastPkts": 112383,
-                    "ifHCInMulticastPkts": 2065,
-                    "ifHCInBroadcastPkts": 3287808,
-                    "ifHCOutOctets": 7062572,
-                    "ifHCOutUcastPkts": 36560,
-                    "ifHCOutMulticastPkts": 4,
-                    "ifHCOutBroadcastPkts": 229,
-                    "ifLinkUpDownTrapEnable": 1,
-                    "ifHighSpeed": 0,
-                    "ifPromiscuousMode": true,
-                    "ifConnectorPresent": true,
-                    "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
-                }
-            }
-        ],
-        "docsCableDownstream": [
-            {
-                "ifEntry": {
-                    "ifIndex": 49,
-                    "ifDescr": "RF Downstream Interface 2",
-                    "ifType": 128,
-                    "ifMtu": 1764,
-                    "ifSpeed": 42884296,
+                    "ifIndex": 1,
+                    "ifDescr": "eRouter Embedded Interface",
+                    "ifType": 6,
+                    "ifMtu": 0,
+                    "ifSpeed": 10000000,
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifInOctets": 0,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -89,12 +40,59 @@
                     "ifSpecific": null
                 },
                 "ifXEntry": {
-                    "ifName": "dsch3",
+                    "ifName": "esafe0",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 4294967295,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 0,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 18446744073709551615,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 10,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 5,
+                    "ifDescr": "Ethernet CPE Interface",
+                    "ifType": 6,
+                    "ifMtu": 1500,
+                    "ifSpeed": 4294967295,
+                    "ifPhysAddress": "0x3ebb56fca6f2",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 2,
+                    "ifLastChange": 2916018,
+                    "ifInOctets": 0,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "eth0_1",
                     "ifInMulticastPkts": 0,
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 0,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -103,13 +101,346 @@
                     "ifHCOutMulticastPkts": 0,
                     "ifHCOutBroadcastPkts": 0,
                     "ifLinkUpDownTrapEnable": 2,
-                    "ifHighSpeed": 43,
+                    "ifHighSpeed": 10000,
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
                     "ifCounterDiscontinuityTime": 0
                 }
             },
+            {
+                "ifEntry": {
+                    "ifIndex": 6,
+                    "ifDescr": "Ethernet CPE Interface",
+                    "ifType": 6,
+                    "ifMtu": 1500,
+                    "ifSpeed": 2500000000,
+                    "ifPhysAddress": "0x2e48a6452f48",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 2,
+                    "ifLastChange": 2916018,
+                    "ifInOctets": 0,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "eth0_6",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 0,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 2500,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 7,
+                    "ifDescr": "Ethernet CPE Interface",
+                    "ifType": 6,
+                    "ifMtu": 1500,
+                    "ifSpeed": 2500000000,
+                    "ifPhysAddress": "0x36bbc3ede1c2",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 2,
+                    "ifLastChange": 2916018,
+                    "ifInOctets": 0,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "eth0_7",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 0,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 2500,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 8,
+                    "ifDescr": "Ethernet CPE Interface",
+                    "ifType": 6,
+                    "ifMtu": 1500,
+                    "ifSpeed": 1000000000,
+                    "ifPhysAddress": "0xbad5c63b0d45",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 2918454,
+                    "ifInOctets": 2633696,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 2368,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 694660,
+                    "ifOutUcastPkts": 42,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "eth0_8",
+                    "ifInMulticastPkts": 39144,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 7239,
+                    "ifOutBroadcastPkts": 509,
+                    "ifHCInOctets": 2633760,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 39144,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 694660,
+                    "ifHCOutUcastPkts": 42,
+                    "ifHCOutMulticastPkts": 7239,
+                    "ifHCOutBroadcastPkts": 509,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 1000,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 9,
+                    "ifDescr": "Ethernet CPE Interface",
+                    "ifType": 6,
+                    "ifMtu": 1500,
+                    "ifSpeed": 10000000,
+                    "ifPhysAddress": "0xb0f530b7763c",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 2916018,
+                    "ifInOctets": 3707765762,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 103483910,
+                    "ifOutUcastPkts": 1073,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "wlan0.0",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 72771730547934210,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 144398866474273286,
+                    "ifHCOutUcastPkts": 1073,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 10,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 10,
+                    "ifDescr": "Ethernet CPE Interface",
+                    "ifType": 6,
+                    "ifMtu": 1500,
+                    "ifSpeed": 10000000,
+                    "ifPhysAddress": "0xb0f530b77631",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 2916018,
+                    "ifInOctets": 3707765762,
+                    "ifInUcastPkts": 6800,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 103483910,
+                    "ifOutUcastPkts": 4486,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "wlan2.0",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 24904819,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 60,
+                    "ifHCInOctets": 72771730547934210,
+                    "ifHCInUcastPkts": 6800,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 24904819,
+                    "ifHCOutOctets": 144398866474273286,
+                    "ifHCOutUcastPkts": 4486,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 60,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 10,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 11,
+                    "ifDescr": "Ethernet CPE Interface",
+                    "ifType": 6,
+                    "ifMtu": 1500,
+                    "ifSpeed": 10000000,
+                    "ifPhysAddress": "0xb0f530b77647",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 2916018,
+                    "ifInOctets": 3707765762,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 103483910,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "wlan4.0",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 72771730547934210,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 144398866474273286,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 10,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            }
+        ],
+        "docsCableMaclayer": [
+            {
+                "ifEntry": {
+                    "ifIndex": 2,
+                    "ifDescr": "RF MAC Interface",
+                    "ifType": 127,
+                    "ifMtu": 1522,
+                    "ifSpeed": 0,
+                    "ifPhysAddress": "0xb0f530b77630",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 512521493,
+                    "ifInUcastPkts": 367889,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 12679833,
+                    "ifOutUcastPkts": 71399,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "cni0",
+                    "ifInMulticastPkts": 114,
+                    "ifInBroadcastPkts": 247768,
+                    "ifOutMulticastPkts": 358,
+                    "ifOutBroadcastPkts": 18,
+                    "ifHCInOctets": 512521493,
+                    "ifHCInUcastPkts": 367889,
+                    "ifHCInMulticastPkts": 114,
+                    "ifHCInBroadcastPkts": 247768,
+                    "ifHCOutOctets": 12679833,
+                    "ifHCOutUcastPkts": 71399,
+                    "ifHCOutMulticastPkts": 358,
+                    "ifHCOutBroadcastPkts": 18,
+                    "ifLinkUpDownTrapEnable": 1,
+                    "ifHighSpeed": 0,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            }
+        ],
+        "docsCableDownstream": [
             {
                 "ifEntry": {
                     "ifIndex": 50,
@@ -120,8 +451,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 59919479,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -141,7 +472,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -154,7 +485,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -167,8 +498,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 60492105,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -188,7 +519,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -201,7 +532,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -214,8 +545,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 59155597,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -235,7 +566,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -248,7 +579,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -261,8 +592,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 59918364,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -282,7 +613,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -295,7 +626,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -308,8 +639,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -329,7 +660,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -342,7 +673,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -355,8 +686,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -376,7 +707,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -389,7 +720,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -402,8 +733,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -423,7 +754,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -436,7 +767,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -449,8 +780,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -470,7 +801,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -483,7 +814,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -496,8 +827,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -517,7 +848,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -530,7 +861,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -543,8 +874,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -564,7 +895,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -577,7 +908,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -590,8 +921,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -611,7 +942,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -624,7 +955,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -637,8 +968,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -658,7 +989,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -671,7 +1002,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -684,8 +1015,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -705,7 +1036,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -718,7 +1049,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -731,8 +1062,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -752,7 +1083,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -765,7 +1096,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -778,8 +1109,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -799,7 +1130,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -812,7 +1143,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -825,8 +1156,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -846,7 +1177,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -859,7 +1190,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -872,8 +1203,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -893,7 +1224,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -906,7 +1237,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -919,8 +1250,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -940,7 +1271,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -953,7 +1284,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -966,8 +1297,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -987,7 +1318,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1000,7 +1331,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -1013,8 +1344,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1034,7 +1365,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1047,7 +1378,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -1060,8 +1391,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1081,7 +1412,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1094,7 +1425,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -1107,8 +1438,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1128,7 +1459,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1141,7 +1472,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -1154,8 +1485,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1175,7 +1506,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1188,7 +1519,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -1201,8 +1532,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1222,7 +1553,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1235,7 +1566,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -1248,8 +1579,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1269,7 +1600,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1282,7 +1613,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -1295,8 +1626,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 748,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1316,7 +1647,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 748,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1329,7 +1660,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -1342,8 +1673,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 1165,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1363,7 +1694,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 1165,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1376,7 +1707,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -1389,8 +1720,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 1165,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1410,7 +1741,7 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 1165,
+                    "ifHCInOctets": 769,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1423,7 +1754,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -1436,8 +1767,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 1165,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 769,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1457,7 +1788,148 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 1165,
+                    "ifHCInOctets": 769,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 2916019
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 79,
+                    "ifDescr": "RF Downstream Interface",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 1187,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch1",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 1187,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 112,
+                    "ifDescr": "RF Downstream Interface 33",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 1187,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch34",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 1187,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 43,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 0
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 113,
+                    "ifDescr": "RF Downstream Interface 34",
+                    "ifType": 128,
+                    "ifMtu": 1764,
+                    "ifSpeed": 42884296,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 1187,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch35",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 1187,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1492,7 +1964,7 @@
                     "ifInDiscards": 0,
                     "ifInErrors": 0,
                     "ifInUnknownProtos": 0,
-                    "ifOutOctets": 1542043,
+                    "ifOutOctets": 2539019,
                     "ifOutUcastPkts": 0,
                     "ifOutNUcastPkts": null,
                     "ifOutDiscards": 0,
@@ -1519,7 +1991,7 @@
                     "ifInDiscards": 0,
                     "ifInErrors": 0,
                     "ifInUnknownProtos": 0,
-                    "ifOutOctets": 1586244,
+                    "ifOutOctets": 2640648,
                     "ifOutUcastPkts": 0,
                     "ifOutNUcastPkts": null,
                     "ifOutDiscards": 0,
@@ -1546,7 +2018,7 @@
                     "ifInDiscards": 0,
                     "ifInErrors": 0,
                     "ifInUnknownProtos": 0,
-                    "ifOutOctets": 1594504,
+                    "ifOutOctets": 2553925,
                     "ifOutUcastPkts": 0,
                     "ifOutNUcastPkts": null,
                     "ifOutDiscards": 0,
@@ -1573,7 +2045,7 @@
                     "ifInDiscards": 0,
                     "ifInErrors": 0,
                     "ifInUnknownProtos": 0,
-                    "ifOutOctets": 1640532,
+                    "ifOutOctets": 2557396,
                     "ifOutUcastPkts": 0,
                     "ifOutNUcastPkts": null,
                     "ifOutDiscards": 0,
@@ -1588,15 +2060,15 @@
             {
                 "ifEntry": {
                     "ifIndex": 3,
-                    "ifDescr": "RF Downstream Interface",
+                    "ifDescr": "RF Downstream Interface 32",
                     "ifType": 277,
                     "ifMtu": 1764,
                     "ifSpeed": 1779270016,
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 1289946665,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 246603236,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1611,12 +2083,12 @@
                     "ifSpecific": null
                 },
                 "ifXEntry": {
-                    "ifName": "dsch1",
+                    "ifName": "dsch33",
                     "ifInMulticastPkts": 0,
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 1289946665,
+                    "ifHCInOctets": 246603236,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1629,7 +2101,7 @@
                     "ifPromiscuousMode": true,
                     "ifConnectorPresent": true,
                     "ifAlias": "",
-                    "ifCounterDiscontinuityTime": 0
+                    "ifCounterDiscontinuityTime": 2916019
                 }
             },
             {
@@ -1642,8 +2114,8 @@
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
-                    "ifLastChange": 0,
-                    "ifInOctets": 320780935,
+                    "ifLastChange": 2916019,
+                    "ifInOctets": 189237077,
                     "ifInUcastPkts": 0,
                     "ifInNUcastPkts": null,
                     "ifInDiscards": 0,
@@ -1663,7 +2135,54 @@
                     "ifInBroadcastPkts": 0,
                     "ifOutMulticastPkts": 0,
                     "ifOutBroadcastPkts": 0,
-                    "ifHCInOctets": 320780935,
+                    "ifHCInOctets": 189237077,
+                    "ifHCInUcastPkts": 0,
+                    "ifHCInMulticastPkts": 0,
+                    "ifHCInBroadcastPkts": 0,
+                    "ifHCOutOctets": 0,
+                    "ifHCOutUcastPkts": 0,
+                    "ifHCOutMulticastPkts": 0,
+                    "ifHCOutBroadcastPkts": 0,
+                    "ifLinkUpDownTrapEnable": 2,
+                    "ifHighSpeed": 1779,
+                    "ifPromiscuousMode": true,
+                    "ifConnectorPresent": true,
+                    "ifAlias": "",
+                    "ifCounterDiscontinuityTime": 2916019
+                }
+            },
+            {
+                "ifEntry": {
+                    "ifIndex": 49,
+                    "ifDescr": "RF Downstream Interface 2",
+                    "ifType": 277,
+                    "ifMtu": 1764,
+                    "ifSpeed": 1779270016,
+                    "ifPhysAddress": "",
+                    "ifAdminStatus": 1,
+                    "ifOperStatus": 1,
+                    "ifLastChange": 0,
+                    "ifInOctets": 174378563,
+                    "ifInUcastPkts": 0,
+                    "ifInNUcastPkts": null,
+                    "ifInDiscards": 0,
+                    "ifInErrors": 0,
+                    "ifInUnknownProtos": 0,
+                    "ifOutOctets": 0,
+                    "ifOutUcastPkts": 0,
+                    "ifOutNUcastPkts": null,
+                    "ifOutDiscards": 0,
+                    "ifOutErrors": 0,
+                    "ifOutQLen": null,
+                    "ifSpecific": null
+                },
+                "ifXEntry": {
+                    "ifName": "dsch3",
+                    "ifInMulticastPkts": 0,
+                    "ifInBroadcastPkts": 0,
+                    "ifOutMulticastPkts": 0,
+                    "ifOutBroadcastPkts": 0,
+                    "ifHCInOctets": 174389318,
                     "ifHCInUcastPkts": 0,
                     "ifHCInMulticastPkts": 0,
                     "ifHCInBroadcastPkts": 0,
@@ -1687,7 +2206,7 @@
                     "ifDescr": "RF Upstream Interface",
                     "ifType": 278,
                     "ifMtu": 1764,
-                    "ifSpeed": 846746232,
+                    "ifSpeed": 381580920,
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
@@ -1698,7 +2217,7 @@
                     "ifInDiscards": 0,
                     "ifInErrors": 0,
                     "ifInUnknownProtos": 0,
-                    "ifOutOctets": 1545656,
+                    "ifOutOctets": 2199472,
                     "ifOutUcastPkts": 0,
                     "ifOutNUcastPkts": null,
                     "ifOutDiscards": 0,
@@ -1714,7 +2233,7 @@
                     "ifDescr": "RF Upstream Interface 5",
                     "ifType": 278,
                     "ifMtu": 1764,
-                    "ifSpeed": 381580920,
+                    "ifSpeed": 846746232,
                     "ifPhysAddress": "",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
@@ -1725,7 +2244,7 @@
                     "ifInDiscards": 0,
                     "ifInErrors": 0,
                     "ifInUnknownProtos": 0,
-                    "ifOutOctets": 1427173,
+                    "ifOutOctets": 2501645,
                     "ifOutUcastPkts": 0,
                     "ifOutNUcastPkts": null,
                     "ifOutDiscards": 0,
@@ -1735,6 +2254,1902 @@
                 },
                 "ifXEntry": null
             }
-        ]
+        ],
+        "bridge": {
+            "ifIndexes": {
+                "0": {
+                    "ifType": null,
+                    "ifDescription": "",
+                    "ifName": "",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 0,
+                            "ifStackLowerLayer": 2,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 3,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 4,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 48,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 49,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 50,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 51,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 52,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 53,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 54,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 55,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 56,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 57,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 58,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 59,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 60,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 61,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 62,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 63,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 64,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 65,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 66,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 67,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 68,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 69,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 70,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 71,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 72,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 73,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 74,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 75,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 76,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 77,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 78,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 79,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 80,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 81,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 82,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 83,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 84,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 112,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 113,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "1": {
+                    "ifType": 6,
+                    "ifDescription": "eRouter Embedded Interface",
+                    "ifName": "esafe0",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [
+                        {
+                            "dot1dBasePort": 1,
+                            "dot1dBasePortIfIndex": 1,
+                            "dot1dBasePortCircuit": "0.0",
+                            "dot1dBasePortDelayExceededDiscards": 0,
+                            "dot1dBasePortMtuExceededDiscards": 0
+                        }
+                    ],
+                    "dot1dTpPortEntry": [
+                        {
+                            "dot1dTpPort": 1,
+                            "dot1dTpPortMaxInfo": 0,
+                            "dot1dTpPortInFrames": 0,
+                            "dot1dTpPortOutFrames": 4294967295,
+                            "dot1dTpPortInDiscards": 0
+                        }
+                    ],
+                    "dot1dTpFdbEntry": [
+                        {
+                            "dot1dTpFdbAddress": "00:00:00:00:00:00",
+                            "dot1dTpFdbPort": 1,
+                            "dot1dTpFdbStatus": 4
+                        },
+                        {
+                            "dot1dTpFdbAddress": "b0:f5:30:b7:76:33",
+                            "dot1dTpFdbPort": 1,
+                            "dot1dTpFdbStatus": 5
+                        }
+                    ],
+                    "ifStackEntry": []
+                },
+                "2": {
+                    "ifType": 127,
+                    "ifDescription": "RF MAC Interface",
+                    "ifName": "cni0",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [
+                        {
+                            "dot1dBasePort": 2,
+                            "dot1dBasePortIfIndex": 2,
+                            "dot1dBasePortCircuit": "0.0",
+                            "dot1dBasePortDelayExceededDiscards": 0,
+                            "dot1dBasePortMtuExceededDiscards": 0
+                        }
+                    ],
+                    "dot1dTpPortEntry": [
+                        {
+                            "dot1dTpPort": 2,
+                            "dot1dTpPortMaxInfo": 1522,
+                            "dot1dTpPortInFrames": 620036,
+                            "dot1dTpPortOutFrames": 75695,
+                            "dot1dTpPortInDiscards": 0
+                        }
+                    ],
+                    "dot1dTpFdbEntry": [
+                        {
+                            "dot1dTpFdbAddress": "b0:f5:30:b7:76:30",
+                            "dot1dTpFdbPort": 2,
+                            "dot1dTpFdbStatus": 4
+                        }
+                    ],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 0,
+                            "ifStackLowerLayer": 2,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 3,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 4,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 48,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 49,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 50,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 51,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 52,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 53,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 54,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 55,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 56,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 57,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 58,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 59,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 60,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 61,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 62,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 63,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 64,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 65,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 66,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 67,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 68,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 69,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 70,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 71,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 72,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 73,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 74,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 75,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 76,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 77,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 78,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 79,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 80,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 81,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 82,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 83,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 84,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 112,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 113,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "3": {
+                    "ifType": 277,
+                    "ifDescription": "RF Downstream Interface 32",
+                    "ifName": "dsch33",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 3,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 3,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "4": {
+                    "ifType": 278,
+                    "ifDescription": "RF Upstream Interface",
+                    "ifName": "usch1",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 4,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 4,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "5": {
+                    "ifType": 6,
+                    "ifDescription": "Ethernet CPE Interface",
+                    "ifName": "eth0_1",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [
+                        {
+                            "dot1dBasePort": 5,
+                            "dot1dBasePortIfIndex": 5,
+                            "dot1dBasePortCircuit": "0.0",
+                            "dot1dBasePortDelayExceededDiscards": 0,
+                            "dot1dBasePortMtuExceededDiscards": 0
+                        }
+                    ],
+                    "dot1dTpPortEntry": [
+                        {
+                            "dot1dTpPort": 5,
+                            "dot1dTpPortMaxInfo": 1500,
+                            "dot1dTpPortInFrames": 0,
+                            "dot1dTpPortOutFrames": 0,
+                            "dot1dTpPortInDiscards": 0
+                        }
+                    ],
+                    "dot1dTpFdbEntry": [
+                        {
+                            "dot1dTpFdbAddress": "3e:bb:56:fc:a6:f2",
+                            "dot1dTpFdbPort": 5,
+                            "dot1dTpFdbStatus": 4
+                        }
+                    ],
+                    "ifStackEntry": []
+                },
+                "6": {
+                    "ifType": 6,
+                    "ifDescription": "Ethernet CPE Interface",
+                    "ifName": "eth0_6",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [
+                        {
+                            "dot1dBasePort": 6,
+                            "dot1dBasePortIfIndex": 6,
+                            "dot1dBasePortCircuit": "0.0",
+                            "dot1dBasePortDelayExceededDiscards": 0,
+                            "dot1dBasePortMtuExceededDiscards": 0
+                        }
+                    ],
+                    "dot1dTpPortEntry": [
+                        {
+                            "dot1dTpPort": 6,
+                            "dot1dTpPortMaxInfo": 1500,
+                            "dot1dTpPortInFrames": 0,
+                            "dot1dTpPortOutFrames": 0,
+                            "dot1dTpPortInDiscards": 0
+                        }
+                    ],
+                    "dot1dTpFdbEntry": [
+                        {
+                            "dot1dTpFdbAddress": "2e:48:a6:45:2f:48",
+                            "dot1dTpFdbPort": 6,
+                            "dot1dTpFdbStatus": 4
+                        }
+                    ],
+                    "ifStackEntry": []
+                },
+                "7": {
+                    "ifType": 6,
+                    "ifDescription": "Ethernet CPE Interface",
+                    "ifName": "eth0_7",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [
+                        {
+                            "dot1dBasePort": 7,
+                            "dot1dBasePortIfIndex": 7,
+                            "dot1dBasePortCircuit": "0.0",
+                            "dot1dBasePortDelayExceededDiscards": 0,
+                            "dot1dBasePortMtuExceededDiscards": 0
+                        }
+                    ],
+                    "dot1dTpPortEntry": [
+                        {
+                            "dot1dTpPort": 7,
+                            "dot1dTpPortMaxInfo": 1500,
+                            "dot1dTpPortInFrames": 0,
+                            "dot1dTpPortOutFrames": 0,
+                            "dot1dTpPortInDiscards": 0
+                        }
+                    ],
+                    "dot1dTpFdbEntry": [
+                        {
+                            "dot1dTpFdbAddress": "36:bb:c3:ed:e1:c2",
+                            "dot1dTpFdbPort": 7,
+                            "dot1dTpFdbStatus": 4
+                        }
+                    ],
+                    "ifStackEntry": []
+                },
+                "8": {
+                    "ifType": 6,
+                    "ifDescription": "Ethernet CPE Interface",
+                    "ifName": "eth0_8",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [
+                        {
+                            "dot1dBasePort": 8,
+                            "dot1dBasePortIfIndex": 8,
+                            "dot1dBasePortCircuit": "0.0",
+                            "dot1dBasePortDelayExceededDiscards": 0,
+                            "dot1dBasePortMtuExceededDiscards": 0
+                        }
+                    ],
+                    "dot1dTpPortEntry": [
+                        {
+                            "dot1dTpPort": 8,
+                            "dot1dTpPortMaxInfo": 1500,
+                            "dot1dTpPortInFrames": 39179,
+                            "dot1dTpPortOutFrames": 7798,
+                            "dot1dTpPortInDiscards": 0
+                        }
+                    ],
+                    "dot1dTpFdbEntry": [
+                        {
+                            "dot1dTpFdbAddress": "ba:d5:c6:3b:0d:45",
+                            "dot1dTpFdbPort": 8,
+                            "dot1dTpFdbStatus": 4
+                        }
+                    ],
+                    "ifStackEntry": []
+                },
+                "9": {
+                    "ifType": 6,
+                    "ifDescription": "Ethernet CPE Interface",
+                    "ifName": "wlan0.0",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [
+                        {
+                            "dot1dBasePort": 9,
+                            "dot1dBasePortIfIndex": 9,
+                            "dot1dBasePortCircuit": "0.0",
+                            "dot1dBasePortDelayExceededDiscards": 0,
+                            "dot1dBasePortMtuExceededDiscards": 0
+                        }
+                    ],
+                    "dot1dTpPortEntry": [
+                        {
+                            "dot1dTpPort": 9,
+                            "dot1dTpPortMaxInfo": 1500,
+                            "dot1dTpPortInFrames": 0,
+                            "dot1dTpPortOutFrames": 1073,
+                            "dot1dTpPortInDiscards": 0
+                        }
+                    ],
+                    "dot1dTpFdbEntry": [
+                        {
+                            "dot1dTpFdbAddress": "b0:f5:30:b7:76:3c",
+                            "dot1dTpFdbPort": 9,
+                            "dot1dTpFdbStatus": 4
+                        }
+                    ],
+                    "ifStackEntry": []
+                },
+                "10": {
+                    "ifType": 6,
+                    "ifDescription": "Ethernet CPE Interface",
+                    "ifName": "wlan2.0",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [
+                        {
+                            "dot1dBasePort": 10,
+                            "dot1dBasePortIfIndex": 10,
+                            "dot1dBasePortCircuit": "0.0",
+                            "dot1dBasePortDelayExceededDiscards": 0,
+                            "dot1dBasePortMtuExceededDiscards": 0
+                        }
+                    ],
+                    "dot1dTpPortEntry": [
+                        {
+                            "dot1dTpPort": 10,
+                            "dot1dTpPortMaxInfo": 1500,
+                            "dot1dTpPortInFrames": 24924499,
+                            "dot1dTpPortOutFrames": 4552,
+                            "dot1dTpPortInDiscards": 0
+                        }
+                    ],
+                    "dot1dTpFdbEntry": [
+                        {
+                            "dot1dTpFdbAddress": "b0:f5:30:b7:76:31",
+                            "dot1dTpFdbPort": 10,
+                            "dot1dTpFdbStatus": 4
+                        }
+                    ],
+                    "ifStackEntry": []
+                },
+                "11": {
+                    "ifType": 6,
+                    "ifDescription": "Ethernet CPE Interface",
+                    "ifName": "wlan4.0",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [
+                        {
+                            "dot1dBasePort": 11,
+                            "dot1dBasePortIfIndex": 11,
+                            "dot1dBasePortCircuit": "0.0",
+                            "dot1dBasePortDelayExceededDiscards": 0,
+                            "dot1dBasePortMtuExceededDiscards": 0
+                        }
+                    ],
+                    "dot1dTpPortEntry": [
+                        {
+                            "dot1dTpPort": 11,
+                            "dot1dTpPortMaxInfo": 1500,
+                            "dot1dTpPortInFrames": 0,
+                            "dot1dTpPortOutFrames": 0,
+                            "dot1dTpPortInDiscards": 0
+                        }
+                    ],
+                    "dot1dTpFdbEntry": [
+                        {
+                            "dot1dTpFdbAddress": "b0:f5:30:b7:76:47",
+                            "dot1dTpFdbPort": 11,
+                            "dot1dTpFdbStatus": 4
+                        }
+                    ],
+                    "ifStackEntry": []
+                },
+                "48": {
+                    "ifType": 277,
+                    "ifDescription": "RF Downstream Interface 1",
+                    "ifName": "dsch2",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 48,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 48,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "49": {
+                    "ifType": 277,
+                    "ifDescription": "RF Downstream Interface 2",
+                    "ifName": "dsch3",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 49,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 49,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "50": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 3",
+                    "ifName": "dsch4",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 50,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 50,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "51": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 4",
+                    "ifName": "dsch5",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 51,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 51,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "52": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 5",
+                    "ifName": "dsch6",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 52,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 52,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "53": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 6",
+                    "ifName": "dsch7",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 53,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 53,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "54": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 7",
+                    "ifName": "dsch8",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 54,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 54,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "55": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 8",
+                    "ifName": "dsch9",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 55,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 55,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "56": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 9",
+                    "ifName": "dsch10",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 56,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 56,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "57": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 10",
+                    "ifName": "dsch11",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 57,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 57,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "58": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 11",
+                    "ifName": "dsch12",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 58,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 58,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "59": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 12",
+                    "ifName": "dsch13",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 59,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 59,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "60": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 13",
+                    "ifName": "dsch14",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 60,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 60,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "61": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 14",
+                    "ifName": "dsch15",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 61,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 61,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "62": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 15",
+                    "ifName": "dsch16",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 62,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 62,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "63": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 16",
+                    "ifName": "dsch17",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 63,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 63,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "64": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 17",
+                    "ifName": "dsch18",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 64,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 64,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "65": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 18",
+                    "ifName": "dsch19",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 65,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 65,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "66": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 19",
+                    "ifName": "dsch20",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 66,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 66,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "67": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 20",
+                    "ifName": "dsch21",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 67,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 67,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "68": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 21",
+                    "ifName": "dsch22",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 68,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 68,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "69": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 22",
+                    "ifName": "dsch23",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 69,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 69,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "70": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 23",
+                    "ifName": "dsch24",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 70,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 70,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "71": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 24",
+                    "ifName": "dsch25",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 71,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 71,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "72": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 25",
+                    "ifName": "dsch26",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 72,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 72,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "73": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 26",
+                    "ifName": "dsch27",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 73,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 73,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "74": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 27",
+                    "ifName": "dsch28",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 74,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 74,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "75": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 28",
+                    "ifName": "dsch29",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 75,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 75,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "76": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 29",
+                    "ifName": "dsch30",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 76,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 76,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "77": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 30",
+                    "ifName": "dsch31",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 77,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 77,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "78": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 31",
+                    "ifName": "dsch32",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 78,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 78,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "79": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface",
+                    "ifName": "dsch1",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 79,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 79,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "80": {
+                    "ifType": 129,
+                    "ifDescription": "RF Upstream Interface 1",
+                    "ifName": "usch2",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 80,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 80,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "81": {
+                    "ifType": 129,
+                    "ifDescription": "RF Upstream Interface 2",
+                    "ifName": "usch3",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 81,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 81,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "82": {
+                    "ifType": 129,
+                    "ifDescription": "RF Upstream Interface 3",
+                    "ifName": "usch4",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 82,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 82,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "83": {
+                    "ifType": 129,
+                    "ifDescription": "RF Upstream Interface 4",
+                    "ifName": "usch5",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 83,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 83,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "84": {
+                    "ifType": 278,
+                    "ifDescription": "RF Upstream Interface 5",
+                    "ifName": "usch6",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 84,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 84,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "112": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 33",
+                    "ifName": "dsch34",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 112,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 112,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                },
+                "113": {
+                    "ifType": 128,
+                    "ifDescription": "RF Downstream Interface 34",
+                    "ifName": "dsch35",
+                    "dot1dBase": [
+                        {
+                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseNumPorts": 9,
+                            "dot1dBaseType": 2
+                        }
+                    ],
+                    "dot1dBasePortEntry": [],
+                    "dot1dTpPortEntry": [],
+                    "dot1dTpFdbEntry": [],
+                    "ifStackEntry": [
+                        {
+                            "ifStackHigherLayer": 2,
+                            "ifStackLowerLayer": 113,
+                            "ifStackStatus": 1
+                        },
+                        {
+                            "ifStackHigherLayer": 113,
+                            "ifStackLowerLayer": 0,
+                            "ifStackStatus": 1
+                        }
+                    ]
+                }
+            }
+        }
     }
 }
