@@ -742,17 +742,23 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
 
 ````json
 {
+    "system_description": {
+        "HW_REV": "1.0",
+        "VENDOR": "LANCity",
+        "BOOTR": "NONE",
+        "SW_REV": "1.0.0",
+        "MODEL": "LCPET-3"
+    },
     "status": 0,
     "message": "Interface statistics retrieved successfully",
     "device": {
-        "mac_address": "b0:f5:30:b7:76:30",
+        "mac_address": "aa:bb:cc:dd:ee:ff",
         "system_description": {
-            "HW_REV": "1A",
-            "VENDOR": "Hitron Technologies",
-            "BOOTR": "2022.01-MXL-v-4.0.369",
-            "SW_REV": "8.5.0.0.1b4",
-            "MODEL": "CODA60",
-            "is_empty": false
+            "HW_REV": "1.0",
+            "VENDOR": "LANCity",
+            "BOOTR": "NONE",
+            "SW_REV": "1.0.0",
+            "MODEL": "LCPET-3"
         }
     },
     "results": {
@@ -811,7 +817,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifType": 6,
                     "ifMtu": 1500,
                     "ifSpeed": 4294967295,
-                    "ifPhysAddress": "0x3ebb56fca6f2",
+                    "ifPhysAddress": "0xaabbccddeeff",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 2,
                     "ifLastChange": 2916018,
@@ -858,7 +864,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifType": 6,
                     "ifMtu": 1500,
                     "ifSpeed": 2500000000,
-                    "ifPhysAddress": "0x2e48a6452f48",
+                    "ifPhysAddress": "0xaabbccddeeff",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 2,
                     "ifLastChange": 2916018,
@@ -905,7 +911,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifType": 6,
                     "ifMtu": 1500,
                     "ifSpeed": 2500000000,
-                    "ifPhysAddress": "0x36bbc3ede1c2",
+                    "ifPhysAddress": "0xaabbccddeeff",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 2,
                     "ifLastChange": 2916018,
@@ -952,7 +958,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifType": 6,
                     "ifMtu": 1500,
                     "ifSpeed": 1000000000,
-                    "ifPhysAddress": "0xbad5c63b0d45",
+                    "ifPhysAddress": "0xaabbccddeeff",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 2918454,
@@ -999,7 +1005,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifType": 6,
                     "ifMtu": 1500,
                     "ifSpeed": 10000000,
-                    "ifPhysAddress": "0xb0f530b7763c",
+                    "ifPhysAddress": "0xaabbccddeeff",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 2916018,
@@ -1046,7 +1052,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifType": 6,
                     "ifMtu": 1500,
                     "ifSpeed": 10000000,
-                    "ifPhysAddress": "0xb0f530b77631",
+                    "ifPhysAddress": "0xaabbccddeeff",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 2916018,
@@ -1093,7 +1099,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifType": 6,
                     "ifMtu": 1500,
                     "ifSpeed": 10000000,
-                    "ifPhysAddress": "0xb0f530b77647",
+                    "ifPhysAddress": "0xaabbccddeeff",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 2916018,
@@ -1142,7 +1148,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifType": 127,
                     "ifMtu": 1522,
                     "ifSpeed": 0,
-                    "ifPhysAddress": "0xb0f530b77630",
+                    "ifPhysAddress": "0xaabbccddeeff",
                     "ifAdminStatus": 1,
                     "ifOperStatus": 1,
                     "ifLastChange": 0,
@@ -3006,7 +3012,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3233,7 +3239,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "esafe0",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3258,12 +3264,12 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     ],
                     "dot1dTpFdbEntry": [
                         {
-                            "dot1dTpFdbAddress": "00:00:00:00:00:00",
+                            "dot1dTpFdbAddress": "aa:bb:cc:dd:ee:ff",
                             "dot1dTpFdbPort": 1,
                             "dot1dTpFdbStatus": 4
                         },
                         {
-                            "dot1dTpFdbAddress": "b0:f5:30:b7:76:33",
+                            "dot1dTpFdbAddress": "aa:bb:cc:dd:ee:ff",
                             "dot1dTpFdbPort": 1,
                             "dot1dTpFdbStatus": 5
                         }
@@ -3276,7 +3282,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "cni0",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3301,7 +3307,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     ],
                     "dot1dTpFdbEntry": [
                         {
-                            "dot1dTpFdbAddress": "b0:f5:30:b7:76:30",
+                            "dot1dTpFdbAddress": "aa:bb:cc:dd:ee:ff",
                             "dot1dTpFdbPort": 2,
                             "dot1dTpFdbStatus": 4
                         }
@@ -3525,7 +3531,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch33",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3552,7 +3558,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "usch1",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3579,7 +3585,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "eth0_1",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3604,7 +3610,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     ],
                     "dot1dTpFdbEntry": [
                         {
-                            "dot1dTpFdbAddress": "3e:bb:56:fc:a6:f2",
+                            "dot1dTpFdbAddress": "aa:bb:cc:dd:ee:ff",
                             "dot1dTpFdbPort": 5,
                             "dot1dTpFdbStatus": 4
                         }
@@ -3617,7 +3623,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "eth0_6",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3642,7 +3648,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     ],
                     "dot1dTpFdbEntry": [
                         {
-                            "dot1dTpFdbAddress": "2e:48:a6:45:2f:48",
+                            "dot1dTpFdbAddress": "aa:bb:cc:dd:ee:ff",
                             "dot1dTpFdbPort": 6,
                             "dot1dTpFdbStatus": 4
                         }
@@ -3655,7 +3661,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "eth0_7",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3680,7 +3686,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     ],
                     "dot1dTpFdbEntry": [
                         {
-                            "dot1dTpFdbAddress": "36:bb:c3:ed:e1:c2",
+                            "dot1dTpFdbAddress": "aa:bb:cc:dd:ee:ff",
                             "dot1dTpFdbPort": 7,
                             "dot1dTpFdbStatus": 4
                         }
@@ -3693,7 +3699,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "eth0_8",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3718,7 +3724,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     ],
                     "dot1dTpFdbEntry": [
                         {
-                            "dot1dTpFdbAddress": "ba:d5:c6:3b:0d:45",
+                            "dot1dTpFdbAddress": "aa:bb:cc:dd:ee:ff",
                             "dot1dTpFdbPort": 8,
                             "dot1dTpFdbStatus": 4
                         }
@@ -3731,7 +3737,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "wlan0.0",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3756,7 +3762,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     ],
                     "dot1dTpFdbEntry": [
                         {
-                            "dot1dTpFdbAddress": "b0:f5:30:b7:76:3c",
+                            "dot1dTpFdbAddress": "aa:bb:cc:dd:ee:ff",
                             "dot1dTpFdbPort": 9,
                             "dot1dTpFdbStatus": 4
                         }
@@ -3769,7 +3775,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "wlan2.0",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3794,7 +3800,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     ],
                     "dot1dTpFdbEntry": [
                         {
-                            "dot1dTpFdbAddress": "b0:f5:30:b7:76:31",
+                            "dot1dTpFdbAddress": "aa:bb:cc:dd:ee:ff",
                             "dot1dTpFdbPort": 10,
                             "dot1dTpFdbStatus": 4
                         }
@@ -3807,7 +3813,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "wlan4.0",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3832,7 +3838,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     ],
                     "dot1dTpFdbEntry": [
                         {
-                            "dot1dTpFdbAddress": "b0:f5:30:b7:76:47",
+                            "dot1dTpFdbAddress": "aa:bb:cc:dd:ee:ff",
                             "dot1dTpFdbPort": 11,
                             "dot1dTpFdbStatus": 4
                         }
@@ -3845,7 +3851,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch2",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3872,7 +3878,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch3",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3899,7 +3905,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch4",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3926,7 +3932,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch5",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3953,7 +3959,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch6",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -3980,7 +3986,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch7",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4007,7 +4013,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch8",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4034,7 +4040,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch9",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4061,7 +4067,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch10",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4088,7 +4094,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch11",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4115,7 +4121,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch12",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4142,7 +4148,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch13",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4169,7 +4175,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch14",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4196,7 +4202,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch15",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4223,7 +4229,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch16",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4250,7 +4256,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch17",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4277,7 +4283,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch18",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4304,7 +4310,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch19",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4331,7 +4337,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch20",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4358,7 +4364,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch21",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4385,7 +4391,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch22",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4412,7 +4418,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch23",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4439,7 +4445,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch24",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4466,7 +4472,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch25",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4493,7 +4499,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch26",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4520,7 +4526,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch27",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4547,7 +4553,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch28",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4574,7 +4580,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch29",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4601,7 +4607,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch30",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4628,7 +4634,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch31",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4655,7 +4661,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch32",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4682,7 +4688,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch1",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4709,7 +4715,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "usch2",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4736,7 +4742,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "usch3",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4763,7 +4769,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "usch4",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4790,7 +4796,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "usch5",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4817,7 +4823,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "usch6",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4844,7 +4850,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch34",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
@@ -4871,7 +4877,7 @@ Preview is best-effort. Some templates may rely on Postman-specific APIs that ar
                     "ifName": "dsch35",
                     "dot1dBase": [
                         {
-                            "dot1dBaseBridgeAddress": "0x2e48a6452f48",
+                            "dot1dBaseBridgeAddress": "0xaabbccddeeff",
                             "dot1dBaseNumPorts": 9,
                             "dot1dBaseType": 2
                         }
