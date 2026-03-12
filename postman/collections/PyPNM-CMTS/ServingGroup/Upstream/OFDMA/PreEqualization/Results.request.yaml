@@ -3,7 +3,16 @@ url: '{{pypnm_cmts_url}}/cmts/pnm/sg/us/ofdma/preEqualization/results'
 method: POST
 body:
   type: json
-  content: "{\r\n  \"operation\": {\r\n    \"pnm_capture_operation_id\": \"{{ofdma_preeq_cmts_operation_id}}\"\r\n  },\r\n  \"selection\": {\r\n    \"serving_group_ids\": [],\r\n    \"channel_ids\": [],\r\n    \"mac_addresses\": []\r\n  },\r\n  \"analysis\": {\r\n    \"type\": \"basic\"\r\n  },\r\n  \"output\": {\r\n    \"type\": \"json\"\r\n  }\r\n}\r\n"
+  content: "{
+  \"operation\": {
+    \"pnm_capture_operation_id\": \"{{ofdma_preeq_cmts_operation_id}}\"
+  },
+  \"response\": {
+    \"output\": {
+      \"request_summary\": \"brief\"
+    }
+  }
+}"
 scripts:
 - type: afterResponse
   code: |-

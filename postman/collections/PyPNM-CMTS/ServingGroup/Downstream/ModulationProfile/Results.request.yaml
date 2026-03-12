@@ -3,38 +3,16 @@ url: "{{pypnm_cmts_url}}/cmts/pnm/sg/ds/ofdm/modulationProfile/results"
 method: POST
 body:
   type: json
-  content: "{\r
-
-    \  \"operation\": {\r
-
-    \    \"pnm_capture_operation_id\":
-    \"{{modulation_profile_cmts_operation_id}}\"\r
-
-    \  },\r
-
-    \  \"selection\": {\r
-
-    \    \"serving_group_ids\": [],\r
-
-    \    \"channel_ids\": [],\r
-
-    \    \"mac_addresses\": []\r
-
-    \  },\r
-
-    \  \"analysis\": {\r
-
-    \    \"type\": \"basic\"\r
-
-    \  },\r
-
-    \  \"output\": {\r
-
-    \    \"type\": \"json\"\r
-
-    \  }\r
-
-    }\r\n"
+  content: "{
+  \"operation\": {
+    \"pnm_capture_operation_id\": \"{{modulation_profile_cmts_operation_id}}\"
+  },
+  \"response\": {
+    \"output\": {
+      \"request_summary\": \"brief\"
+    }
+  }
+}"
 scripts:
   - type: afterResponse
     code: >-

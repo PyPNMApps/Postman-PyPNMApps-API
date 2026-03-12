@@ -3,9 +3,14 @@ url: "{{pypnm_cmts_url}}/cmts/pnm/sg/ds/ofdm/histogram/status"
 method: POST
 body:
   type: json
-  content: "{\r
-
-    \  \"pnm_capture_operation_id\": \"{{histogram_cmts_operation_id}}\"\r
-
-    }"
+  content: "{
+  \"operation\": {
+    \"pnm_capture_operation_id\": \"{{histogram_cmts_operation_id}}\"
+  },
+  \"response\": {
+    \"output\": {
+      \"request_summary\": \"brief\"
+    }
+  }
+}"
 order: 2000

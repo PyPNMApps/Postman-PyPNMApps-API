@@ -31,12 +31,12 @@ values:
     type: default
     description: ''
   - key: pypnm_url
-    value: 172.0.0.1:8080
+    value: 127.0.0.1:8080
     enabled: true
     type: default
     description: ''
   - key: pypnm_cmts_url
-    value: 127.0.0.1:8080
+    value: 127.0.0.1:8000
     enabled: true
     type: default
     description: ''
